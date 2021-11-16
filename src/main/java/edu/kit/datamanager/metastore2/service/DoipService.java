@@ -99,13 +99,15 @@ public class DoipService implements InitializingBean {
     try {
       server.init();
       Runtime.getRuntime().addShutdownHook(new Thread(server::shutdown));
-      LOGGER.info("Address: '{}'", config.listenAddress);
-      LOGGER.info("Port: '{}'", config.port);
-      LOGGER.info("Service Name: '{}'", doipConfiguration.getServiceName());
-      LOGGER.info("Service ID: '{}'", doipConfiguration.getServiceId());
-      LOGGER.info("Service Description: '{}'", doipConfiguration.getServiceDescription());
+      LOGGER.info("Address:                '{}'", config.listenAddress);
+      LOGGER.info("Port:                   '{}'", config.port);
+      LOGGER.info("Service Name:           '{}'", doipConfiguration.getServiceName());
+      LOGGER.info("Service ID:             '{}'", doipConfiguration.getServiceId());
+      LOGGER.info("Target ID Schema:       '{}'", doipConfiguration.getTargetIdSchema());
+      LOGGER.info("Target ID Metadata:     '{}'", doipConfiguration.getTargetIdMetadata());
+      LOGGER.info("Service Description:    '{}'", doipConfiguration.getServiceDescription());
       LOGGER.info("Authentication Enabled: '{}'", doipConfiguration.getAuthenticationEnabled());
-      LOGGER.info("Default Token: '{}'", doipConfiguration.getDefaultToken());
+      LOGGER.info("Default Token:          '{}'", doipConfiguration.getDefaultToken());
       LOGGER.info("*********************************************************************");
       LOGGER.info("DOIP Server is up and running!");
     } catch (Exception ex) {

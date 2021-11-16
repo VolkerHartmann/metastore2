@@ -44,6 +44,12 @@ public class DoipConfiguration extends GenericPluginProperties{
   @Value("${repo.plugin.doip.serviceId:0.Metastore/DOIPServer}")
   private String serviceId;
 
+  @Value("${repo.plugin.doip.targetId.schema:0.Metastore/DOIPServer4Schema}")
+  private String targetIdSchema;
+
+  @Value("${repo.plugin.doip.targetId.metadata:0.Metastore/DOIPServer4Metadata}")
+  private String targetIdMetadata;
+
   @Value("${repo.plugin.doip.serviceName:TurntableAPI}")
   private String serviceName;
 

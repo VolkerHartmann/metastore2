@@ -23,8 +23,13 @@ import edu.kit.datacite.kernel_4.Creator;
 import edu.kit.datacite.kernel_4.Datacite43Schema;
 import edu.kit.datacite.kernel_4.Date;
 import edu.kit.datacite.kernel_4.Identifier;
+import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.metastore2.util.DoipUtils;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
+import edu.kit.datamanager.metastore2.domain.MetadataRecord;
+import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
+import edu.kit.datamanager.metastore2.domain.ResourceIdentifier.IdentifierType;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,6 +39,7 @@ import java.security.PublicKey;
 import java.text.SimpleDateFormat;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Set;
 import net.dona.doip.DoipConstants;
 import net.dona.doip.InDoipMessage;
 import net.dona.doip.InDoipSegment;
@@ -67,6 +73,9 @@ public class DoipProcessor4MetaStore implements DoipProcessor {
   
   private MetastoreConfiguration schemaConfig;
   private MetastoreConfiguration metadataConfig;
+  
+  private String targetId4Schema;
+  private String targetId4Metadata;
   
   public DoipProcessor4MetaStore(MetastoreConfiguration schema, MetastoreConfiguration metadata) {
     LOGGER.debug("Initializing DOIP processor with repo configurations.");
@@ -862,4 +871,45 @@ public class DoipProcessor4MetaStore implements DoipProcessor {
       LOGGER.debug("Cannot serialize DoipServerResponse!?");
     }
   }
+  
+  public void setTargetIds(String targetId4Schema, String targetId4Metadata) {
+    this.targetId4Schema = targetId4Schema;
+    this.targetId4Metadata = targetId4Metadata;
+  }
+  
+  private MetadataRecord transform2MetadataRecord(Datacite43Schema datacite) {
+    MetadataRecord returnValue = new MetadataRecord();
+    // setId
+//    returnValue.setPid(getResourceIdentifier(datacite));
+    
+    return returnValue;
+  }
+
+  private MetadataSchemaRecord transform2MetadataSchemaRecord(Datacite43Schema datacite) {
+    MetadataSchemaRecord returnValue = new MetadataSchemaRecord();
+//    returnValue.setPid(getResourceIdentifier(datacite));
+     //returnValue.set
+//    MetadataSchemaRecordUtil.createMetadataSchemaRecord(schemaConfig, recordDocument, document, getSchemaDocumentById)
+            
+    return returnValue;
+  }
+  
+//  private ResourceIdentifier getResourceIdentifier(Datacite43Schema datacite) {
+//    ResourceIdentifer resourceIdentifier = null;
+//    Set<Identifier> identifiers = datacite.getIdentifiers();
+//    for (Identifier identifier : identifiers) {
+//      if (identifier.getIdentifierType().equalsIgnoreCase(IdentifierType.HANDLE)) {
+//        ResourceIdentifier.factoryResourceIdentifier(identifier.getIdentifier(), IdentifierType.HANDLE);
+//        break;
+//      }
+//      if (identifier.getIdentifierType().equalsIgnoreCase(IdentifierType.URL)) {
+//        ResourceIdentifier.factoryResourceIdentifier(identifier.getIdentifier(), IdentifierType.URL);
+//        break;
+//      }
+//    }
+//    if (resoureIdentifer == null) {
+//      throw new BadArgumentException();
+//    }
+//    return resourceIdentifier;
+//  }
 }
