@@ -1,10 +1,9 @@
 plugins { 
-    id "org.springframework.boot" version "2.4.10"
+    id "org.springframework.boot" version "2.4.13"
     id "io.spring.dependency-management" version "1.0.11.RELEASE" 
     id "io.freefair.lombok" version "6.1.0"
     id "io.freefair.maven-publish-java" version "6.1.0"
-    id "com.github.kt3k.coveralls" version "2.12.0" 
-    id "org.owasp.dependencycheck" version "6.2.2"
+    id "org.owasp.dependencycheck" version "6.5.0.1"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
     id 'net.researchgate.release' version '2.8.1'
     id 'java'
@@ -15,9 +14,12 @@ description = 'General purpose metadata repository and schema registry service'
 group = 'edu.kit.datamanager'
 
 ext {
-    springBootVersion = '2.4.10' 
-    springDocVersion  = '1.5.6'
-    javersVersion     = '6.2.3'
+    springBootVersion = '2.4.13' 
+    springDocVersion  = '1.5.13'
+    javersVersion     = '6.5.3'
+
+    // directory for generated code snippets during tests
+    snippetsDir = file("build/generated-snippets")
 }
 
 println "Running gradle version: $gradle.gradleVersion"
@@ -36,13 +38,13 @@ configurations {
     all*.exclude module : 'spring-boot-starter-logging'
 }
 
-if (project.hasProperty('travis')) {
-    println 'Using travis profile for building ' + project.getName()
-    apply from: 'gradle/profile-travis.gradle'
-} else if (project.hasProperty('release')) {
-    println 'Using release profile for building ' + project.getName()
-    apply from: 'gradle/profile-release.gradle'   
-} 
+if (System.getProperty('profile') == 'minimal') {
+    println 'Using minimal profile for building ' + project.getName()
+    apply from: 'gradle/profile-minimal.gradle'   
+} else {
+    println 'Using default profile executing all tests for building ' + project.getName()
+    apply from: 'gradle/profile-complete.gradle'
+}
 
 dependencies {
     // Spring
@@ -65,8 +67,8 @@ dependencies {
     implementation "org.springframework.security:spring-security-config:5.5.2"
     
     // cloud support
-    implementation "org.springframework.cloud:spring-cloud-starter-config:3.0.4"
-    implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.0.3"
+    implementation "org.springframework.cloud:spring-cloud-starter-config:3.0.6"
+    implementation "org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.0.5"
 
     // springdoc
     implementation "org.springdoc:springdoc-openapi-ui:${springDocVersion}"
@@ -96,11 +98,14 @@ dependencies {
     implementation "org.javers:javers-core:${javersVersion}"
 
     // JSON validator
-    implementation "com.networknt:json-schema-validator:1.0.43"
+    implementation "com.networknt:json-schema-validator:1.0.64"
   
+    // XML validator // https://mvnrepository.com/artifact/xerces/xercesImpl
+    implementation 'xerces:xercesImpl:2.12.1'
+
     // datamanager
-    implementation "edu.kit.datamanager:repo-core:0.9.1"
-    implementation "edu.kit.datamanager:service-base:0.3.0"
+    implementation "edu.kit.datamanager:repo-core:0.9.2"
+    implementation "edu.kit.datamanager:service-base:0.3.2"
 
     // DOIP SDK
     implementation "net.dona.doip:doip-sdk:2.1.0"
@@ -128,7 +133,6 @@ compileJava {
     options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 }
 
-
 test {
     finalizedBy jacocoTestReport
     environment "spring.config.location", "classpath:/test-config/"
@@ -139,8 +143,53 @@ test {
     }
 }
 
+tasks.withType(Test) {
+    testLogging {
+        events 'started', 'passed'
+    }
+}
+
 jacoco {
     toolVersion = "0.8.7"
+}
+
+import java.text.SimpleDateFormat
+
+tasks.register('testForSnippetsDir') {
+  doFirst {
+    println 'snippetsDir exists: ' + snippetsDir.exists()
+    if (!snippetsDir.exists()) {
+      println 'Create snippets dir...'
+      println 'WARNING: Don\'t skip tests for building production ready jar file!'
+      snippetsDir.mkdirs()
+    }
+  }
+} 
+
+asciidoctor {
+  dependsOn testForSnippetsDir
+     attributes "snippets": snippetsDir,
+               "version":  jar.archiveVersion,
+               "date":     new SimpleDateFormat("yyyy-MM-dd").format(new Date())
+    inputs.dir snippetsDir
+    dependsOn test  
+    sourceDir "docs/"
+    outputDir "build/docs/html5"
+}
+
+   
+bootJar {
+    println 'Create bootable jar...'
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'org.springframework.boot.loader.PropertiesLauncher'
+    }
+    dependsOn asciidoctor
+    from ("${asciidoctor.outputDir}") {
+        into 'static/docs'
+    }
+    launchScript()
 }
 
 // task for printing project name.
