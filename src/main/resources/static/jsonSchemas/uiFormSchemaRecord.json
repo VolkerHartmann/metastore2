@@ -1,0 +1,25 @@
+{
+    "type": "fieldset",
+    "items": [
+        "schemaId",
+        "schemaVersion",
+        "mimeType",
+        "type",
+        "createdAt",
+        "lastUpdate",
+        "label",
+        "definition",
+        "comment",
+        {
+            "type": "array",
+            "title": "ACL",
+            "htmlClass": "acl",
+            "items": [
+                "acl[]"
+            ]
+        },
+        "locked",
+        "schemaDocumentUri",
+        "schemaHash"
+    ]
+}

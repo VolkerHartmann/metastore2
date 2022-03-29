@@ -49,7 +49,10 @@ public class ApplicationProperties extends GenericApplicationProperties{
 
   @Value("${metastore.metadata.metadataFolder}")
   private URL metadataFolder;
-  @Value("${metastore.metadata.schemaRegistries:''}")
+  @Value("${metastore.metadata.schemaRegistries: }")
   private String[] schemaRegistries;
+
+  @Value("${metastore.javers.scope:20}")
+  private int maxJaversScope;
 
 }

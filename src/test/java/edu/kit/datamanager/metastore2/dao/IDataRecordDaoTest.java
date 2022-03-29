@@ -12,6 +12,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,7 +53,7 @@ import org.springframework.test.context.web.ServletTestExecutionListener;
   TransactionalTestExecutionListener.class,
   WithSecurityContextTestExecutionListener.class})
 @ActiveProfiles("test")
-@TestPropertySource(properties = {"server.port=41402"})
+@TestPropertySource(properties = {"server.port=41411"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class IDataRecordDaoTest {
 
@@ -91,15 +92,38 @@ public class IDataRecordDaoTest {
    * Test of findByMetadataId method, of class IDataRecordDao.
    */
   @Test
+  public void testFindByMetadataIdAndVersion() {
+    System.out.println("findByMetadataIdAndVersion");
+    String metadataId = "metadataId1";
+//    IDataRecordDao instance = new IDataRecordDaoImpl();
+    Optional<DataRecord> result = instance.findByMetadataIdAndVersion(metadataId, 3l);
+    assertNotNull(result);
+    assertTrue(result.isPresent());
+
+    result = instance.findByMetadataIdAndVersion(metadataId, 1l);
+    assertNotNull(result);
+    assertFalse(result.isPresent());
+    
+    result = instance.findByMetadataIdAndVersion("unknownId", 1l);
+    assertNotNull(result);
+    assertFalse(result.isPresent());
+  }
+
+  /**
+   * Test of findByMetadataId method, of class IDataRecordDao.
+   */
+  @Test
   public void testFindByMetadataId() {
     System.out.println("findByMetadataId");
     String metadataId = "metadataId1";
 //    IDataRecordDao instance = new IDataRecordDaoImpl();
-    DataRecord result = instance.findByMetadataId(metadataId);
+    Optional<DataRecord> result = instance.findTopByMetadataIdOrderByVersionDesc(metadataId);
     assertNotNull(result);
+    assertTrue(result.isPresent());
 
-    result = instance.findByMetadataId("unknownId");
-    assertNull(result);
+    result = instance.findTopByMetadataIdOrderByVersionDesc("unknownId");
+    assertNotNull(result);
+    assertFalse(result.isPresent());
   }
 
   /**
@@ -228,19 +252,20 @@ public class IDataRecordDaoTest {
 
   private void prepareDataBase() {
     String[][] datasets = {
-      {"metadataId1", "documentUri", "123", "schemaId", "2021-03-15T13:00"},
-      {"metadataId2", "documentUri", "123", "schemaId", "2021-03-15T14:00"},
-      {"metadataId3", "documentUri", "123", "schemaId", "2021-03-15T15:00"},
-      {"metadataId4", "documentUri", "123", "schemaId", "2021-03-15T16:00"},
-      {"metadataId5", "documentUri", "123", "schemaId", "2021-03-15T17:00"},
-      {"metadataId6", "documentUri", "123", "schemaId", "2021-03-15T18:00"},};
+      {"metadataId1", "3", "documentUri", "123", "schemaId", "2021-03-15T13:00"},
+      {"metadataId2", "1", "documentUri", "123", "schemaId", "2021-03-15T14:00"},
+      {"metadataId3", "1", "documentUri", "123", "schemaId", "2021-03-15T15:00"},
+      {"metadataId4", "1", "documentUri", "123", "schemaId", "2021-03-15T16:00"},
+      {"metadataId5", "1", "documentUri", "123", "schemaId", "2021-03-15T17:00"},
+      {"metadataId6", "1", "documentUri", "123", "schemaId", "2021-03-15T18:00"},};
     dataRecordDao.deleteAll();
     for (String[] dataset : datasets) {
-      saveDataRecord(dataset[0], dataset[1], dataset[2], dataset[3], dataset[4]);
+      saveDataRecord(dataset[0], dataset[1], dataset[2], dataset[3], dataset[4], dataset[5]);
     }
   }
 
   private void saveDataRecord(String metadataId,
+          String version,
           String metadataDocumentUri,
           String documentHash,
           String schemaId,
@@ -252,6 +277,7 @@ public class IDataRecordDaoTest {
     DataRecord dataRecord = new DataRecord();
     dataRecord.setDocumentHash(documentHash);
     dataRecord.setMetadataId(metadataId);
+    dataRecord.setVersion(Long.parseLong(version));
     dataRecord.setSchemaId(schemaId);
     dataRecord.setLastUpdate(instant);
     dataRecord.setMetadataDocumentUri(metadataDocumentUri);

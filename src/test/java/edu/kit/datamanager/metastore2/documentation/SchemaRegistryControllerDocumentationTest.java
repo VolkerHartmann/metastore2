@@ -21,6 +21,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -85,8 +86,8 @@ import org.springframework.web.context.WebApplicationContext;
 @TestPropertySource(properties = {"server.port=41405"})
 @TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_xml_doc;DB_CLOSE_DELAY=-1"})
 @TestPropertySource(properties = {"metastore.schema.schemaFolder=file:///tmp/metastore2/restdocu/xml/schema"})
-@TestPropertySource(properties = {"metastore.schema.metadataFolder=file:///tmp/metastore2/restdocu/xml/metadata"})
-@TestPropertySource(properties = {"metastore.metadata.schemaRegistries=http://localhost:41405/api/v1/"})
+@TestPropertySource(properties = {"metastore.metadata.metadataFolder=file:///tmp/metastore2/restdocu/xml/metadata"})
+@TestPropertySource(properties = {"metastore.metadata.schemaRegistries="})
 @TestPropertySource(properties = {"server.error.include-message=always"})
 public class SchemaRegistryControllerDocumentationTest {
 
@@ -100,8 +101,9 @@ public class SchemaRegistryControllerDocumentationTest {
 
   private final static String EXAMPLE_SCHEMA_ID = "my_first_xsd";
   private final static String ANOTHER_SCHEMA_ID = "another_xsd";
-  private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/restdocu/";
+  private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/restdocu/xml/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
+  private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
   private final static String SCHEMA_V1 = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/\"\n"
           + "        xmlns=\"http://www.example.org/schema/xsd/\"\n"
           + "        xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
@@ -180,7 +182,7 @@ public class SchemaRegistryControllerDocumentationTest {
           + "  <example:date>2018-07-02</example:date>\n"
           + "  <example:note>since version 3 notes are allowed</example:note>\n"
           + "</example:metadata>";
-  private static final String RELATED_RESOURCE = "anyResourceId";
+  private static final ResourceIdentifier RELATED_RESOURCE = ResourceIdentifier.factoryUrlResourceIdentifier("https://repo/anyResourceId");
 
   @Before
   public void setUp() throws JsonProcessingException {
@@ -191,12 +193,20 @@ public class SchemaRegistryControllerDocumentationTest {
                 .forEach(File::delete);
       }
       Paths.get(TEMP_DIR_4_SCHEMAS).toFile().mkdir();
+      try (Stream<Path> walk = Files.walk(Paths.get(URI.create("file://" + TEMP_DIR_4_METADATA)))) {
+        walk.sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
+      }
+      Paths.get(TEMP_DIR_4_METADATA).toFile().mkdir();
     } catch (IOException ex) {
       ex.printStackTrace();
     }
     this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
             .addFilters(springSecurityFilterChain)
-            .apply(documentationConfiguration(this.restDocumentation).operationPreprocessors()
+            .apply(documentationConfiguration(this.restDocumentation)
+                    .uris().withPort(8040).and()
+                    .operationPreprocessors()
                     .withRequestDefaults(prettyPrint())
                     .withResponseDefaults(Preprocessors.removeHeaders("X-Content-Type-Options", "X-XSS-Protection", "X-Frame-Options"), prettyPrint()))
             .build();
@@ -224,7 +234,6 @@ public class SchemaRegistryControllerDocumentationTest {
     //**************************************************************************
     schemaRecord.setSchemaId(EXAMPLE_SCHEMA_ID);
     schemaRecord.setType(MetadataSchemaRecord.SCHEMA_TYPE.XML);
-    schemaRecord.setMimeType(MediaType.APPLICATION_XML.toString());
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 
@@ -370,8 +379,8 @@ public class SchemaRegistryControllerDocumentationTest {
     // Create a metadata record.
     MetadataRecord metadataRecord = new MetadataRecord();
 //    record.setId("my_id");
-    metadataRecord.setSchemaId(EXAMPLE_SCHEMA_ID);
     metadataRecord.setRelatedResource(RELATED_RESOURCE);
+    metadataRecord.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(EXAMPLE_SCHEMA_ID));
     metadataRecord.setSchemaVersion(1l);
 
     recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(metadataRecord).getBytes());
@@ -412,6 +421,7 @@ public class SchemaRegistryControllerDocumentationTest {
 
     mapper = new ObjectMapper();
     MetadataRecord record = mapper.readValue(body, MetadataRecord.class);
+    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(EXAMPLE_SCHEMA_ID));
     record.setSchemaVersion(2l);
     recordFile = new MockMultipartFile("record", "metadata-record-v2.json", "application/json", mapper.writeValueAsString(record).getBytes());
     metadataFile = new MockMultipartFile("document", "metadata-v2.xml", "application/xml", DOCUMENT_V2.getBytes());
@@ -434,6 +444,7 @@ public class SchemaRegistryControllerDocumentationTest {
             andDo(document("get-metadata-record-v2")).
             andExpect(status().isOk()).
             andReturn().getResponse();
+    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(EXAMPLE_SCHEMA_ID));
     record.setSchemaVersion(3l);
     recordFile = new MockMultipartFile("record", "metadata-record-v3.json", "application/json", mapper.writeValueAsString(record).getBytes());
     metadataFile = new MockMultipartFile("document", "metadata-v3.xml", "application/xml", DOCUMENT_V3.getBytes());
@@ -465,7 +476,7 @@ public class SchemaRegistryControllerDocumentationTest {
     // find all metadata for a resource
     Instant oneHourBefore = Instant.now().minusSeconds(3600);
     Instant twoHoursBefore = Instant.now().minusSeconds(7200);
-    this.mockMvc.perform(get("/api/v1/metadata").param("resoureId", RELATED_RESOURCE)).
+    this.mockMvc.perform(get("/api/v1/metadata").param("resoureId", RELATED_RESOURCE.getIdentifier())).
             andDo(print()).
             andDo(document("find-metadata-record-resource")).
             andExpect(status().isOk()).

@@ -1,0 +1,21 @@
+[{
+        "title": "Identifier",
+        "field": "id"
+    },  
+    {
+        "title": "Related Resource",
+        "field": "relatedResource.identifier"
+    },
+    {
+        "title": "Schema Identifier",
+        "field": "schema.identifier"   
+    },
+    {
+        "title": "Date Updated",
+        "field": "lastUpdate",
+        "formatter":"datetime",
+        "formatterParams":{
+            "outputFormat":"YYYY-MM-DD HH:mm"
+        }
+    }
+]

@@ -14,6 +14,7 @@ import edu.kit.datamanager.metastore2.dao.IMetadataFormatDao;
 import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.domain.oaipmh.MetadataFormat;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
@@ -119,9 +120,6 @@ public class OaiPmhControllerTest {
   private static final String SCHEMA_ID_1 = "schemaV1";
   private static final String SCHEMA_ID_2 = "schemaV2";
   private static final String SCHEMA_ID_3 = "schemaV3";
-  private static final String TITLE_1 = "Title 1";
-  private static final String TITLE_2 = "Title 2";
-  private static final String TITLE_3 = "Title 3";
   private final static String SCHEMA = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/%s\"\n"
           + "                xmlns=\"http://www.example.org/schema/xsd/\"\n"
           + "                xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
@@ -985,9 +983,9 @@ public class OaiPmhControllerTest {
   public void ingestMetadataRecord(String schemaId, String metadataDocument) throws Exception {
     MetadataRecord record = new MetadataRecord();
 //    record.setId("my_id");
-    record.setSchemaId(schemaId);
+    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(schemaId));
     UUID randomUUID = UUID.randomUUID();
-    record.setRelatedResource(randomUUID.toString());
+    record.setRelatedResource(ResourceIdentifier.factoryInternalResourceIdentifier(randomUUID.toString()));
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
 //    aclEntries.add(new AclEntry("test2",PERMISSION.ADMINISTRATE));

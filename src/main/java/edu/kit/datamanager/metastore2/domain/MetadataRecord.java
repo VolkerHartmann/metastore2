@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import edu.kit.datamanager.entities.EtagSupport;
+import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.util.json.CustomInstantDeserializer;
 import edu.kit.datamanager.util.json.CustomInstantSerializer;
@@ -52,9 +53,9 @@ public class MetadataRecord implements EtagSupport, Serializable {
   @NotBlank(message = "The unique identify of the record.")
   private String id;
   @NotBlank(message = "A globally unique identifier pointing to this record, e.g. DOI, Handle, PURL.")
-  private String pid;
+  private ResourceIdentifier pid;
   @NotBlank(message = "The unqiue identifier of the resource the metadata record is related to. The value might be a URL, a PID or something else resolvable by an external tool/service.")
-  private String relatedResource;
+  private ResourceIdentifier relatedResource;
   @NotNull(message = "The date the record has been initially created.")
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
   @JsonDeserialize(using = CustomInstantDeserializer.class)
@@ -65,8 +66,8 @@ public class MetadataRecord implements EtagSupport, Serializable {
   @JsonDeserialize(using = CustomInstantDeserializer.class)
   @JsonSerialize(using = CustomInstantSerializer.class)
   private Instant lastUpdate;
-  @NotBlank(message = "The unqiue identifier of the schema used by this record. The schemaId must map to a valid entry in the schema registry.")
-  private String schemaId;
+  @NotBlank(message = "The unqiue identifier of the schema used by this record. Possible types: INTERNAL, URL. Will be extended...")
+  private ResourceIdentifier schema;
   @NotNull(message = "The version of the schema. If no version is provided the current schema is used.")
   private Long schemaVersion;
   @NotNull(message = "The record version. The version is set by the metadata registry and cannot be provided manually.")
@@ -74,41 +75,47 @@ public class MetadataRecord implements EtagSupport, Serializable {
 
   @NotNull(message = "A list of access control entries for resticting access.")
   @OneToMany(cascade = javax.persistence.CascadeType.ALL, orphanRemoval = true)
-   private final Set<AclEntry> acl = new HashSet<>();
+  private final Set<AclEntry> acl = new HashSet<>();
   @NotBlank(message = "The metadata document uri, e.g. pointing to a local file.")
   private String metadataDocumentUri;
   @NotBlank(message = "The SHA-1 hash of the associated metadata file. The hash is used for comparison while updating.")
   private String documentHash;
   @JsonIgnore
   private String eTag;
+
   /**
    * Set new access control list.
+   *
    * @param newAclList new list with acls.
    */
   public void setAcl(Set<AclEntry> newAclList) {
     acl.clear();
-    acl.addAll(newAclList);
+    if (newAclList != null) {
+      acl.addAll(newAclList);
+    }
   }
 
   /**
    * Set creation date (truncated to milliseconds).
+   *
    * @param instant creation date
    */
   public void setCreatedAt(Instant instant) {
     if (instant != null) {
-    createdAt = instant.truncatedTo(ChronoUnit.MILLIS);
+      createdAt = instant.truncatedTo(ChronoUnit.MILLIS);
     } else {
       createdAt = null;
     }
   }
-  
+
   /**
    * Set update date (truncated to milliseconds).
+   *
    * @param instant update date
    */
   public void setLastUpdate(Instant instant) {
     if (instant != null) {
-    lastUpdate = instant.truncatedTo(ChronoUnit.MILLIS);
+      lastUpdate = instant.truncatedTo(ChronoUnit.MILLIS);
     } else {
       lastUpdate = null;
     }
@@ -118,5 +125,18 @@ public class MetadataRecord implements EtagSupport, Serializable {
   @JsonIgnore
   public String getEtag() {
     return eTag;
+  }
+
+  /**
+   * Get (internal) schema identifier.
+   *
+   * @return schema identifier.
+   */
+  @JsonIgnore
+  public String getSchemaId() {
+    if (schema.getIdentifierType() == ResourceIdentifier.IdentifierType.INTERNAL) {
+      return schema.getIdentifier();
+    }
+    throw new BadArgumentException("URL as schema identifier is not supported yet! (Coming soon)");
   }
 }

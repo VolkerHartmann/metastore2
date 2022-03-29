@@ -37,8 +37,12 @@ public class DataRecord implements Serializable {
   Long id;
   @NotBlank(message = "The unqiue identifier of the metadata.")
   private String metadataId;
+  @NotBlank(message = "The version number of the metadata document.")
+  private Long version;
   @NotBlank(message = "The unqiue identifier of the schema used in the metadata repository for identifying the schema.")
   private String schemaId;
+  @NotBlank(message = "The version of the schema.")
+  private Long schemaVersion;
   @NotBlank(message = "The timestamp of the last update on this resource.")
   private Instant lastUpdate;
   @NotBlank(message = "The SHA-1 hash of the associated metadata file. The hash is used for comparison while updating.")

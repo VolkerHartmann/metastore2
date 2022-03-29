@@ -32,6 +32,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,16 +55,16 @@ import org.springframework.web.util.UriComponentsBuilder;
   @ApiResponse(responseCode = "403", description = "Forbidden is returned if the caller has no sufficient privileges.")})
 public interface IMetadataController {
 
-  @Operation(summary = "Create a new metadata record.", description = "This endpoint allows to create a new metadata record by providing the record metadata as JSON document as well as the actual metadata as file upload. The record metadata mainly contains "
-          + "the resource identifier the record is associated with as well as the identifier of the schema which can be used to validate the provided metadata document. In the current version, both parameters are required. For future versions, e.g. the metadata "
-          + "document might be provided by reference.",
+  @Operation(summary = "Ingest a new metadata document and its record.", description = "This endpoint allows to create a new metadata record by providing the record metadata as JSON document as well as the actual metadata as file upload. The record metadata mainly contains "
+          + "the resource identifier the record is associated with as well as the identifier of the schema which can be used to validate the provided metadata document. In the current version, both parameters are required. If no schema version is given (if 'INTERNAL' reference"
+          + "is used) the most recent schema version will be used.",
           responses = {
             @ApiResponse(responseCode = "201", description = "Created is returned only if the record has been validated, persisted and the document was successfully validated and stored.", content = @Content(schema = @Schema(implementation = MetadataRecord.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided metadata record is invalid or if the validation using the provided schema failed."),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no schema for the provided schema id was found."),
             @ApiResponse(responseCode = "409", description = "A Conflict is returned, if there is already a record for the related resource id and the provided schema id.")})
 
-  @RequestMapping(path = "", method = RequestMethod.POST, consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+  @RequestMapping(path = "", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
   @ResponseBody
   public ResponseEntity createRecord(
           @Parameter(description = "Json representation of the metadata record.", required = true) @RequestPart(name = "record", required = true) final MultipartFile record,
@@ -71,7 +73,7 @@ public interface IMetadataController {
           final HttpServletResponse response,
           final UriComponentsBuilder uriBuilder) throws URISyntaxException;
 
-  @Operation(summary = "Get a metadata record by its id.", description = "Obtain is single record by its identifier. The identifier can be either the numeric identifier or the related resource's identifier. "
+  @Operation(summary = "Get a metadata record by id.", description = "Obtain a single record by its resource identifier. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
           + "by providing a version number as request parameter.",
           responses = {
@@ -85,7 +87,7 @@ public interface IMetadataController {
           WebRequest wr,
           HttpServletResponse hsr);
 
-  @Operation(summary = "Get a metadata document by its record's id.", description = "Obtain is single metadata document identified by its identifier. The identifier can be either the numeric identifier or the related resource's identifier. "
+  @Operation(summary = "Get a metadata document by record identifier.", description = "Obtain a single metadata document identified by its resource identifier."
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
           + "Furthermore, a specific version of the metadata document can be returned by providing a version number as request parameter.",
           responses = {
@@ -99,8 +101,7 @@ public interface IMetadataController {
           WebRequest wr,
           HttpServletResponse hsr);
 
-
-  @Operation(summary = "Get all records.", description = "List all records in a paginated and/or sorted form. The result can be refined by providing id, specific related resource id(s) and/or metadata schema id(s) valid records must match. "
+  @Operation(summary = "Get all records.", description = "List all records in a paginated and sorted form. The result can be refined by providing id, specific related resource id(s) and/or metadata schema id(s) valid records must match. "
           + "If 'id' is provided all available versions for given 'id' will be returned and all other parameters will be ignored."
           + "If 'resourceId' and 'schemaId' are provided, a record matches if its related resource identifier AND the used metadata schema are matching. "
           + "Furthermore, the UTC time of the last update can be provided in three different fashions: 1) Providing only updateFrom returns all records updated at or after the provided date, 2) Providing only updateUntil returns all records updated before or "
@@ -117,23 +118,24 @@ public interface IMetadataController {
           @Parameter(description = "A list of metadata schema identifiers.", required = false) @RequestParam(value = "schemaId", required = false) List<String> schemaIds,
           @Parameter(description = "The UTC time of the earliest update of a returned record.", required = false) @RequestParam(name = "from", required = false) Instant updateFrom,
           @Parameter(description = "The UTC time of the latest update of a returned record.", required = false) @RequestParam(name = "until", required = false) Instant updateUntil,
-          Pageable pgbl,
+          @PageableDefault(sort = {"lastUpdate"}, direction = Sort.Direction.DESC) Pageable pgbl,
           WebRequest wr,
           HttpServletResponse hsr,
           UriComponentsBuilder ucb);
 
-  @Operation(summary = "Update a metadata record.", description = "Apply an update to the metadata record with the provided identifier and/or its accociated metadata document. The identifier can be either the numeric identifier or the related resource's identifier."
-          + "If versioning is enabled, a new version of the record is created. Otherwise, the record and/or its metadata are overwritten.",
+  @Operation(summary = "Update a metadata record and/or metadata document.", description = "Apply an update to the metadata record with the provided resource identifier and/or its accociated metadata document."
+          + "If versioning is enabled and a (new) metadata document is provided, a new version of the record is created. Otherwise, the record and/or its metadata document are overwritten.",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK is returned in case of a successful update, e.g. the record (if provided) was in the correct format and the document (if provided) matches the provided schema id. The updated record is returned in the response.", content = @Content(schema = @Schema(implementation = MetadataRecord.class))),
+            @ApiResponse(responseCode = "200", description = "OK is returned in case of a successful update, e.g. the record (if provided) was in the correct format and the document (if provided) matches the provided schema id."
+                    + "The updated record is returned in the response.", content = @Content(schema = @Schema(implementation = MetadataRecord.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided metadata record is invalid or if the validation using the provided schema failed."),
             @ApiResponse(responseCode = "404", description = "Not Found is returned if no record for the provided id or no schema for the provided schema id was found.")})
   @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = {"application/json"})
-  @Parameters ( {
-    @Parameter(name = "If-Match", description= "ETag of the object. Please use quotation marks!", required = true, in = ParameterIn.HEADER) 
-  }  )
+  @Parameters({
+    @Parameter(name = "If-Match", description = "ETag of the object. Please use quotation marks!", required = true, in = ParameterIn.HEADER)
+  })
   ResponseEntity updateRecord(
-          @Parameter(description = "The record identifier of related resource identifier.", required = true) @PathVariable("id") String id,
+          @Parameter(description = "The resource identifier.", required = true) @PathVariable("id") String id,
           @Parameter(description = "JSON representation of the metadata record.", required = false) @RequestPart(name = "record", required = false) final MultipartFile record,
           @Parameter(description = "The metadata document associated with the record. The document must match the schema defined in the record.", required = false) @RequestPart(name = "document", required = false) final MultipartFile document,
           final WebRequest request,
@@ -141,15 +143,15 @@ public interface IMetadataController {
           final UriComponentsBuilder uriBuilder
   );
 
-  @Operation(summary = "Delete a record.", description = "Delete a single metadata record and the associated metadata document. The identifier can be either the numeric identifier or the related resource's identifier. "
+  @Operation(summary = "Delete a record.", description = "Delete a single metadata record and the associated metadata document linked with the provided resource identifier. "
           + "Deleting a record typically requires the caller to have special permissions. "
           + "In some cases, deleting a record can also be available for the owner or other privileged users or can be forbidden at all. Deletion of a record affects all versions of the particular record.",
           responses = {
             @ApiResponse(responseCode = "204", description = "No Content is returned as long as no error occurs while deleting a record. Multiple delete operations to the same record will also return HTTP 204 even if the deletion succeeded in the first call.")})
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.DELETE})
-  @Parameters ( {
-    @Parameter(name = "If-Match", description= "ETag of the object. Please use quotation marks!", required = true, in = ParameterIn.HEADER) 
-  }  )
+  @Parameters({
+    @Parameter(name = "If-Match", description = "ETag of the object. Please use quotation marks!", required = true, in = ParameterIn.HEADER)
+  })
   @ResponseBody
-  public ResponseEntity deleteRecord(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id, WebRequest wr, HttpServletResponse hsr);
+  public ResponseEntity deleteRecord(@Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") String id, WebRequest wr, HttpServletResponse hsr);
 }

@@ -58,12 +58,16 @@ public class SchemaUtils {
       LOG.trace("Guess type for '{}'", schemaAsString);
 
       Matcher m = JSON_FIRST_BYTE.matcher(schemaAsString);
-      if (m.matches()) {
-        return MetadataSchemaRecord.SCHEMA_TYPE.JSON;
-      } else {
-        m = XML_FIRST_BYTE.matcher(schemaAsString);
+      if (schemaAsString.contains("{")) {
         if (m.matches()) {
-          return MetadataSchemaRecord.SCHEMA_TYPE.XML;
+          return MetadataSchemaRecord.SCHEMA_TYPE.JSON;
+        }
+      } else {
+        if (schemaAsString.contains("<")) {
+          m = XML_FIRST_BYTE.matcher(schemaAsString);
+          if (m.matches()) {
+            return MetadataSchemaRecord.SCHEMA_TYPE.XML;
+          }
         }
       }
     }
@@ -75,6 +79,8 @@ public class SchemaUtils {
     try {
       DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
       documentBuilderFactory.setNamespaceAware(true);
+      // Disable DTD due to XXE vulnerabiltiy
+      documentBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
       DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
       Document document = documentBuilder.parse(new ByteArrayInputStream(schema));
       NamedNodeMap map = ((Element) document.getDocumentElement()).getAttributes();

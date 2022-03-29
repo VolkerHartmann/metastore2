@@ -15,26 +15,34 @@
  */
 package edu.kit.datamanager.metastore2.web.impl;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.BadArgumentException;
+import edu.kit.datamanager.exceptions.ResourceNotFoundException;
+import edu.kit.datamanager.exceptions.UnprocessableEntityException;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
 import edu.kit.datamanager.metastore2.domain.LinkedMetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.MetadataRecordUtil;
+import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
 import edu.kit.datamanager.metastore2.web.IMetadataController;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.dao.spec.dataresource.LastUpdateSpecification;
+import edu.kit.datamanager.repo.dao.spec.dataresource.PermissionSpecification;
 import edu.kit.datamanager.repo.dao.spec.dataresource.RelatedIdentifierSpec;
 import edu.kit.datamanager.repo.dao.spec.dataresource.ResourceTypeSpec;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.ResourceType;
-import edu.kit.datamanager.repo.util.DataResourceUtils;
+import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -73,6 +81,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 @Controller
 @RequestMapping(value = "/api/v1/metadata")
+@Tag(name = "Metadata Repository")
 @Schema(description = "Metadata Resource Management")
 public class MetadataControllerImpl implements IMetadataController {
 
@@ -89,13 +98,13 @@ public class MetadataControllerImpl implements IMetadataController {
 
   private final String guestToken;
 
-/**
- * 
- * @param applicationProperties
- * @param metadataConfig
- * @param metadataRecordDao
- * @param dataResourceDao 
- */
+  /**
+   *
+   * @param applicationProperties
+   * @param metadataConfig
+   * @param metadataRecordDao
+   * @param dataResourceDao
+   */
   public MetadataControllerImpl(ApplicationProperties applicationProperties,
           MetastoreConfiguration metadataConfig,
           ILinkedMetadataRecordDao metadataRecordDao,
@@ -123,8 +132,8 @@ public class MetadataControllerImpl implements IMetadataController {
           HttpServletResponse response,
           UriComponentsBuilder uriBuilder) throws URISyntaxException {
 
-     long nano1 = System.nanoTime() / 1000000;
-   LOG.trace("Performing createRecord({},...).", recordDocument);
+    long nano1 = System.nanoTime() / 1000000;
+    LOG.trace("Performing createRecord({},...).", recordDocument);
     MetadataRecord record;
     if (recordDocument == null || recordDocument.isEmpty()) {
       String message = "No metadata record provided. Returning HTTP BAD_REQUEST.";
@@ -135,22 +144,28 @@ public class MetadataControllerImpl implements IMetadataController {
       record = Json.mapper().readValue(recordDocument.getInputStream(), MetadataRecord.class);
     } catch (IOException ex) {
       String message = "No valid metadata record provided. Returning HTTP BAD_REQUEST.";
-      LOG.error(message);
+      if (ex instanceof JsonParseException) {
+        message = message + " Reason: " + ex.getMessage();
+      }
+      LOG.error("Error parsing json: ", ex);
       throw new BadArgumentException(message);
     }
     long nano2 = System.nanoTime() / 1000000;
 
-    if (record.getRelatedResource() == null || record.getSchemaId() == null) {
+    if (record.getRelatedResource() == null || record.getRelatedResource().getIdentifier() == null || record.getSchema() == null || record.getSchema().getIdentifier() == null) {
       LOG.error("Mandatory attributes relatedResource and/or schemaId not found in record. Returning HTTP BAD_REQUEST.");
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mandatory attributes relatedResource and/or schemaId not found in record.");
     }
 
-    if (record.getId() != null) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Not expecting record id to be assigned by user.");
-    }
-
     LOG.debug("Test for existing metadata record for given schema and resource");
-    boolean recordAlreadyExists = metadataRecordDao.existsMetadataRecordByRelatedResourceAndSchemaId(record.getRelatedResource(), record.getSchemaId());
+    ResourceIdentifier schemaIdentifier;
+    try {
+      schemaIdentifier = MetadataSchemaRecordUtil.getSchemaIdentifier(metadataConfig, record);
+    } catch (ResourceNotFoundException rnfe) {
+      LOG.debug("Error checking for existing relations.", rnfe);
+      throw new UnprocessableEntityException("Schema ID seems to be invalid");
+    }
+    boolean recordAlreadyExists = metadataRecordDao.existsMetadataRecordByRelatedResourceAndSchemaId(record.getRelatedResource().getIdentifier(), schemaIdentifier.getIdentifier());
     long nano3 = System.nanoTime() / 1000000;
 
     if (recordAlreadyExists) {
@@ -169,7 +184,7 @@ public class MetadataControllerImpl implements IMetadataController {
     URI locationUri;
     locationUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getRecordById(result.getId(), result.getRecordVersion(), null, null)).toUri();
     long nano7 = System.nanoTime() / 1000000;
-    LOG.error("Create Record Service, {}, {}, {}, {}, {}, {}, {}", nano1, nano2 - nano1, nano3 - nano1, nano4 - nano1, nano5 - nano1, nano6 - nano1, nano7 - nano1);
+    LOG.info("Create Record Service, {}, {}, {}, {}, {}, {}, {}", nano1, nano2 - nano1, nano3 - nano1, nano4 - nano1, nano5 - nano1, nano6 - nano1, nano7 - nano1);
 
     return ResponseEntity.created(locationUri).eTag("\"" + result.getEtag() + "\"").body(result);
   }
@@ -220,19 +235,21 @@ public class MetadataControllerImpl implements IMetadataController {
 
     //if security is enabled, include principal in query
     LOG.debug("Performing query for records.");
-    Page<DataResource> records = DataResourceUtils.readAllVersionsOfResource(metadataConfig, id, pgbl);
-    
+    MetadataRecord recordByIdAndVersion = MetadataRecordUtil.getRecordByIdAndVersion(metadataConfig, id);
+    List<MetadataRecord> recordList = new ArrayList<>();
+    long totalNoOfElements = recordByIdAndVersion.getRecordVersion();
+    for (long version = totalNoOfElements - pgbl.getOffset(), size = 0; version > 0 && size < pgbl.getPageSize(); version--, size++) {
+      recordList.add(MetadataRecordUtil.getRecordByIdAndVersion(metadataConfig, id, version));
+    }
 
     LOG.trace("Transforming Dataresource to MetadataRecord");
-    List<DataResource> recordList = records.getContent();
     List<MetadataRecord> metadataList = new ArrayList<>();
     recordList.forEach((record) -> {
-      MetadataRecord item = MetadataRecordUtil.migrateToMetadataRecord(metadataConfig, record, false);
-      fixMetadataDocumentUri(item);
-      metadataList.add(item);
+      fixMetadataDocumentUri(record);
+      metadataList.add(record);
     });
 
-    String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), records.getTotalElements());
+    String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), totalNoOfElements);
 
     return ResponseEntity.status(HttpStatus.OK).header("Content-Range", contentRange).body(metadataList);
   }
@@ -252,15 +269,53 @@ public class MetadataControllerImpl implements IMetadataController {
     LOG.trace("Performing getRecords({}, {}, {}, {}).", relatedIds, schemaIds, updateFrom, updateUntil);
     if (id != null) {
       return getAllVersions(id, pgbl);
-    } 
+    }
     // Search for resource type of MetadataSchemaRecord
     Specification<DataResource> spec = ResourceTypeSpec.toSpecification(ResourceType.createResourceType(MetadataRecord.RESOURCE_TYPE));
+    // Add authentication if enabled
+    if (metadataConfig.isAuthEnabled()) {
+      boolean isAdmin;
+      isAdmin = AuthenticationHelper.hasAuthority(RepoUserRole.ADMINISTRATOR.toString());
+      // Add authorization for non administrators
+      if (!isAdmin) {
+        List<String> authorizationIdentities = AuthenticationHelper.getAuthorizationIdentities();
+        if (authorizationIdentities != null) {
+          LOG.trace("Creating (READ) permission specification.");
+          authorizationIdentities.add(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL);
+          Specification<DataResource> permissionSpec = PermissionSpecification.toSpecification(authorizationIdentities, PERMISSION.READ);
+          spec = spec.and(permissionSpec);
+        } else {
+          LOG.trace("No permission information provided. Skip creating permission specification.");
+        }
+      }
+    }
     List<String> allRelatedIdentifiers = new ArrayList<>();
+//    File file = new File(new URIoa)
     if (schemaIds != null) {
       for (String schemaId : schemaIds) {
-        MetadataSchemaRecord currentSchemaRecord = MetadataRecordUtil.getCurrentSchemaRecord(metadataConfig, schemaId);
+        MetadataSchemaRecord currentSchemaRecord;
+        try {
+          currentSchemaRecord = MetadataRecordUtil.getCurrentInternalSchemaRecord(metadataConfig, schemaId);
+          // Test for internal URI -> Transform to global URI.
+          if (currentSchemaRecord.getSchemaDocumentUri().startsWith("file:")) {
+            ResourceIdentifier schemaIdentifier = MetadataSchemaRecordUtil.getSchemaIdentifier(metadataConfig, currentSchemaRecord);
+            currentSchemaRecord.setSchemaDocumentUri(schemaIdentifier.getIdentifier());
+          }
+          allRelatedIdentifiers.add(currentSchemaRecord.getSchemaDocumentUri());
+        } catch (ResourceNotFoundException rnfe) {
+          //  schemaID not found set version to 1
+          currentSchemaRecord = new MetadataSchemaRecord();
+          currentSchemaRecord.setSchemaVersion(1l);
+          allRelatedIdentifiers.add("UNKNOWN_SCHEMA_ID");
+        }
         for (long versionNumber = 1; versionNumber < currentSchemaRecord.getSchemaVersion(); versionNumber++) {
-          allRelatedIdentifiers.add(schemaId + MetadataRecordUtil.SCHEMA_VERSION_SEPARATOR + versionNumber);
+          MetadataSchemaRecord schemaRecord = MetadataRecordUtil.getInternalSchemaRecord(metadataConfig, schemaId, versionNumber);
+          // Test for internal URI -> Transform to global URI.
+          if (schemaRecord.getSchemaDocumentUri().startsWith("file:")) {
+            ResourceIdentifier schemaIdentifier = MetadataSchemaRecordUtil.getSchemaIdentifier(metadataConfig, schemaRecord);
+            schemaRecord.setSchemaDocumentUri(schemaIdentifier.getIdentifier());
+          }
+          allRelatedIdentifiers.add(schemaRecord.getSchemaDocumentUri());
         }
       }
     }
@@ -268,13 +323,31 @@ public class MetadataControllerImpl implements IMetadataController {
       allRelatedIdentifiers.addAll(relatedIds);
     }
     if (!allRelatedIdentifiers.isEmpty()) {
-      spec = spec.and(RelatedIdentifierSpec.toSpecification(allRelatedIdentifiers.toArray(new String[allRelatedIdentifiers.size()])));
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("---------------------------------------------------------");
+        for (String relatedId : allRelatedIdentifiers) {
+          LOG.trace("Look for related Identifier: '{}'", relatedId);
+        }
+        LOG.trace("---------------------------------------------------------");
+      }
+      Specification<DataResource> toSpecification = RelatedIdentifierSpec.toSpecification(allRelatedIdentifiers.toArray(new String[allRelatedIdentifiers.size()]));
+      spec = spec.and(toSpecification);
     }
     if ((updateFrom != null) || (updateUntil != null)) {
       spec = spec.and(LastUpdateSpecification.toSpecification(updateFrom, updateUntil));
     }
 
     //if security is enabled, include principal in query
+    if (LOG.isTraceEnabled()) {
+      Page<DataResource> records = dataResourceDao.findAll(pgbl);
+      LOG.trace("List all data resources...");
+      LOG.trace("-----------------------------------------------");
+      for (DataResource item : records.getContent()) {
+        LOG.trace("- '{}'", item);
+      }
+      LOG.trace("-----------------------------------------------");
+      LOG.trace("Specification: '{}'", spec);
+    }
     LOG.debug("Performing query for records.");
     Page<DataResource> records = dataResourceDao.findAll(spec, pgbl);
 
@@ -296,7 +369,7 @@ public class MetadataControllerImpl implements IMetadataController {
   public ResponseEntity updateRecord(
           @PathVariable("id") String id,
           @RequestPart(name = "record", required = false) MultipartFile record,
-          @RequestPart(name = "document", required = false)final MultipartFile document,
+          @RequestPart(name = "document", required = false) final MultipartFile document,
           WebRequest request,
           HttpServletResponse response,
           UriComponentsBuilder uriBuilder
@@ -344,6 +417,6 @@ public class MetadataControllerImpl implements IMetadataController {
   private void fixMetadataDocumentUri(MetadataRecord record) {
     String metadataDocumentUri = record.getMetadataDocumentUri();
     record.setMetadataDocumentUri(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getMetadataDocumentById(record.getId(), record.getRecordVersion(), null, null)).toUri().toString());
-     LOG.trace("Fix metadata document Uri '{}' -> '{}'",metadataDocumentUri, record.getMetadataDocumentUri());
+    LOG.trace("Fix metadata document Uri '{}' -> '{}'", metadataDocumentUri, record.getMetadataDocumentUri());
   }
 }
