@@ -79,7 +79,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item affix "><a href="about.html">About</a></li><li class="chapter-item "><a href="introduction.html">MetaStore</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="introduction.html">Schema Management</a></li><li class="chapter-item "><a href="introduction.html">Metadata Management</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item affix "><a href="about.html">About</a></li><li class="chapter-item "><a href="introduction.html">MetaStore</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="technicalView.html">Technical View</a></li></ol></li><li class="chapter-item "><a href="introductionCookbook.html">Cookbook</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="schema/introduction.html">Schema Management</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="schema/select.html">Select/create a schema</a></li><li class="chapter-item "><a href="schema/register.html">Register a new schema document</a></li><li class="chapter-item "><a href="schema/update.html">Update an existing schema document</a></li><li class="chapter-item "><a href="schema/extend.html">Extend an existing schema document</a></li></ol></li><li class="chapter-item "><a href="metadata/introduction.html">Metadata Management</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="metadata/ingest.html">Ingest a metadata document</a></li><li class="chapter-item "><a href="metadata/read.html">Read a metadata document</a></li><li class="chapter-item "><a href="metadata/update.html">Update an existing metadata document</a></li></ol></li><li class="chapter-item "><a href="acl/introduction.html">Managing Access Rights</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="acl/accessible.html">Make Document available for other Users</a></li><li class="chapter-item "><a href="acl/publish.html">Make Document public available</a></li><li class="chapter-item "><a href="acl/reject.html">Disable public access for a single Document</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -185,11 +185,887 @@ metadata/schema documents.</li>
     </div>
 </div>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="metastore"><a class="header" href="#metastore">MetaStore</a></h1>
-<p>Coming soon! </p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="metastore-1"><a class="header" href="#metastore-1">MetaStore</a></h1>
-<p>Coming soon! </p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="metastore-2"><a class="header" href="#metastore-2">MetaStore</a></h1>
-<p>Coming soon! </p>
+<p>Metastore is a metadata repository for managing a large number of metadata documents. 
+While registering metadata documents they are formally quality-controlled, 
+persistently stored and then accessible via a unique identifier. 
+In addition, Metastore allows versioning of metadata documents.
+A schema formally defines the structure of a metadata document. The internal 
+schema registry (providing XML and JSON) manages these schemas by registering, 
+(persistent) storing and (if necessary) versioning them. All metadata documents 
+are linked to a schema that is used for validation during ingest.
+For content search of metadata documents an additional indexing service is 
+available to transform the metadata documents to make them ready for elasticsearch.
+It also provides an easy to use GUI for creating and editing documents. </p>
+<h2 id="when-to-use-metastore"><a class="header" href="#when-to-use-metastore">When to use MetaStore</a></h2>
+<p>If at least first point is valid:</p>
+<ol>
+<li>You want to manage XML/JSON documents build on a given XSD/JSON Schema.</li>
+<li>You want to manage huge amounts (up to millions) of documents.</li>
+<li>You want to share (some of) your (schema) documents with others.</li>
+<li>You want to make (some of) your (schema) documents public available.</li>
+<li>You want to make them referencable.</li>
+<li>You want to update your (schema) documents with or without simple versioning.</li>
+<li>You want to use your own (extended) schema.</li>
+</ol>
+<h2 id="when-not-to-use-metastore"><a class="header" href="#when-not-to-use-metastore">When NOT to use MetaStore</a></h2>
+<p>Don't use MetaStore if </p>
+<ol>
+<li>you want to use plain documents not based on a schema. </li>
+<li>you want use JSON-LD (take a look at Coscine provided by RTWH Aachen university).</li>
+</ol>
+<h2 id="at-a-glance"><a class="header" href="#at-a-glance">At a Glance</a></h2>
+<p>MetaStore is a general purpose metadata repository and schema registry service.</p>
+<p>It allows you to </p>
+<ul>
+<li>register an (XML/JSON) schema</li>
+<li>update an (XML/JSON) schema</li>
+<li>add metadata documents linked with a registered schema</li>
+<li>validate metadata documents against a registered schema</li>
+<li>update/add metadata documents online via a GUI</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="metastore-technical-view"><a class="header" href="#metastore-technical-view">MetaStore (Technical View)</a></h1>
+<p>MetaStore provides several interfaces:</p>
+<ul>
+<li>REST interface for managing documents</li>
+<li>OAI-PMH for harvesting metadata documents for given schemas</li>
+<li>WebUI for managing documents without any further requirements.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="cookbook"><a class="header" href="#cookbook">Cookbook</a></h1>
+<p>This cookbook will give you an overview how the MetaStore will help you managing your metadata documents.
+For a lightweight and easy to follow guide a very simple schema is used to focus on the
+possibilities provided by MetaStore.</p>
+<hr />
+<h2 id="ingredients"><a class="header" href="#ingredients">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="work-steps"><a class="header" href="#work-steps">Work Steps</a></h2>
+<nestednumerationlist>
+<ol>
+<li><a href="./schema/introduction.html">Working with schema( document)s</a>
+<ol>
+<li><a href="./schema/select.html">Selecting a schema</a></li>
+<li><a href="./schema/register.html">Registering a new schema document</a></li>
+<li><a href="./schema/update.html">Update an existing schema document</a></li>
+<li><a href="./schema/extend.html">Extend an existing schema document</a></li>
+</ol>
+</li>
+<li><a href="./metadata/metadata_mangement_step_1.html">Working with metadata documents</a>
+<ol>
+<li><a href="./datatypes_step_3_1.html">Register new Child-Data Type(s)</a></li>
+<li><a href="./datatypes_step_3_2.html">Register extended Child-Data Type(s)</a></li>
+<li><a href="./datatypes_step_3_3.html">Register main Data Type</a></li>
+</ol>
+</li>
+<li>Managing Access Rights
+<ol>
+<li><a href="./acl/accessible.html">Make Document available for other Users</a></li>
+<li><a href="./acl/publish.html">Make Document public available</a></li>
+</ol>
+</li>
+</ol>
+</nestednumerationlist>
+<p>The following steps will be explained in detail on the next pages:</p>
+<p>First of all we have to register a schema which defines the structure of the metadata documents.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="working-with-schema-documents"><a class="header" href="#working-with-schema-documents">Working with schema( document)s</a></h1>
+<p>First of all we have to register at least one schema which defines the structure of the metadata documents.</p>
+<hr />
+<h2 id="ingredients-1"><a class="header" href="#ingredients-1">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="recipes"><a class="header" href="#recipes">Recipes</a></h2>
+<p>The following steps will be explained in detail on the next pages:</p>
+<nestednumerationlist>
+<ol>
+<li><a href="schema/./select.html">Select/create a schema</a></li>
+<li><a href="schema/./register.html">Register a new schema document</a></li>
+<li><a href="schema/./update.html">Update an existing schema document</a></li>
+<li><a href="schema/./extend.html">Extend an existing schema document</a></li>
+</ol>
+</nestednumerationlist>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="selectcreate-a-schema"><a class="header" href="#selectcreate-a-schema">Select/create a Schema</a></h1>
+<p>Before starting ingesting metadata documents in MetaStore an appropriate schema 
+should be selected. To do this, some fundamental decisions must be made.</p>
+<hr />
+<h2 id="target-audience-1"><a class="header" href="#target-audience-1">Target Audience</a></h2>
+<ul>
+<li>Data Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-2"><a class="header" href="#ingredients-2">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary"><a class="header" href="#work-steps-summary">Work Steps (Summary)</a></h2>
+<h3 id="selectcreate-a-schema-1"><a class="header" href="#selectcreate-a-schema-1">Select/create a Schema</a></h3>
+<ul>
+<li>Step 1: Which metadata do I need?</li>
+<li>Step 2: Search for existing metadata standards</li>
+<li>Step 3: Create your own schema (optional)</li>
+</ul>
+<hr />
+<h2 id="step-1-which-metadata-do-i-need"><a class="header" href="#step-1-which-metadata-do-i-need">Step 1: Which metadata do I need?</a></h2>
+<p>Metadata should describe the associated data in such a way that it can be 
+intrepreted without further information and also reproduced if necessary. 
+First of all identified metadata entries should be collected. </p>
+<h2 id="step-2-search-for-existing-metadata-standards"><a class="header" href="#step-2-search-for-existing-metadata-standards">Step 2: Search for existing metadata standards</a></h2>
+<p>In most cases there is already at least one schema document fulfilling your needs
+containing all entries collected in beforehand.</p>
+<p>But how to find this schema?</p>
+<p>The Metadata Standards Catalog may be a good starting point. There exists 
+several instances:</p>
+<ul>
+<li><a href="https://rdamsc.bath.ac.uk/">https://rdamsc.bath.ac.uk/</a></li>
+<li><a href="https://msc.datamanager.kit.edu/">https://msc.datamanager.kit.edu/</a></li>
+</ul>
+<p>There may be other catalogs related to a specific domain.</p>
+<p><em><strong>NOTE:</strong></em> Not all schemas listed there might fit to MetaStore as MetaStore only 
+supports JSON Schema and XML Schema. </p>
+<p>If there is no schema fulfilling your needs look for the schema document fitting 
+best and extend the given schema. (See <a href="schema/./extend.html">'Extend an existing schema document'</a>)</p>
+<h2 id="step-3-create-your-own-schema-optional"><a class="header" href="#step-3-create-your-own-schema-optional">Step 3: Create your own schema (optional)</a></h2>
+<p>If there is really no fitting schema a new schema has to be created.</p>
+<p>There are two possibilities:</p>
+<ul>
+<li><a href="https://json-schema.org/">JSON Schema</a></li>
+<li><a href="https://www.w3schools.com/XML/schema_howto.asp">XML Schema</a></li>
+</ul>
+<p>If you are already familiar with one of these two possibilities you should use 
+this. Otherwise, you should use JSON Schema as it is easier to create and is supported
+out of the box by the GUI delivered with MetaStore. </p>
+<p>There are several tools for creating a schema from scratch:</p>
+<ul>
+<li>JSON Schema
+<ul>
+<li><a href="https://www.jsonschema.net/home">https://www.jsonschema.net/home</a></li>
+<li><a href="https://www.liquid-technologies.com/online-json-to-schema-converter">https://www.liquid-technologies.com/online-json-to-schema-converter</a></li>
+<li><a href="https://app.quicktype.io/#l=schema">https://app.quicktype.io/#l=schema</a></li>
+<li><a href="https://json-schema.org/implementations.html#schema-generators">...</a></li>
+</ul>
+</li>
+<li>XML Schema
+<ul>
+<li><a href="https://www.xmlfox.com/">https://www.xmlfox.com/</a></li>
+<li><a href="https://www.liquid-technologies.com/xml-schema-editor">https://www.liquid-technologies.com/xml-schema-editor</a> (commercial)</li>
+<li><a href="https://www.oxygenxml.com/xml_editor/xml_schema_editor.html">https://www.oxygenxml.com/xml_editor/xml_schema_editor.html</a>(commercial)</li>
+<li><a href="https://www.w3.org/XML/Schema#Tools">...</a></li>
+</ul>
+</li>
+</ul>
+<p>Let's start with a simple JSON Schema containing </p>
+<ul>
+<li>author</li>
+<li>title</li>
+<li>creation date</li>
+</ul>
+<p>The JSON document may look like this:</p>
+<pre><code>{
+  &quot;author&quot;: &quot;Last Name, First Name&quot;,
+  &quot;title&quot;: &quot;My first document&quot;,
+  &quot;creation_date&quot;: &quot;2022-04-11&quot;
+}
+</code></pre>
+<p>This example results in the following schema using the first link given above:</p>
+<pre><code>{
+    &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema&quot;,
+    &quot;$id&quot;: &quot;http://example.com/example.json&quot;,
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;title&quot;: &quot;The root schema&quot;,
+    &quot;description&quot;: &quot;The root schema comprises the entire JSON document.&quot;,
+    &quot;default&quot;: {},
+    &quot;examples&quot;: [
+        {
+            &quot;author&quot;: &quot;Last Name, First Name&quot;,
+            &quot;title&quot;: &quot;My first document&quot;,
+            &quot;creation_date&quot;: &quot;2022-04-11&quot;
+        }
+    ],
+    &quot;required&quot;: [
+        &quot;author&quot;,
+        &quot;title&quot;,
+        &quot;creation_date&quot;
+    ],
+    &quot;properties&quot;: {
+        &quot;author&quot;: {
+            &quot;$id&quot;: &quot;#/properties/author&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Author:&quot;,
+            &quot;description&quot;: &quot;The person who wrote the document.&quot;,
+            &quot;default&quot;: &quot;&quot;,
+            &quot;examples&quot;: [
+                &quot;Last Name, First Name&quot;
+            ]
+        },
+        &quot;title&quot;: {
+            &quot;$id&quot;: &quot;#/properties/title&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Title:&quot;,
+            &quot;description&quot;: &quot;The title of the document.&quot;,
+            &quot;default&quot;: &quot;&quot;,
+            &quot;examples&quot;: [
+                &quot;My first document&quot;
+            ]
+        },
+        &quot;creation_date&quot;: {
+            &quot;$id&quot;: &quot;#/properties/creation_date&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Creation Date:&quot;,
+            &quot;description&quot;: &quot;Creation date in the format 'YYYY-MM-DD'.&quot;,
+            &quot;default&quot;: &quot;2022-01-01&quot;,
+            &quot;examples&quot;: [
+                &quot;2022-04-11&quot;
+            ]
+        }
+    },
+    &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<p><em><strong>Note:</strong></em> The following JSON Schema specifications are supported by the library used:</p>
+<ul>
+<li>Draft v7 </li>
+<li>Draft v2019-09</li>
+</ul>
+<h3 id="recommendations-for-json-schemas"><a class="header" href="#recommendations-for-json-schemas">Recommendations for JSON Schemas</a></h3>
+<p>If the scientists will later use the web interface to store their metadata 
+documents, here are a few hints to make their work a little easier. 
+As the web interface uses the entries from the schema to create a form from them, 
+some fields should be filled with meaningful values.
+Each property of the schema contains some optional entries:</p>
+<ol>
+<li>title - The text of the title will be displayed above the input field.</li>
+<li>description - The text of the description will be displayed below the input 
+field and should contain some additional infos.</li>
+<li>default - The input field will be prefilled with the default value. This might
+be helpful if a field mostly contains a fixed value. </li>
+<li>enum - Defines an array of possible values which is displayed as a dropdown menu.</li>
+</ol>
+<p>The entry 'additionalProperties' at the end of the schema should be always 'false' 
+to forbid custom entries.</p>
+<p>The used schema above will result in the following form:</p>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaRecordFormExample.png" alt="Schema Record Form Example" style="max-height:50em;" />
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="register-a-new-schema-document"><a class="header" href="#register-a-new-schema-document">Register a new schema document</a></h1>
+<p>Once a schema is choosen it may be registered in MetaStore (if not already done).</p>
+<hr />
+<h2 id="target-audience-2"><a class="header" href="#target-audience-2">Target Audience</a></h2>
+<ul>
+<li>Data Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-3"><a class="header" href="#ingredients-3">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+<li>Selected schema from the previous step stored on local disc</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-1"><a class="header" href="#work-steps-summary-1">Work Steps (Summary)</a></h2>
+<h3 id="register-a-new-schema-document-1"><a class="header" href="#register-a-new-schema-document-1">Register a new schema document</a></h3>
+<ul>
+<li>Step 1: Check if schema already exists?</li>
+<li>Step 2: Create new schema</li>
+</ul>
+<hr />
+<h2 id="step-1-check-if-schema-already-exists"><a class="header" href="#step-1-check-if-schema-already-exists">Step 1: Check if schema already exists?</a></h2>
+<p>Right now it is difficult to find and/or compare schemas. It is strongly recommended
+to use the standard labels of the schema when registering them. (E.g.: if you select
+a schema from the Metadata Standards Catalog use the short name or abbreviation of 
+the schema as identifier (e.g.: Dublin Core -&gt; schemaID = DublinCore).</p>
+<h2 id="step-2-create-new-schema"><a class="header" href="#step-2-create-new-schema">Step 2: Create new schema</a></h2>
+<p>Register schema if it not already exists.</p>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaManagement_Step1.png" alt="Schema Management GUI" style="max-height:50em;" />
+</div>
+<p>Click on 'Register new Schema' to register a new schema. Fill the form with the metadata for the
+schema document. The following values are mandatory:</p>
+<ul>
+<li>SchemaId</li>
+<li>Mime Type: application/json or application/xml</li>
+<li>Type: JSON or XML </li>
+<li>Choose schema file via file chooser dialog. </li>
+</ul>
+<p>Afterwards the form should look like this:</p>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaManagement_Step2.png" alt="Schema Record Form" style="max-height:50em;" />
+</div>
+<p><em><strong>Note:</strong></em> If no authentication is made, all users are registered as 'SELF'. 
+Otherwise the one who registers the schema gets the administration rights. </p>
+<p>After clicking 'CREATE' the new schema will be listed inside the table:</p>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaManagement_Step3.png" alt="List of Schemas" style="max-height:50em;" />
+</div>
+<p><em><strong>Congratulations, you successfully registered your first schema!</strong></em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="update-an-existing-schema-document"><a class="header" href="#update-an-existing-schema-document">Update an existing schema document</a></h1>
+<p>Sometimes there are some typos in the registered schema or you want to extend
+it with <strong>optional</strong> fields the schema may be updated. Therefor its version will
+be incremented. Nevertheless all metadata documents already linked to the old
+version are still valid as the version is part of the reference. The metadata 
+documents and their metadata stayed untouched.</p>
+<hr />
+<h2 id="target-audience-3"><a class="header" href="#target-audience-3">Target Audience</a></h2>
+<ul>
+<li>Data Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-4"><a class="header" href="#ingredients-4">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+<li>Updated schema stored on local disc</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-2"><a class="header" href="#work-steps-summary-2">Work Steps (Summary)</a></h2>
+<h3 id="update-an-existing-schema-document-1"><a class="header" href="#update-an-existing-schema-document-1">Update an existing schema document</a></h3>
+<ul>
+<li>Step 1: Download existing schema</li>
+<li>Step 2: Update existing schema locally</li>
+<li>Step 3: Upload updated schema</li>
+</ul>
+<hr />
+<h2 id="step-1-download-schema"><a class="header" href="#step-1-download-schema">Step 1: Download schema</a></h2>
+<p>Right now editing schemas online is not supported. If the schema is no longer
+locally available it has to be downloaded from MetaStore. To do so you have to
+do the following steps:</p>
+<ol>
+<li>Press the 'View' icon of the wanted schema in the schema list.</li>
+<li>Copy 'Schema Document Uri' to the address bar of your browser.</li>
+<li>Right click page and select 'Save page as...' in the context menu. </li>
+</ol>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaManagement_Step3.png" alt="List of Schema Records" style="max-height:50em;" />
+</div>
+<h2 id="step-2-update-existing-schema-locally"><a class="header" href="#step-2-update-existing-schema-locally">Step 2: Update existing schema locally</a></h2>
+<p>Extend the existing schema by an optional field containing notes. The updated schema
+will look like this:
+This example results in the following schema using the first link given above:</p>
+<pre><code>{
+    &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema&quot;,
+    &quot;$id&quot;: &quot;http://example.com/example.json&quot;,
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;title&quot;: &quot;The root schema&quot;,
+    &quot;description&quot;: &quot;The root schema comprises the entire JSON document.&quot;,
+    &quot;default&quot;: {},
+    &quot;examples&quot;: [
+        {
+            &quot;author&quot;: &quot;Last Name, First Name&quot;,
+            &quot;title&quot;: &quot;My first document&quot;,
+            &quot;creation_date&quot;: &quot;2022-04-11&quot;
+        }
+    ],
+    &quot;required&quot;: [
+        &quot;author&quot;,
+        &quot;title&quot;,
+        &quot;creation_date&quot;
+    ],
+    &quot;properties&quot;: {
+        &quot;author&quot;: {
+            &quot;$id&quot;: &quot;#/properties/author&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Author:&quot;,
+            &quot;description&quot;: &quot;The person who wrote the document.&quot;,
+            &quot;default&quot;: &quot;&quot;,
+            &quot;examples&quot;: [
+                &quot;Last Name, First Name&quot;
+            ]
+        },
+        &quot;title&quot;: {
+            &quot;$id&quot;: &quot;#/properties/title&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Title:&quot;,
+            &quot;description&quot;: &quot;The title of the document.&quot;,
+            &quot;default&quot;: &quot;&quot;,
+            &quot;examples&quot;: [
+                &quot;My first document&quot;
+            ]
+        },
+        &quot;creation_date&quot;: {
+            &quot;$id&quot;: &quot;#/properties/creation_date&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Creation Date:&quot;,
+            &quot;description&quot;: &quot;Creation date in the format 'YYYY-MM-DD'.&quot;,
+            &quot;default&quot;: &quot;2022-01-01&quot;,
+            &quot;examples&quot;: [
+                &quot;2022-04-11&quot;
+            ]
+        },
+        &quot;note&quot;: {
+            &quot;$id&quot;: &quot;#/properties/note&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Additional note:&quot;,
+            &quot;description&quot;: &quot;Add some additional notes here. (optional)&quot;,
+            &quot;default&quot;: &quot;&quot;
+        }
+    },
+    &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<p>As the entry 'notes' is not defined in the 'required' array this entry may be 
+optional.
+Store the new schema in a file named 'my_first_json_schema_version_2.json'.</p>
+<h2 id="step-3-upload-updated-schema"><a class="header" href="#step-3-upload-updated-schema">Step 3: Upload updated schema</a></h2>
+<p>Click the pencil of the appropriate schema and a form will open</p>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaManagement_Step4.png" alt="Update Schema Record Form" style="max-height:50em;" />
+</div>
+<p>After selecting updated schema press 'Update Schema'. 
+Now the version of the schema was increased.</p>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaManagement_Step5.png" alt="Updated Schema List" style="max-height:50em;" />
+</div>
+<p>The new form for the metadata documents now looks like this:</p>
+<div class="centerbox">
+    <img src="schema//metastore2/images/SchemaManagement_Step6.png" alt="New Schema Record Form" style="max-height:50em;" />
+</div>
+<p><em><strong>Congratulations, you successfully updated your schema!</strong></em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="extend-an-existing-schema-document"><a class="header" href="#extend-an-existing-schema-document">Extend an existing schema document</a></h1>
+<p>In case a suitable (JSON/XML) schema has been found, but some important information is 
+missing, it is strongly recommended not to extend this schema by means of an update.
+Since old schemas are then no longer compatible with the new version, in such a 
+case a new schema should be registered based on the existing one.</p>
+<hr />
+<h2 id="target-audience-4"><a class="header" href="#target-audience-4">Target Audience</a></h2>
+<ul>
+<li>Data Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-5"><a class="header" href="#ingredients-5">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-3"><a class="header" href="#work-steps-summary-3">Work Steps (Summary)</a></h2>
+<h3 id="extend-an-existing-schema-document-1"><a class="header" href="#extend-an-existing-schema-document-1">Extend an existing schema document</a></h3>
+<ul>
+<li>Step 1: Fetch selected schema</li>
+<li>Step 2: Extend schema</li>
+<li>Step 3: Register new schema</li>
+</ul>
+<hr />
+<h2 id="step-1-fetch-selected-schema"><a class="header" href="#step-1-fetch-selected-schema">Step 1: Fetch selected schema</a></h2>
+<p>First of all the choosen schema has to be stored locally.
+If the schema is already registered in the MetaStore please refer to 
+<a href="schema/./update.html#step-1-download-schema">Step 1: Download schema</a>.</p>
+<h2 id="step-2-extend-schema"><a class="header" href="#step-2-extend-schema">Step 2: Extend schema</a></h2>
+<p>Add the missing fields to the schema and mark them as 'required'.
+Extend previous schema with a mandatory 'abstract' entry this would look like this:</p>
+<pre><code>{
+    &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema&quot;,
+    &quot;$id&quot;: &quot;http://example.com/example.json&quot;,
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;title&quot;: &quot;The root schema&quot;,
+    &quot;description&quot;: &quot;The root schema comprises the entire JSON document.&quot;,
+    &quot;default&quot;: {},
+    &quot;examples&quot;: [
+        {
+            &quot;author&quot;: &quot;Last Name, First Name&quot;,
+            &quot;title&quot;: &quot;My first document&quot;,
+            &quot;creation_date&quot;: &quot;2022-04-11&quot;
+        }
+    ],
+    &quot;required&quot;: [
+        &quot;author&quot;,
+        &quot;title&quot;,
+        &quot;abstract&quot;,
+        &quot;creation_date&quot;
+    ],
+    &quot;properties&quot;: {
+        &quot;author&quot;: {
+            &quot;$id&quot;: &quot;#/properties/author&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Author:&quot;,
+            &quot;description&quot;: &quot;The person who wrote the document.&quot;,
+            &quot;default&quot;: &quot;&quot;,
+            &quot;examples&quot;: [
+                &quot;Last Name, First Name&quot;
+            ]
+        },
+        &quot;title&quot;: {
+            &quot;$id&quot;: &quot;#/properties/title&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Title:&quot;,
+            &quot;description&quot;: &quot;The title of the document.&quot;,
+            &quot;default&quot;: &quot;&quot;,
+            &quot;examples&quot;: [
+                &quot;My first document&quot;
+            ]
+        },
+        &quot;abstract&quot;: {
+            &quot;$id&quot;: &quot;#/properties/abstract&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Abstract:&quot;,
+            &quot;description&quot;: &quot;Abstract of the document. (&lt; 2000 characters)&quot;,
+            &quot;default&quot;: &quot;&quot;
+        },
+        &quot;creation_date&quot;: {
+            &quot;$id&quot;: &quot;#/properties/creation_date&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Creation Date:&quot;,
+            &quot;description&quot;: &quot;Creation date in the format 'YYYY-MM-DD'.&quot;,
+            &quot;default&quot;: &quot;2022-01-01&quot;,
+            &quot;examples&quot;: [
+                &quot;2022-04-11&quot;
+            ]
+        },
+        &quot;note&quot;: {
+            &quot;$id&quot;: &quot;#/properties/note&quot;,
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;title&quot;: &quot;Additional note:&quot;,
+            &quot;description&quot;: &quot;Add some additional notes here. (optional)&quot;,
+            &quot;default&quot;: &quot;&quot;
+        }
+    },
+    &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h2 id="step-2-create-new-schema-1"><a class="header" href="#step-2-create-new-schema-1">Step 2: Create new schema</a></h2>
+<p>Register new schema.</p>
+<div class="centerbox">
+    <img src="schema//images/SchemaManagement_Step5.png" alt="Schema Management List" style="max-height:50em;" />
+</div>
+<p>Click on 'Register new Schema' to register a new schema. Fill the form with the metadata for the
+schema document. The following values are mandatory:</p>
+<ul>
+<li>SchemaId</li>
+<li>Mime Type: application/json or application/xml</li>
+<li>Type: JSON or XML </li>
+<li>Choose schema file via file chooser dialog. </li>
+</ul>
+<p>Afterwards the form should look like this:</p>
+<div class="centerbox">
+    <img src="schema//images/SchemaManagement_Step7.png" alt="Schema Record Form" style="max-height:50em;" />
+</div>
+<p><em><strong>Note:</strong></em> If no authentication is made, all users are registered as 'SELF'. 
+Otherwise the one who registers the schema gets the administration rights. </p>
+<p>After clicking 'CREATE' the new schema will be listed inside the table:</p>
+<div class="centerbox">
+    <img src="schema//images/SchemaManagement_Step8.png" alt="List of Schemas" style="max-height:50em;" />
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="metadata-management"><a class="header" href="#metadata-management">Metadata Management</a></h1>
+<p>When at least one schema is registered metadata documents could be managed by
+MetaStore. All metadata documents stored in MetaStore are successfully validated
+against a registered schema.</p>
+<hr />
+<h2 id="ingredients-6"><a class="header" href="#ingredients-6">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance with at least one registered schema introduced in section 'Schema Management'</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="recipes-1"><a class="header" href="#recipes-1">Recipes</a></h2>
+<p>The following steps will be explained in detail on the next pages:</p>
+<nestednumerationlist>
+<ol>
+<li><a href="metadata/./ingest.html">Create a metadata document</a></li>
+<li><a href="metadata/./read.html">Read a metadata document</a></li>
+<li><a href="metadata/./update.html">Update an existing metadata document</a></li>
+</ol>
+</nestednumerationlist>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="ingest-a-metadata-document"><a class="header" href="#ingest-a-metadata-document">Ingest a metadata document</a></h1>
+<p>MetaStore will not provide plain text files. As only JSON and XML are supported 
+the metadata documents have to fulfill a given (JSON/XML) schema.
+The GUI has full support of JSON documents. </p>
+<hr />
+<h2 id="target-audience-5"><a class="header" href="#target-audience-5">Target Audience</a></h2>
+<ul>
+<li>(Data) Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-7"><a class="header" href="#ingredients-7">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+<li>Already registered schema (<a href="metadata/../schema/introduction.html">see 'Schema Management'</a>)</li>
+<li>Data related to the metadata</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-4"><a class="header" href="#work-steps-summary-4">Work Steps (Summary)</a></h2>
+<h3 id="ingest-a-metadata-document-1"><a class="header" href="#ingest-a-metadata-document-1">Ingest a metadata document</a></h3>
+<ul>
+<li>Step 1: Check if schema is already registered?</li>
+<li>Step 2: Select registered schema</li>
+<li>Step 3: Create metadata document</li>
+</ul>
+<hr />
+<h2 id="step-1-check-if-schema-is-already-registered"><a class="header" href="#step-1-check-if-schema-is-already-registered">Step 1: Check if schema is already registered?</a></h2>
+<p>If the schema your metadata document should use is not already registered please
+have a look at chapter <a href="metadata/../schema/select.html">'Select/create a Schema'</a>. </p>
+<h2 id="step-2-select-registered-schema"><a class="header" href="#step-2-select-registered-schema">Step 2: Select registered schema</a></h2>
+<p>Note the 'Schema Record Identifier' of selected schema or its URL.</p>
+<h2 id="step3-create-metadata-document"><a class="header" href="#step3-create-metadata-document">Step3: Create metadata document</a></h2>
+<p>Fortunately the GUI of MetaStore supports users to input metadata document. </p>
+<ol>
+<li>Select 'Metadata Management'</li>
+<li>Click on 'Register new metadata document'</li>
+<li>Fill form like seen below</li>
+</ol>
+<div class="centerbox">
+    <img src="metadata//metastore2/images/MetadataManagement_Step1.png" alt="Metadata Management Form" style="max-height:50em;" />
+</div>
+<p><em><strong>Notes:</strong></em> </p>
+<ul>
+<li>If no authentication is made, all users are registered as 'SELF'. Otherwise 
+the one who registers the schema gets the administration rights. </li>
+<li>Identifier is optional and if given it has to be unique. (If no identifier is 
+specified it will be set to a UUID.)</li>
+<li>It's recommended to use a URL as identifier for the related resource.</li>
+<li>It's recommended to use the previously noted 'Schema Record Identifier' as identifier.
+'INTERNAL' must then be selected as 'Identifier Type'.</li>
+<li>In this step the first version of the schema will be selected. Therefore no notes are possible.</li>
+</ul>
+<p>After clicking 'Show Input Form' the GUI creates an input form which queries all
+entries. The filled form may look like this:</p>
+<div class="centerbox">
+    <img src="metadata//metastore2/images/MetadataManagement_Step2.png" alt="Input Form for metadata document" style="max-height:50em;" />
+</div>
+Click on 'Register Metadata Document' to register the new metadata document.
+<p>The new metadata document will be listed inside the table:</p>
+<div class="centerbox">
+    <img src="metadata//metastore2/images/MetadataManagement_Step3.png" alt="List of Metadata Documents" style="max-height:50em;" />
+</div>
+<p><em><strong>Congratulations, you successfully registered your first metadata document!</strong></em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="read-a-metadata-document"><a class="header" href="#read-a-metadata-document">Read a metadata document</a></h1>
+<p>If a metadata document has been ingested, it can also be viewed via the browser,
+provided the appropriate rights have been granted. </p>
+<hr />
+<h2 id="target-audience-6"><a class="header" href="#target-audience-6">Target Audience</a></h2>
+<ul>
+<li>Data Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-8"><a class="header" href="#ingredients-8">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-5"><a class="header" href="#work-steps-summary-5">Work Steps (Summary)</a></h2>
+<h3 id="read-a-metadata-document-1"><a class="header" href="#read-a-metadata-document-1">Read a metadata document</a></h3>
+<ul>
+<li>Step 1: Search for metadata document</li>
+<li>Step 2: View metadata document (form)</li>
+</ul>
+<hr />
+<h2 id="step-1-search-for-metadata-document"><a class="header" href="#step-1-search-for-metadata-document">Step 1: Search for metadata document</a></h2>
+<p>The entries in the metadata document list can be sorted ascending or descending 
+by selecting <img src="metadata//metastore2/images/SortColumn.png" alt="Sort Column Icon" style="max-height:15px;" />
+by each column. If you want to list only entries of a specific schema you may</p>
+<ul>
+<li>add '?id=My_first_JSON_Schema' to the URL in the address bar</li>
+</ul>
+<p>or </p>
+<ul>
+<li>go to tab 'Schema Management'</li>
+<li>search for the wanted schema</li>
+<li>click <img src="metadata//metastore2/images/ListDocumentsOfSchema.png" alt="List Documents of Schema only" style="max-height:15px;" /></li>
+</ul>
+<h2 id="step-2-view-metadata-document-form"><a class="header" href="#step-2-view-metadata-document-form">Step 2: View metadata document (form)</a></h2>
+<p>To view the record and its document you have select <img src="metadata//metastore2/images/ViewRecord.png" alt="View Record" style="max-height:15px;" />.
+The record of the entry will be viewed:</p>
+<div class="centerbox">
+    <img src="metadata//metastore2/images/MetadataManagement_Step4.png" alt="View Metadata Record" style="max-height:50em;" />
+</div>
+<p>Clicking on 'Metadata Document' will show the form filled in beforehand:</p>
+<div class="centerbox">
+    <img src="metadata//metastore2/images/MetadataManagement_Step5.png" alt="Input Form for metadata document" style="max-height:50em;" />
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="update-an-existing-metadata-document"><a class="header" href="#update-an-existing-metadata-document">Update an existing metadata document</a></h1>
+<p>Sometimes there are some typos in the ingested metadata document or you want to 
+extend it with <strong>optional</strong> fields of a newer version of a schema. Therefor its 
+version will be incremented. Nevertheless the old version of the metadata document
+is still available.</p>
+<hr />
+<h2 id="target-audience-7"><a class="header" href="#target-audience-7">Target Audience</a></h2>
+<ul>
+<li>(Data) Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-9"><a class="header" href="#ingredients-9">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance</li>
+<li>Web Browser</li>
+<li>Registered schema</li>
+<li>Metadata document stored in MetaStore</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-6"><a class="header" href="#work-steps-summary-6">Work Steps (Summary)</a></h2>
+<h3 id="update-an-existing-schema-document-2"><a class="header" href="#update-an-existing-schema-document-2">Update an existing schema document</a></h3>
+<ul>
+<li>Step 1: Update metadata record</li>
+<li>Step 2: Update metadata document</li>
+</ul>
+<hr />
+<p><em><strong>Note:</strong></em> </p>
+<ul>
+<li>Right now record and document cannot be updated in one step if you want to use
+an updated schema.</li>
+</ul>
+<h2 id="step-1-update-metadata-record"><a class="header" href="#step-1-update-metadata-record">Step 1: Update metadata record</a></h2>
+<p>Click on <img src="metadata//metastore2/images/EditEntry.png" alt="Edit Entry" style="max-height:15px;" />
+to get a form with the metadata record. Change like shown below:</p>
+<div class="centerbox">
+    <img src="metadata//metastore2/images/MetadataManagement_Step6.png" alt="List of Schema Records" style="max-height:50em;" />
+</div>
+<p>Click on 'Show Metadata Document' and then click 'Update' to update metadata record.</p>
+<p><em><strong>Note:</strong></em> The version still remains the same but 'Schema version' was updated.</p>
+<h2 id="step-2-update-metadata-document"><a class="header" href="#step-2-update-metadata-document">Step 2: Update metadata document</a></h2>
+<p>Click once more on <img src="metadata//metastore2/images/EditEntry.png" alt="Edit Entry" style="max-height:15px;" />
+to get a form with the metadata record. As the schema version was already changed 
+you can directly click on 'Show Metadata Document'
+The new form will be showed:</p>
+<div class="centerbox">
+    <img src="metadata//metastore2/images/MetadataManagement_Step7.png" alt="List of Schema Records" style="max-height:50em;" />
+</div>
+<p>Add some notes and 'Update'</p>
+<p><em><strong>Congratulations, you successfully updated your metadata document!</strong></em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="access-rights-management"><a class="header" href="#access-rights-management">Access Rights Management</a></h1>
+<p>The MetaStore can be used with or without authentication. If authentication is enabled,
+the creator of he documents is automatically granted administration rights.In the 
+other case, everyone(SELF) who has access also has administration rights.
+Each user has a SID (unique identifier) which identifies you. If no credentials 
+are available, access is automatically granted as an anonymous user (SID: <em>anonymousUser</em>).</p>
+<hr />
+<p>There are four levels of access rights:</p>
+<table><thead><tr><th>ACCESS LEVEL</th><th>Description</th></tr></thead><tbody>
+<tr><td><em><strong>NONE</strong></em></td><td>No access is allowed. (This is the standard level for all SIDs not mentioned in the access control lists (ACLs).)</td></tr>
+<tr><td><em><strong>READ</strong></em></td><td>User is allowed to read records and documents but not to change them.</td></tr>
+<tr><td><em><strong>WRITE</strong></em></td><td>Extend the 'READ' access level. The user can additionally make changes except changing the access rights.</td></tr>
+<tr><td><em><strong>ADMINISTRATE</strong></em></td><td>Extend the 'WRITE' access level. The user may also change access rights.</td></tr>
+</tbody></table>
+<hr />
+<h2 id="ingredients-10"><a class="header" href="#ingredients-10">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance with at least one registered schema and related metadata document.</li>
+<li>Web Browser</li>
+</ul>
+<h2 id="recipes-2"><a class="header" href="#recipes-2">Recipes</a></h2>
+<p>The following steps will be explained in detail on the next pages:</p>
+<nestednumerationlist>
+<ol>
+<li><a href="acl/./accessible.html">Make Document available for other Users</a></li>
+<li><a href="acl/./publish.html">Make Document public available</a></li>
+<li><a href="acl/./reject.html">Disable public access for a single Document</a></li>
+</ol>
+</nestednumerationlist>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="make-document-available-for-other-users"><a class="header" href="#make-document-available-for-other-users">Make Document available for other Users</a></h1>
+<p>By default, only creators have access to your recorded schemas/documents. To allow
+other users to access your documents, you need to update the access rights. </p>
+<hr />
+<h2 id="target-audience-8"><a class="header" href="#target-audience-8">Target Audience</a></h2>
+<ul>
+<li>(Data) Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-11"><a class="header" href="#ingredients-11">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance with at least one registered schema and related metadata document.</li>
+<li>Web Browser</li>
+<li>SID of all users you want to grant access.</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-7"><a class="header" href="#work-steps-summary-7">Work Steps (Summary)</a></h2>
+<h3 id="make-document-available-for-other-users-1"><a class="header" href="#make-document-available-for-other-users-1">Make Document available for other Users</a></h3>
+<ul>
+<li>Step 1: Check for SID of user(s)</li>
+<li>Step 2: Update record for Digital Object</li>
+</ul>
+<hr />
+<h2 id="step-1-check-for-sid-of-users"><a class="header" href="#step-1-check-for-sid-of-users">Step 1: Check for SID of user(s)</a></h2>
+<p>First of all, the users who are to be granted access to your document must be asked 
+for their SID. </p>
+<h2 id="step-2-update-record-for-digital-object"><a class="header" href="#step-2-update-record-for-digital-object">Step 2: Update record for Digital Object</a></h2>
+<p>Click on <img src="acl//metastore2/images/EditEntry.png" alt="Edit Entry" style="max-height:15px;" />
+to get a form with the schema/metadata record. 
+Click 'ADD' to add another entry to the ACL, insert the correct SID and grant the
+appropriate permission. Repeat this for all users you want to add.</p>
+<p>This may look like this:</p>
+<div class="centerbox">
+    <img src="acl//metastore2/images/ACL_Step1.png" alt="Add ACL Entry" style="max-height:50em;" />
+</div>
+<p>Click on 'Update Schema' or in case of a metadata document click on 'Show Metadata Document' 
+and afterwards 'Update' to update schema/metadata record.</p>
+<p><em><strong>That's it! The users you add can now also access (dependent of their permissions)
+the selected document.</strong></em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="make-document-public-available"><a class="header" href="#make-document-public-available">Make Document public available</a></h1>
+<p>By default, unauthenticated users do not have access to a document. If you want to
+want to make it publicly available, you must update the access rights. </p>
+<hr />
+<h2 id="target-audience-9"><a class="header" href="#target-audience-9">Target Audience</a></h2>
+<ul>
+<li>(Data) Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-12"><a class="header" href="#ingredients-12">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance with at least one registered schema and related metadata document.</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-8"><a class="header" href="#work-steps-summary-8">Work Steps (Summary)</a></h2>
+<h3 id="make-document-public-available-1"><a class="header" href="#make-document-public-available-1">Make Document public available</a></h3>
+<ul>
+<li>Step 1: Update record for Digital Object</li>
+</ul>
+<hr />
+<h2 id="step-1-update-record-for-digital-object"><a class="header" href="#step-1-update-record-for-digital-object">Step 1: Update record for Digital Object</a></h2>
+<p>Click on <img src="acl//metastore2/images/EditEntry.png" alt="Edit Entry" style="max-height:15px;" />
+to get a form with the schema/metadata record. 
+Click 'ADD' to add another entry to the ACL, insert 'anonymousUser' as SID and grant the
+appropriate permission. </p>
+<p>This may look like this:</p>
+<div class="centerbox">
+    <img src="acl//metastore2/images/ACL_Step2.png" alt="Add ACL Entry" style="max-height:50em;" />
+</div>
+<p><em><strong>Note:</strong></em> </p>
+<ul>
+<li>You should <strong>never</strong> grant higher permissions than 'READ' to unauthenticated users.</li>
+</ul>
+<p>Click on 'Update Schema' or in case of a metadata document click on 'Show Metadata Document' 
+and afterwards 'Update' to update schema/metadata record.</p>
+<p><em><strong>That's it! All users can now also access (dependent of their permissions)
+the selected document.</strong></em></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="make-document-public-available-2"><a class="header" href="#make-document-public-available-2">Make Document public available</a></h1>
+<p>By default, unauthenticated users do not have access to a document. If you want to
+want to make it publicly available, you must update the access rights. 
+If you already granted unauthenticated users access to a document you have to
+forbid any access to them by setting the permission to 'NONE'.</p>
+<hr />
+<h2 id="target-audience-10"><a class="header" href="#target-audience-10">Target Audience</a></h2>
+<ul>
+<li>(Data) Scientists</li>
+</ul>
+<hr />
+<h2 id="ingredients-13"><a class="header" href="#ingredients-13">Ingredients</a></h2>
+<ul>
+<li>(local) MetaStore instance with at least one registered schema and related metadata document.</li>
+<li>Web Browser</li>
+</ul>
+<hr />
+<h2 id="work-steps-summary-9"><a class="header" href="#work-steps-summary-9">Work Steps (Summary)</a></h2>
+<h3 id="make-document-public-available-3"><a class="header" href="#make-document-public-available-3">Make Document public available</a></h3>
+<ul>
+<li>Step 1: Update record for Digital Object</li>
+</ul>
+<hr />
+<h2 id="step-1-update-record-for-digital-object-1"><a class="header" href="#step-1-update-record-for-digital-object-1">Step 1: Update record for Digital Object</a></h2>
+<p>Click on <img src="acl//metastore2/images/EditEntry.png" alt="Edit Entry" style="max-height:15px;" />
+to get a form with the schema/metadata record. 
+Set permission for 'anonymousUser' to 'NONE'. </p>
+<p>This may look like this:</p>
+<div class="centerbox">
+    <img src="acl//metastore2/images/ACL_Step3.png" alt="Add ACL Entry" style="max-height:50em;" />
+</div>
+<p>Click on 'Update Schema' or in case of a metadata document click on 'Show Metadata Document' 
+and afterwards 'Update' to update schema/metadata record.</p>
+<p><em><strong>That's it! Unauthenticated users are no longer allowed to access the selected document.</strong></em></p>
 
                     </main>
 

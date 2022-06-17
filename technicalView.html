@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>About - MetaStore Cookbook</title>
+        <title>Technical View - MetaStore Cookbook</title>
         <!-- Custom HTML head -->
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item affix "><a href="about.html">About</a></li><li class="chapter-item "><a href="introduction.html">MetaStore</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="technicalView.html">Technical View</a></li></ol></li><li class="chapter-item "><a href="introductionCookbook.html">Cookbook</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="schema/introduction.html">Schema Management</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="schema/select.html">Select/create a schema</a></li><li class="chapter-item "><a href="schema/register.html">Register a new schema document</a></li><li class="chapter-item "><a href="schema/update.html">Update an existing schema document</a></li><li class="chapter-item "><a href="schema/extend.html">Extend an existing schema document</a></li></ol></li><li class="chapter-item "><a href="metadata/introduction.html">Metadata Management</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="metadata/ingest.html">Ingest a metadata document</a></li><li class="chapter-item "><a href="metadata/read.html">Read a metadata document</a></li><li class="chapter-item "><a href="metadata/update.html">Update an existing metadata document</a></li></ol></li><li class="chapter-item "><a href="acl/introduction.html">Managing Access Rights</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="acl/accessible.html">Make Document available for other Users</a></li><li class="chapter-item "><a href="acl/publish.html">Make Document public available</a></li><li class="chapter-item "><a href="acl/reject.html">Disable public access for a single Document</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item affix "><a href="about.html">About</a></li><li class="chapter-item expanded "><a href="introduction.html">MetaStore</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item expanded "><a href="technicalView.html" class="active">Technical View</a></li></ol></li><li class="chapter-item "><a href="introductionCookbook.html">Cookbook</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="schema/introduction.html">Schema Management</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="schema/select.html">Select/create a schema</a></li><li class="chapter-item "><a href="schema/register.html">Register a new schema document</a></li><li class="chapter-item "><a href="schema/update.html">Update an existing schema document</a></li><li class="chapter-item "><a href="schema/extend.html">Extend an existing schema document</a></li></ol></li><li class="chapter-item "><a href="metadata/introduction.html">Metadata Management</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="metadata/ingest.html">Ingest a metadata document</a></li><li class="chapter-item "><a href="metadata/read.html">Read a metadata document</a></li><li class="chapter-item "><a href="metadata/update.html">Update an existing metadata document</a></li></ol></li><li class="chapter-item "><a href="acl/introduction.html">Managing Access Rights</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="acl/accessible.html">Make Document available for other Users</a></li><li class="chapter-item "><a href="acl/publish.html">Make Document public available</a></li><li class="chapter-item "><a href="acl/reject.html">Disable public access for a single Document</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -149,46 +149,22 @@
 
                 <div id="content" class="content">
                     <main>
-                        <div class="centerbox">
-© Karlsruhe Institute of Technology
-</div>
-<hr />
-<div class="centerbox">
-Version: 1.0.0
-</div>
-<div class="centerbox">
-Last Upate: 06.04.2022
-</div>
-<hr />
-<h1 id="about"><a class="header" href="#about">About</a></h1>
-<p>This cookbook shall guide the reader through the different use cases when 
-registering, updating metadata/schema documents.</p>
-<h2 id="target-audience"><a class="header" href="#target-audience">Target audience</a></h2>
-<p>This specification is targeted at people who:</p>
+                        <h1 id="metastore-technical-view"><a class="header" href="#metastore-technical-view">MetaStore (Technical View)</a></h1>
+<p>MetaStore provides several interfaces:</p>
 <ul>
-<li>People who need to know how this service can be used managing
-metadata/schema documents.</li>
+<li>REST interface for managing documents</li>
+<li>OAI-PMH for harvesting metadata documents for given schemas</li>
+<li>WebUI for managing documents without any further requirements.</li>
 </ul>
-<h2 id="about-us"><a class="header" href="#about-us">About us</a></h2>
-<p><a href="https://www.scc.kit.edu/ueberuns/dem.php">Data Expoitation Methods (DEM)</a>, is part of the Steinbuch Centre for Computing (SCC), located at Karlsruhe Institute of Technology (KIT).</p>
-<div>
-    <div class="logo-spacing-general">
-        <a class="logo-align-middle logo-card"
-        href="https://kit.edu/"
-        title="Karlsruhe Institute of Technology"
-        aria-label="Visit the KIT Website">
-            <img class="lightonly" src="kit_logo_en_black.svg" alt="KIT logo">
-            <img class="darkonly" src="kit_logo_en_white.svg" alt="KIT logo">
-            <img class="whiteonly" src="kit_logo_en.svg" alt="KIT logo">
-        </a>
-    </div>
-</div>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="next" href="introduction.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="introductionCookbook.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         <div style="clear: both"></div>
@@ -197,7 +173,10 @@ metadata/schema documents.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="next" href="introduction.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="introductionCookbook.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
