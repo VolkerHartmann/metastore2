@@ -16,6 +16,8 @@
 package edu.kit.datamanager.metastore2.web.impl;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.entities.messaging.MetadataResourceMessage;
@@ -64,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -332,6 +335,28 @@ public class MetadataControllerImpl implements IMetadataController {
     String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), totalNoOfElements);
 
     return ResponseEntity.status(HttpStatus.OK).header("Content-Range", contentRange).body(metadataList);
+  }
+
+  @Override
+  public ResponseEntity<List<DataResource>> getReallyAllRecords(
+          WebRequest wr,
+          HttpServletResponse hsr,
+          UriComponentsBuilder ucb
+  ) {
+    LOG.trace("Performing getReallyAllRecords.");
+
+    ObjectMapper mapper = new ObjectMapper();
+    List<DataResource> records = dataResourceDao.findAll();
+    for (DataResource item : records) {
+      System.out.println("§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§");
+      try {
+        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(item));
+      } catch (JsonProcessingException ex) {
+        java.util.logging.Logger.getLogger(MetadataRecordUtil.class.getName()).log(Level.SEVERE, null, ex);
+      }
+      System.out.println("§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§");
+    }
+    return ResponseEntity.status(HttpStatus.OK).body(records);
   }
 
   @Override
