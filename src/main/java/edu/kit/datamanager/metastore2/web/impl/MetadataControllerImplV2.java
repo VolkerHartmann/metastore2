@@ -446,6 +446,21 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
     return ResponseEntity.status(HttpStatus.OK).header("Content-Range", contentRange).body(recordList);
   }
 
+
+  @Override
+  public ResponseEntity<List<DataResource>> getReallyAllRecords(
+           WebRequest wr,
+          HttpServletResponse hsr,
+          UriComponentsBuilder ucb
+  ) {
+      List<DataResource> records = dataResourceDao.findAll();
+
+    List<DataResource> recordList = records;
+
+
+    return ResponseEntity.status(HttpStatus.OK).body(recordList);
+  }
+
   @Override
   public ResponseEntity updateRecord(
           @PathVariable("id") String id,

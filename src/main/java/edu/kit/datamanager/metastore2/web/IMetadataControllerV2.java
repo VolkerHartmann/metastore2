@@ -163,6 +163,22 @@ public interface IMetadataControllerV2 extends InfoContributor {
           HttpServletResponse hsr,
           UriComponentsBuilder ucb);
 
+  @Operation(summary = "Get all records.", description = "List all records in a paginated and sorted form. The result can be refined by providing id, specific related resource id(s) and/or metadata schema id(s) valid records must match. "
+          + "If 'id' is provided all available versions for given 'id' will be returned and all other parameters will be ignored."
+          + "If 'resourceId' and 'schemaId' are provided, a record matches if its related resource identifier AND the used metadata schema are matching. "
+          + "Furthermore, the UTC time of the last update can be provided in three different fashions: 1) Providing only updateFrom returns all records updated at or after the provided date, 2) Providing only updateUntil returns all records updated before or "
+          + "at the provided date, 3) Providing both returns all records updated within the provided date range."
+          + "If no parameters are provided, all accessible records are listed. If versioning is enabled, only the most recent version is listed (except in case of 'id' is provided).",
+          responses = {
+            @ApiResponse(responseCode = "200", description = "OK and a list of records or an empty list if no record matches.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = DataResource.class))))})
+  @RequestMapping(value = {"/allEntries"}, method = {RequestMethod.GET})
+  @PageableAsQueryParam
+  @ResponseBody
+  public ResponseEntity<List<DataResource>> getReallyAllRecords(
+          WebRequest wr,
+          HttpServletResponse hsr,
+          UriComponentsBuilder ucb);
+
   @Operation(summary = "Update a metadata record and/or metadata document.", description = "Apply an update to the metadata record with the provided resource identifier and/or its accociated metadata document."
           + "If versioning is enabled and a (new) metadata document is provided, a new version of the record is created. Otherwise, the record and/or its metadata document are overwritten.",
           responses = {
