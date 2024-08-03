@@ -16,6 +16,9 @@
 package edu.kit.datamanager.metastore2.web.impl;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.entities.messaging.MetadataResourceMessage;
@@ -64,6 +67,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -432,10 +436,17 @@ public class MetadataControllerImpl implements IMetadataController {
     LOG.trace("Transforming Dataresource to MetadataRecord");
     List<DataResource> recordList = records.getContent();
     List<MetadataRecord> metadataList = new ArrayList<>();
+    ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
     recordList.forEach(metadataRecord -> {
-      MetadataRecord item = MetadataRecordUtil.migrateToMetadataRecord(metadataConfig, metadataRecord, false);
-      MetadataRecordUtil.fixMetadataDocumentUri(item);
-      metadataList.add(item);
+      try {
+        MetadataRecord item = MetadataRecordUtil.migrateToMetadataRecord(metadataConfig, metadataRecord, false);
+        MetadataRecordUtil.fixMetadataDocumentUri(item);
+        metadataList.add(item);
+        LOG.info("Metadata Record: '{}'", ow.writeValueAsString(item));
+        LOG.info("DataCite Record: '{}'", ow.writeValueAsString(metadataRecord));
+      } catch (JsonProcessingException ex) {
+        java.util.logging.Logger.getLogger(MetadataControllerImpl.class.getName()).log(Level.SEVERE, null, ex);
+      }
     });
 
     String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), records.getTotalElements());

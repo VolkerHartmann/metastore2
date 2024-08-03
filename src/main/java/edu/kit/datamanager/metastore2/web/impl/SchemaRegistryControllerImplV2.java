@@ -318,11 +318,17 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
     LOG.debug("Performing query for records.");
     Page<DataResource> records = DataResourceRecordUtil.queryDataResources(spec, pgbl);
     List<DataResource> recordList = records.getContent();
-    if (LOG.isTraceEnabled()) {
+     ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+//   if (LOG.isTraceEnabled()) {
       LOG.trace("Cleaning up schemaDocumentUri of query result.");
       for (DataResource item : recordList) {
+      try {
         LOG.trace("---> " + item.toString());
+         LOG.info("DataCite Record: '{}'", ow.writeValueAsString(item));
+        } catch (JsonProcessingException ex) {
+        java.util.logging.Logger.getLogger(SchemaRegistryControllerImpl.class.getName()).log(Level.SEVERE, null, ex);
       }
+//   }
     }
     
     String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), records.getTotalElements());

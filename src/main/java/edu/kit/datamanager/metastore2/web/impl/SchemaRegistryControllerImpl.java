@@ -15,6 +15,9 @@
  */
 package edu.kit.datamanager.metastore2.web.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
@@ -50,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.info.Info;
@@ -249,6 +253,7 @@ public class SchemaRegistryControllerImpl implements ISchemaRegistryController {
           WebRequest wr,
           HttpServletResponse hsr,
           UriComponentsBuilder ucb) {
+    LOG.info("Performing getRecords({}, {}, {}, {}).", schemaId, mimeTypes, updateFrom, updateUntil);
     LOG.trace("Performing getRecords({}, {}, {}, {}).", schemaId, mimeTypes, updateFrom, updateUntil);
     // if schemaId is given return all versions 
     if (schemaId != null) {
@@ -286,12 +291,19 @@ public class SchemaRegistryControllerImpl implements ISchemaRegistryController {
       }
     }
     List<MetadataSchemaRecord> schemaList = new ArrayList<>();
+    ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
     recordList.forEach(schemaRecord -> {
-      MetadataSchemaRecord item = MetadataSchemaRecordUtil.migrateToMetadataSchemaRecord(schemaConfig, schemaRecord, false);
-      MetadataSchemaRecordUtil.fixSchemaDocumentUri(item);
-      schemaList.add(item);
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("===> " + item.toString());
+      try {
+        MetadataSchemaRecord item = MetadataSchemaRecordUtil.migrateToMetadataSchemaRecord(schemaConfig, schemaRecord, false);
+        MetadataSchemaRecordUtil.fixSchemaDocumentUri(item);
+        schemaList.add(item);
+        LOG.info("Metadata Schema Record: '{}'", ow.writeValueAsString(item));
+        LOG.info("DataCite Record: '{}'", ow.writeValueAsString(schemaRecord));
+        if (LOG.isTraceEnabled()) {
+          LOG.trace("===> " + item.toString());
+        }
+      } catch (JsonProcessingException ex) {
+        java.util.logging.Logger.getLogger(SchemaRegistryControllerImpl.class.getName()).log(Level.SEVERE, null, ex);
       }
     });
 

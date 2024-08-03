@@ -16,6 +16,9 @@
 package edu.kit.datamanager.metastore2.web.impl;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import static edu.kit.datamanager.entities.Identifier.IDENTIFIER_TYPE.INTERNAL;
 import static edu.kit.datamanager.entities.Identifier.IDENTIFIER_TYPE.URL;
 import edu.kit.datamanager.entities.PERMISSION;
@@ -65,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -431,9 +435,16 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
 
 
     LOG.trace("Transforming Dataresource to DataResource");
+    ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
     List<DataResource> recordList = records.getContent();
     for (DataResource item : recordList) {
+      try {
+        LOG.info("DataCite Record vorher: '{}'", ow.writeValueAsString(item));
       DataResourceRecordUtil.fixSchemaUrl(item);
+        LOG.info("DataCite Record nachher: '{}'", ow.writeValueAsString(item));
+      } catch (JsonProcessingException ex) {
+        java.util.logging.Logger.getLogger(MetadataControllerImpl.class.getName()).log(Level.SEVERE, null, ex);
+      }
     }
 
     String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), records.getTotalElements());
