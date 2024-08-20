@@ -1,0 +1,85 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "type": "SoftwareSourceCode",
+    "applicationCategory": "Repository",
+    "author": [
+        {
+            "id": "https://orcid.org/0000-0003-2804-688X",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Karlsruhe Institute of Technology (KIT)"
+            },
+            "email": "thomas.jejkal@kit.edu",
+            "familyName": "Jejkal",
+            "givenName": "Thomas"
+        },
+        {
+            "type": "schema:Role",
+            "schema:author": "https://orcid.org/0000-0003-2804-688X",
+            "schema:roleName": "Maintainer",
+            "schema:startDate": "2020-08-07"
+        },
+        {
+            "id": "https://orcid.org/0000-0001-6383-5214",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Karlsruhe Institute of Technology (KIT)"
+            },
+            "email": "volker.hartmann@kit.edu",
+            "familyName": "Hartmann",
+            "givenName": "Volker"
+        },
+        {
+            "type": "schema:Role",
+            "schema:author": "https://orcid.org/0000-0001-6383-5214",
+            "schema:roleName": "Maintainer",
+            "schema:startDate": "2020-08-07"
+        },
+        {
+            "id": "https://orcid.org/0000-0002-4480-6116",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Karlsruhe Institute of Technology (KIT)"
+            },
+            "email": "sabrine.chelbi@kit.edu",
+            "familyName": "Chelbi",
+            "givenName": "Sabrine"
+        }
+    ],
+    "codeRepository": "https://github.com/kit-data-manager/metastore2.git",
+    "dateCreated": "2020-08-07",
+    "dateModified": "2024-08-20",
+    "datePublished": "2021-10-16",
+    "description": "MetaStore is a research data repository software for storing metadata documents and schemas. Quality and consistency are ensured by associating and validating each document against a schema. It supports JSON and XML.",
+    "downloadUrl": "https://github.com/kit-data-manager/metastore2/archive/refs/tags/v1.4.4.zip",
+    "identifier": "https://doi.org/10.5281/zenodo.7685007",
+    "keywords": [
+        "XML",
+        "JSON",
+        "metadata",
+        "repository"
+    ],
+    "license": "https://spdx.org/licenses/Apache-2.0",
+    "name": "MetaStore",
+    "operatingSystem": [
+        "Linux",
+        "Windows",
+        "MacOs",
+        "Docker"
+    ],
+    "programmingLanguage": "Java",
+    "schema:releaseNotes": "https://github.com/kit-data-manager/metastore2/releases/tag/v1.4.4",
+    "runtimePlatform": ">= JVM 17",
+    "softwareRequirements": "-",
+    "version": "1.4.4",
+    "contIntegration": "https://github.com/kit-data-manager/metastore2/actions/workflows/gradle.yml",
+    "codemeta:continuousIntegration": {
+        "id": "https://github.com/kit-data-manager/metastore2/actions/workflows/gradle.yml"
+    },
+    "developmentStatus": "active",
+    "funding": "Research program ‘Engineering Digital Futures’ of the Helmholtz Association of German Research Centers and the Helmholtz Metadata Collaboration Platform",
+    "issueTracker": "https://github.com/kit-data-manager/metastore2/issues"
+}
