@@ -40,6 +40,7 @@ import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.security.filter.JwtAuthenticationToken;
 import edu.kit.datamanager.service.IMessagingService;
 import edu.kit.datamanager.service.impl.LogfileMessagingService;
+import edu.kit.datamanager.util.AuthenticationHelper;
 import edu.kit.datamanager.util.ControllerUtils;
 import edu.kit.datamanager.util.JwtBuilder;
 import org.slf4j.Logger;
@@ -176,6 +177,7 @@ public class ElasticIndexerRunner implements CommandLineRunner {
         baseUrl = findByPath.getUrl().split("/api/v1/schema")[0];
         LOG.trace("Found baseUrl: '{}'", baseUrl);
       }
+      DataResourceRecordUtil.setBaseUrl(baseUrl);
       if (updateIndex) {
         if (updateDate == null) {
           updateDate = new Date(0);
@@ -525,5 +527,15 @@ public class ElasticIndexerRunner implements CommandLineRunner {
     //capture state change
     LOG.trace("Capturing audit information.");
     metadataConfig.getAuditService().captureAuditInformation(migratedDataResource, "migration2version2");
+
+    if (version == 1) {
+      LOG.trace("Sending CREATE event.");
+      messagingService.orElse(new LogfileMessagingService()).
+              send(MetadataResourceMessage.factoryCreateMetadataMessage(migratedDataResource, AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
+    } else {
+      LOG.trace("Sending UPDATE event.");
+      messagingService.orElse(new LogfileMessagingService()).
+              send(MetadataResourceMessage.factoryUpdateMetadataMessage(migratedDataResource, AuthenticationHelper.getPrincipal(), ControllerUtils.getLocalHostname()));
+    }
   }
 }
