@@ -1,0 +1,2 @@
+:snippets: ../build/generated-snippets/
+include::docs/documentationV2.adoc[]
