@@ -6,36 +6,39 @@
 package edu.kit.datamanager.metastore2.dto;
 
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
-import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import org.json.simple.JSONObject;
 
+import java.util.List;
+
 /**
+ * Data transfer object for Web UI.
  *
  * @author sabrinechelbi
  */
 @Builder
 @Getter
+@SuppressWarnings("java:S1068")
 public class EditorRequestMetadata {
-        
-     /**
-     * JSON schema, which describes the structure of the data model. 
-     */
-    private JSONObject dataModel;
-    
-    /**
-     * JSON user interface form, which describes the structure of the form layout.
-     */
-    private JSONObject uiForm;
-    
-    /**
-     * array of schema records.
-     */
-    private List<MetadataRecord> metadataRecords;
-    
-        /**
-     * array, which includes the table’s column definitions. 
-     */
-    private TabulatorItems[] items;
+
+  /**
+   * JSON schema, which describes the structure of the data model.
+   */
+  private JSONObject dataModel;
+
+  /**
+   * JSON user interface form, which describes the structure of the form layout.
+   */
+  private JSONObject uiForm;
+
+  /**
+   * array of schema records.
+   */
+  private List<MetadataRecord> metadataRecords;
+
+  /**
+   * array, which includes the table’s column definitions.
+   */
+  private TabulatorItems[] items;
 }

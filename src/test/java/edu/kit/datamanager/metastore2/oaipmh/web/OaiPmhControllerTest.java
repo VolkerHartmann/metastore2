@@ -35,10 +35,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import java.time.Instant;
@@ -71,7 +71,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import org.springframework.security.test.context.support.WithSecurityContextTestExecutionListener;
-import org.springframework.security.web.FilterChainProxy;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
@@ -110,16 +110,20 @@ import org.xml.sax.SAXException;
   WithSecurityContextTestExecutionListener.class})
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"server.port=41403"})
+//@TestPropertySource(properties = {"metastore.schema.schemaFolder=file:///tmp/oaipmh/schema"})
+//@TestPropertySource(properties = {"metastore.metadata.metadataFolder=file:///tmp/oaipmh/metadata"})
+@TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_oaipmh;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@SuppressWarnings("java:S2925")
 public class OaiPmhControllerTest {
 
   private final static String TEMP_DIR_4_ALL = "/tmp/oaipmh/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
   private static Boolean alreadyInitialized = Boolean.FALSE;
-  private static final String SCHEMA_ID_1 = "schemaV1";
-  private static final String SCHEMA_ID_2 = "schemaV2";
-  private static final String SCHEMA_ID_3 = "schemaV3";
+  private static final String SCHEMA_ID_1 = "schema_v1";
+  private static final String SCHEMA_ID_2 = "schema_v2";
+  private static final String SCHEMA_ID_3 = "schema_v3";
   private final static String SCHEMA = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/%s\"\n"
           + "                xmlns=\"http://www.example.org/schema/xsd/\"\n"
           + "                xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
@@ -141,7 +145,7 @@ public class OaiPmhControllerTest {
           + "  <example:date>2018-07-02</example:date>\n"
           + "</example:metadata>";
   private final static String JSON_SCHEMA = "{\n"
-          + "    \"$schema\": \"http://json-schema.org/draft/2019-09/schema#\",\n"
+          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
           + "    \"$id\": \"http://www.example.org/schema/json\",\n"
           + "    \"type\": \"object\",\n"
           + "    \"title\": \"Json schema for tests\",\n"
@@ -152,13 +156,11 @@ public class OaiPmhControllerTest {
           + "    ],\n"
           + "    \"properties\": {\n"
           + "        \"title\": {\n"
-          + "            \"$id\": \"#/properties/string\",\n"
           + "            \"type\": \"string\",\n"
           + "            \"title\": \"Title\",\n"
           + "            \"description\": \"Title of object.\"\n"
           + "        },\n"
           + "        \"date\": {\n"
-          + "            \"$id\": \"#/properties/string\",\n"
           + "            \"type\": \"string\",\n"
           + "            \"format\": \"date\",\n"
           + "            \"title\": \"Date\",\n"
@@ -173,8 +175,6 @@ public class OaiPmhControllerTest {
   private MockMvc mockMvc;
   @Autowired
   private WebApplicationContext context;
-  @Autowired
-  private FilterChainProxy springSecurityFilterChain;
   @Autowired
   private ILinkedMetadataRecordDao metadataRecordDao;
   @Autowired
@@ -216,7 +216,7 @@ public class OaiPmhControllerTest {
     try {
       // setup mockMvc
       this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
-              .addFilters(springSecurityFilterChain)
+              .apply(springSecurity()) 
               .apply(documentationConfiguration(this.restDocumentation))
               .build();
       // Create schema only once.
@@ -356,7 +356,7 @@ public class OaiPmhControllerTest {
     Assert.assertEquals(0, result.getError().size());
     Assert.assertEquals(5, result.getListMetadataFormats().getMetadataFormat().size());
     // ADD ANOTHER JSON SCHEMA *******************************************************
-    ingestSchemaRecord("jsonSchema", MetadataSchemaRecord.SCHEMA_TYPE.JSON, JSON_SCHEMA);
+    ingestSchemaRecord("json_schema", MetadataSchemaRecord.SCHEMA_TYPE.JSON, JSON_SCHEMA);
     res = this.mockMvc.perform(get("/oaipmh").param("verb", VerbType.LIST_METADATA_FORMATS.value())).andDo(print()).andExpect(status().isOk()).andReturn();
     result = getResponse(res);
     Assert.assertNotNull(result);
@@ -842,10 +842,10 @@ public class OaiPmhControllerTest {
   private void checkInvalidResponseList(VerbType type, String from, String until, String metadataPrefix, String token, OAIPMHerrorcodeType errorType) throws Exception {
     MockHttpServletRequestBuilder param = get("/oaipmh").param("verb", type.value());
     if (from != null) {
-      param = param.param("from", from.toString());
+      param = param.param("from", from);
     }
     if (until != null) {
-      param = param.param("until", until.toString());
+      param = param.param("until", until);
     }
     if (metadataPrefix != null) {
       param = param.param("metadataPrefix", metadataPrefix);
@@ -985,7 +985,7 @@ public class OaiPmhControllerTest {
 //    record.setId("my_id");
     record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(schemaId));
     UUID randomUUID = UUID.randomUUID();
-    record.setRelatedResource(ResourceIdentifier.factoryInternalResourceIdentifier(randomUUID.toString()));
+    record.setRelatedResource(ResourceIdentifier.factoryUrlResourceIdentifier("http://example.org/" + randomUUID));
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
 //    aclEntries.add(new AclEntry("test2",PERMISSION.ADMINISTRATE));
@@ -1036,9 +1036,9 @@ public class OaiPmhControllerTest {
       Validator validator = schema.newValidator();
       validator.validate(xmlFile);
     } catch (SAXException e) {
-      Assert.assertFalse("Response is not valid!" + e.getMessage(), true);
+      Assert.fail("Response is not valid!" + e.getMessage());
     } catch (IOException e) {
-      Assert.assertFalse(e.getMessage(), true);
+      Assert.fail(e.getMessage());
     }
 
   }
@@ -1066,9 +1066,9 @@ public class OaiPmhControllerTest {
       Validator validator = schema.newValidator();
       validator.validate(xmlFile);
     } catch (SAXException e) {
-      Assert.assertFalse("Response is not valid!" + e.getMessage(), true);
+      Assert.fail("Response is not valid!" + e.getMessage());
     } catch (IOException e) {
-      Assert.assertFalse(e.getMessage(), true);
+      Assert.fail(e.getMessage());
     }
 
   }

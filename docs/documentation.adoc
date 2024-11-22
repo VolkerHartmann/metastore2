@@ -31,6 +31,21 @@ In between, special characteristics of the calls are explained together with add
 For technical reasons, all metadata resources shown in the examples contain all fields, e.g. also empty lists or fields with value 'null'. You may ignore most of them
 as long as they are not needed. Some of them will be assigned by the server, others remain empty or null as long as you don't assign any value to them. 
 All fields mandatory at creation time are explained in the resource creation example.
+
+=== Building the URL
+The URL for accessing the MetaStore REST endpoints is constructed as follows:
+
+1. Protocol (e.g., http, https)
+2. Host name (e.g. localhost, www.example.org)
+3. Port (e.g. 8040) 
+4. Context path (e.g. /metastore)
+5. Endpoint (e.g. /api/v1/metadata)
+
+For example, to list all the schema records in your local MetaStore, you need to
+run the following in your browser: http://localhost:8040/metastore/api/v1/schemas
+
+In former versions (< 1.3.0), no context path was provided by default. 
+ 
 [[XML]]
 == XML (Schema)
 [[ChapterMetadataSchemaHandling4Xml]]
@@ -52,6 +67,7 @@ like this:
     "sid" : "...",
     "permission" : "..."
   } ],
+  "licenseUri" : "...",
   "schemaDocumentUri" : "...",
   "schemaHash" : "...",
   "locked" : false
@@ -63,7 +79,11 @@ At least the following elements are expected to be provided by the user:
 - schemaId: A unique label for the schema.
 - type: XML or JSON. For XSD schemas this should be 'XML'
 
-In addition, ACL may be useful to make schema editable by others. (This will be of interest while updating an existing schema)
+In addition, ACL may be useful to make schema readable/editable by others.
+This will be of interest while accessing/updating an existing schema.(if authorization is enabled)
+
+[NOTE]
+License URI is optional. It's new since 1.5.0.
 
 === Registering a Metadata Schema Document
 
@@ -100,7 +120,7 @@ You can see, that most of the sent metadata schema record is empty. Only schemaI
 
 include::{snippets}/register-schema/http-request.adoc[]
 
-As Content-Type only 'application/json' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
+As Content-Type only 'multpart/form-data' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
 provided document, adding missing information where possible and persisting the created resource, the result is sent back to the user and will look that way:
 
 include::{snippets}/register-schema/http-response.adoc[]
@@ -255,7 +275,7 @@ HTTP-wise the call looks as follows:
 
 include::{snippets}/register-another-schema/http-request.adoc[]
 
-As Content-Type only 'application/json' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
+As Content-Type only 'multpart/form-data' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
 provided document, adding missing information where possible and persisting the created resource, the result is sent back to the user and will look that way:
 
 include::{snippets}/register-another-schema/http-response.adoc[]
@@ -447,6 +467,7 @@ like this:
             "sid": "...",
             "permission": "..."
         }],
+    "licenseUri": "...",
     "metadataDocumentUri": "...",
     "documentHash": "..."
 }
@@ -461,6 +482,9 @@ In addition, ACL may be useful to make metadata editable by others. (This will b
 
 [NOTE]
 If linked schema is identified by its schemaId the INTERNAL type has to be used.
+
+[NOTE]
+License URI is optional. It's new since 1.5.0.
 
 ==== Register/Ingest a Metadata Record with Metadata Document
 
@@ -496,7 +520,7 @@ You can see, that most of the sent metadata schema record is empty. Only schemaI
 
 include::{snippets}/ingest-metadata-document/http-request.adoc[]
 
-As Content-Type only 'application/json' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
+As Content-Type only 'multpart/form-data' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
 provided document, adding missing information where possible and persisting the created resource, the result is sent back to the user and will look that way:
 
 include::{snippets}/ingest-metadata-document/http-response.adoc[]
@@ -577,7 +601,7 @@ You can see, that only the ACL entry for "guest" was added. All other properties
 
 include::{snippets}/update-metadata-record-v2/http-request.adoc[]
 
-You will get the new metadata record with the additional ACL entry. Version number was incremented by one, 'lastUpdate' and 'recordVersion' are also modified by the server.
+You will get the new metadata record with the additional ACL entry. Version number of record was incremented by one and 'lastUpdate' was also modified by the server.
 include::{snippets}/update-metadata-record-v2/http-response.adoc[]
 
 What you see is, that the metadata record looks different from the original document. 
@@ -740,6 +764,7 @@ like this:
     "sid" : "...",
     "permission" : "..."
   } ],
+  "licenseUri" : "...",
   "schemaDocumentUri" : "...",
   "schemaHash" : "...",
   "locked" : false
@@ -753,6 +778,9 @@ At least the following elements are expected to be provided by the user:
 - type: XML or JSON. For JSON schemas this should be 'JSON'
 
 In addition, ACL may be useful to make schema editable by others. (This will be of interest while updating an existing schema)
+
+[NOTE]
+License URI is optional. It's new since 1.5.0.
 
 === Registering a Metadata Schema Document
 
@@ -769,7 +797,7 @@ schema-record4json.json:
 ----
 schema.json:
 {
-  "$schema": "http://json-schema.org/draft/2019-09/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "http://www.example.org/schema/json",
   "type": "object",
   "title": "Json schema for tests",
@@ -779,7 +807,6 @@ schema.json:
   ],
   "properties": {
     "title": {
-      "$id": "#/properties/string",
       "type": "string",
       "title": "Title",
       "description": "Title of object."
@@ -795,7 +822,7 @@ You can see, that most of the sent metadata schema record is empty. Only schemaI
 
 include::{snippets}/register-json-schema/http-request.adoc[]
 
-As Content-Type only 'application/json' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
+As Content-Type only 'multpart/form-data' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
 provided document, adding missing information where possible and persisting the created resource, the result is sent back to the user and will look that way:
 
 include::{snippets}/register-json-schema/http-response.adoc[]
@@ -852,7 +879,7 @@ Just send an HTTP POST with the updated metadata schema document and/or metadata
 ----
 schema-v2.json:
 {
-    "$schema": "http://json-schema.org/draft/2019-09/schema#",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "http://www.example.org/schema/json",
     "type": "object",
     "title": "Json schema for tests",
@@ -863,13 +890,11 @@ schema-v2.json:
     ],
     "properties": {
         "title": {
-            "$id": "#/properties/string",
             "type": "string",
             "title": "Title",
             "description": "Title of object."
         },                                                                                                                                                                      
         "date": {
-            "$id": "#/properties/string",
             "type": "string",
             "format": "date",
             "title": "Date",
@@ -900,7 +925,7 @@ Just send an HTTP POST with the updated metadata schema document and/or metadata
 ----
 schema-v3.json:
 {
-    "$schema": "http://json-schema.org/draft/2019-09/schema#",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "http://www.example.org/schema/json",
     "type": "object",
     "title": "Json schema for tests",
@@ -911,20 +936,17 @@ schema-v3.json:
     ],
     "properties": {
         "title": {
-            "$id": "#/properties/string",
             "type": "string",
             "title": "Title",
             "description": "Title of object."
         },                                                                                                                                                                      
         "date": {
-            "$id": "#/properties/string",
             "type": "string",
             "format": "date",
             "title": "Date",
             "description": "Date of object"
         },
         "note": {
-            "$id": "#/properties/string",
             "type": "string",
             "title": "Note",
             "description": "Additonal information about object"
@@ -962,7 +984,7 @@ another-schema-record4json.json:
 ----
 another-schema.json:
 {
-    "$schema": "http://json-schema.org/draft/2019-09/schema#",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "http://www.example.org/schema/json/example",
     "type": "object",
     "title": "Another Json schema for tests",
@@ -972,7 +994,6 @@ another-schema.json:
     ],
     "properties": {
         "description": {
-            "$id": "#/properties/string",
             "type": "string",
             "title": "Description",
             "description": "Any description."
@@ -988,7 +1009,7 @@ HTTP-wise the call looks as follows:
 
 include::{snippets}/register-another-json-schema/http-request.adoc[]
 
-As Content-Type only 'application/json' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
+As Content-Type only 'multpart/form-data' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
 provided document, adding missing information where possible and persisting the created resource, the result is sent back to the user and will look that way:
 
 include::{snippets}/register-another-json-schema/http-response.adoc[]
@@ -1021,7 +1042,7 @@ If there are more than 20 schemas registered you have to provide page and/or siz
 
 The modified HTTP request  with pagination looks like follows:
 
-include::{snippets}/get-all-schemas-pagination/http-request.adoc[]
+include::{snippets}/get-all-json-schemas-pagination/http-request.adoc[]
 
 ==== Getting a List of all Schema Records for a Specific SchemaId
 
@@ -1176,6 +1197,7 @@ like this:
             "sid": "...",
             "permission": "..."
         }],
+    "licenseUri": "...",
     "metadataDocumentUri": "...",
     "documentHash": "..."
 }
@@ -1186,7 +1208,10 @@ At least the following elements are expected to be provided by the user:
 - schema: Identifier of the linked schema. (INTERNAL and URL supported as type)
 - relatedResource: The link to the resource. 
 
-metadataDocuIn addition, ACL may be useful to make metadata editable by others. (This will be of interest while updating an existing metadata)
+In addition, ACL may be useful to make metadata editable by others. (This will be of interest while updating an existing metadata)
+
+[NOTE]
+License URI is optional. It's new since 1.5.0.
 
 ==== Register/Ingest a Metadata Record with Metadata Document
 
@@ -1221,7 +1246,7 @@ You can see, that most of the sent metadata schema record is empty. Only schemaI
 
 include::{snippets}/ingest-json-metadata-document/http-request.adoc[]
 
-As Content-Type only 'application/json' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
+As Content-Type only 'multpart/form-data' is supported and should be provided. The other headers are typically set by the HTTP client. After validating the 
 provided document, adding missing information where possible and persisting the created resource, the result is sent back to the user and will look that way:
 
 include::{snippets}/ingest-json-metadata-document/http-response.adoc[]
@@ -1300,7 +1325,7 @@ You can see, that only the ACL entry for "guest" was added. All other properties
 
 include::{snippets}/update-json-metadata-record-v2/http-request.adoc[]
 
-You will get the new metadata record with the additional ACL entry. Version number was incremented by one, 'lastUpdate' and 'recordVersion' are also modified by the server.
+You will get the new metadata record with the additional ACL entry. Version number of record was incremented by one and 'lastUpdate' was also modified by the server.
 include::{snippets}/update-json-metadata-record-v2/http-response.adoc[]
 
 What you see is, that the metadata record looks different from the original document. 

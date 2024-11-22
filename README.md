@@ -1,13 +1,22 @@
 # MetaStore 2 repository
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7685007.svg)](https://doi.org/10.5281/zenodo.7685007)
 [![Build Status](https://github.com/kit-data-manager/metastore2/actions/workflows/gradle.yml/badge.svg)](https://github.com/kit-data-manager/metastore2/actions/workflows/gradle.yml)
-[![Codecov](https://codecov.io/gh/kit-data-manager/metastore2/branch/master/graph/badge.svg)](https://codecov.io/gh/kit-data-manager/metastore2)
+[![Codecov](https://codecov.io/gh/kit-data-manager/metastore2/graph/badge.svg)](https://codecov.io/gh/kit-data-manager/metastore2)
 [![CodeQL](https://github.com/kit-data-manager/metastore2/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/kit-data-manager/metastore2/actions/workflows/codeql-analysis.yml)
 ![License](https://img.shields.io/github/license/kit-data-manager/metastore2.svg)
-[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/kitdm/metastore2)](https://hub.docker.com/r/kitdm/metastore2/tags)
-![Docker Image Version (latest semver)](https://img.shields.io/docker/v/kitdm/metastore2)
+[![docker]](https://github.com/kit-data-manager/metastore2/pkgs/container/metastore2)
+[![currentVersion]](https://github.com/kit-data-manager/metastore2/pkgs/container/metastore2)
+[![size]](https://github.com/kit-data-manager/metastore2/pkgs/container/metastore2)
 
-General purpose metadata repository and schema registry service.
+
+[docker]: <https://ghcr-badge.egpl.dev/kit-data-manager/metastore2/tags?trim=major&color=steelblue&ignore=main,latest&label=docker versions>
+[currentVersion]: <https://ghcr-badge.egpl.dev/kit-data-manager/metastore2/latest_tag?trim=major&color=steelblue&label=current version>
+[size]: <https://ghcr-badge.egpl.dev/kit-data-manager/metastore2/size?color=steelblue&label=size>
+
+MetaStore is a research data repository software for storing metadata documents and schemas.
+Quality and consistency are ensured by associating and validating each document against a schema.
+It supports JSON and XML.
 
 It allows you to 
 - register an (XML/JSON) schema
@@ -17,20 +26,20 @@ It allows you to
 - update added metadata
  
 ## Installation
-There are three ways to install metaStore2 as a micorservice:
-- [Using](#Installation-via-DockerHub) the image available via [DockerHub](https://hub.docker.com/r/kitdm/) (***recommended***)
+There are three ways to install metaStore2 as a microservice:
+- [Using](#Installation-via-GitHub-Packages) the image available via [GitHub Packages](https://github.com/orgs/kit-data-manager/packages?repo_name=metastore2) (***recommended***)
 - [Building](#Build-docker-container-locally) docker image locally
 - [Building](#Build-and-run-locally) and running locally
 
-## Installation via DockerHub
+## Installation via GitHub Packages
 ### Prerequisites
 In order to run this microservice via docker you'll need:
 
 * [Docker](https://www.docker.com/) 
 
 ### Installation
-Typically, there is no need for locally building images as all version are accessible via DockerHub.
-Have a look of available images and their tags [here](https://hub.docker.com/r/kitdm/metastore2) 
+Typically, there is no need for locally building images as all version are accessible via GitHub Packages.
+Have a look of available images and their tags [here](https://github.com/orgs/kit-data-manager/packages?repo_name=metastore2) 
 Just follow instructions [below](#Build-docker-container).
 
 ## Build docker container locally
@@ -52,15 +61,15 @@ user@localhost:/home/user/metastore2$
 ```
 
 #### Create image
-Now you'll have to create an image containing the micro service. This can be done via a script.
+Now you'll have to create an image containing the microservice. This can be done via a script.
 On default the created images will be tagged as follows:
 
-*'latest tag'-'actual date(yyyy-mm-dd)'* (e.g.: 0.1.1-2020-10-05)
+*'latest tag'-'actual date(yyyy-mm-dd)'* (e.g.: 1.2.0-2023-06-27)
 
 ```
 user@localhost:/home/user/metastore2$ bash docker/buildDocker.sh
 ---------------------------------------------------------------------------
-Build docker container kitdm/metastore2:0.1.1-2020-10-05
+Build docker container ghcr.io/kit-data-manager/metastore2:1.2.0-2023-06-27
 ---------------------------------------------------------------------------
 [...]
 ---------------------------------------------------------------------------
@@ -73,9 +82,9 @@ user@localhost:/home/user/metastore2$
 After building image you have to create (and start) a container for executing microservice:
 ```
 # If you want to use a specific image you may list all possible tags first.
-user@localhost:/home/user/metastore2$ docker images kitdm/metastore2 --format {{.Tag}}
-0.1.1-2020-10-05
-user@localhost:/home/user/metastore2$ docker run -d -p8040:8040 --name metastore4docker kitdm/metastore2:0.1.1-2020-10-05
+user@localhost:/home/user/metastore2$ docker images ghcr.io/kit-data-manager/metastore2 --format {{.Tag}}
+1.2.0-2023-06-27
+user@localhost:/home/user/metastore2$ docker run -d -p8040:8040 --name metastore4docker ghcr.io/kit-data-manager/metastore2:1.2.0-2023-06-27
 57c973e7092bfc3778569f90632d60775dfecd12352f13a4fd2fdf4270865286
 user@localhost:/home/user/metastore2$
 ```
@@ -90,7 +99,7 @@ Therefor you have to provide an additional flag to the command mentioned before:
 user@localhost:/home/user/metastore2$ mkdir config
 # Place your own 'application.properties' inside the config directory
 # Create/run container
-user@localhost:/home/user/metastore2$ docker run -d -p8040:8040 -v `pwd`/config:/spring/metastore2/config --name metastore4docker kitdm/metastore2:0.1.1-2020-10-05
+user@localhost:/home/user/metastore2$ docker run -d -p8040:8040 -v `pwd`/config:/spring/metastore2/config --name metastore4docker ghcr.io/kit-data-manager/metastore2:1.2.0-2023-06-27
 57c973e7092bfc3778569f90632d60775dfecd12352f13a4fd2fdf4270865286
 user@localhost:/home/user/metastore2$
 ```
@@ -111,7 +120,7 @@ user@localhost:/home/user/metastore2$ docker start metastore4docker
 ### Prerequisites
 In order to run this microservice via docker you'll need:
 
-* [Java SE Development Kit 8 or higher](https://openjdk.java.net/) 
+* [Java SE Development Kit >= 17](https://openjdk.java.net/) 
 * [git](https://git-scm.com/) 
 
 ### Installation
@@ -148,53 +157,55 @@ only contain your adapted settings. e.g. in case you want to change only the por
 # Server settings
 server.port: 1234
 ```
-## Build framework using docker
-The metaStore framework consists of the following services:
-- RabbitMQ - messaging service
-- Elasticsearch - indexing service
-- Indexing-service - service transforming metadata documents to json
-- MetaStore2 - service managing metadata schema and metadata documents
-To build the whole framework use the shell script ('metatoreFramework.sh'). 
+## Build framework using docker (Linux only)
+Based on Docker Compose, the entire framework, including elasticsearch and the UI, can now be installed with a single command.
 ```
-user@localhost:/home/user/metastore2$ bash metaStoreFramework.sh --help
-Script for managing MetaStore service.
-USAGE:
-  metaStoreFramework.sh [init|start|stop]
- 
-  init - Initialize/Reset the whole framework
-  start - Start stopped framework
-  stop - Stop framework
-user@localhost:/home/user/metastore2$ 
+user@localhost:/home/user/metastore2$ docker compose up -d
 ```
+As soon all services are running you can browse to http://localhost/index.html
 
-### Customize settings
-Two services may be customized to your needs.
-1. MetaStore 
-   - overwrite settings by copying your application.properties file to ./settings/metastore
-2. Indexing-Service
-   - overwrite settings by copying your application.properties file to ./settings/indexing
+### First steps using framework
+If you want to use the (external) web frontend please visit:
 
-## First steps
-As soon as the microservice is started, you can browse to 
+https://kit-data-manager.github.io/webpage/metastore/documentation/frontend/index.html
 
-http://localhost:8040/
+A small documentation guiding you through the first steps of using the RESTful API you can find at
 
-and start ingesting schemas and metadata documents.
+https://kit-data-manager.github.io/webpage/metastore/documentation/REST/index.html
 
 If you want to use a script for doing so please refer to 
 
-http://localhost:8040/swagger-ui.html
+http://metastore.docker:8040/metastore/swagger-ui.html
 
 in order to see available RESTful endpoints and their documentation. Furthermore, 
 you can use this Web interface to test single API calls in order to get familiar with the 
 service. 
 
-A small documentation guiding you through the first steps of using the RESTful API you can find at
+### Managing framework using docker
+To stop and start all services do the following:
+```
+user@localhost:/home/user/metastore2$ docker compose stop
+[+] Running 6/6
+ ⠿ Container dockercompose-my-apache-1  Stopped                            1.5s
+ ⠿ Container indexing4metastore         Stopped                           13.2s
+ ⠿ Container dockercompose-dps-1        Stopped                            0.3s
+ ⠿ Container metastore.docker           St...                             13.1s
+ ⠿ Container rabbitmq4indexing          S...                               6.5s
+ ⠿ Container elastic4indexing           St...                              0.8s
+user@localhost:/home/user/metastore2$ docker compose start
+[+] Running 6/6
+ ⠿ Container dockercompose-dps-1        Started                            0.4s
+ ⠿ Container dockercompose-my-apache-1  Started                            0.6s
+ ⠿ Container elastic4indexing           He...                             10.9s
+ ⠿ Container rabbitmq4indexing          S...                               0.3s
+ ⠿ Container metastore.docker           St...                              0.5s
+ ⠿ Container indexing4metastore         Started                            0.5s
+user@localhost:/home/user/metastore2$
+```
 
-http://localhost:8040/static/docs/documentation.html
-
-
-
+## First steps using MetaStore standalone
+If you're using MetaStore without the whole framework the service is reachable via
+http://localhost:8040/metastore/....
 
 ## Setup for production mode
 :WARNING: If you want to use the service in production mode you have modify your configuration (application.properties).
@@ -204,8 +215,8 @@ http://localhost:8040/static/docs/documentation.html
 3. Setup directories for schemata and metadata to a reliable disc. (metastore.schema.schemaFolder, metastore.metadata.metadataFolder)
 4. Check all settings in application.properties. (e.g. CSRF)
 
-:information_source: If metaStore should be used standalone (without KIT Data Manager) 
-you have to setup a database before. (See ['Installation PostgreSQL'](installation_postgres.md)) 
+:information_source: If MetaStore should be used standalone (without KIT Data Manager) 
+you have to install a database before. (See ['Installation PostgreSQL'](installation_postgres.md)) 
 
 #### Setup MetaStore2
 Before you are able to start the repository microservice, you have to modify the file 'application.properties' according to your local setup. 

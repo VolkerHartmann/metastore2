@@ -20,8 +20,11 @@ import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.Date;
+import edu.kit.datamanager.repo.domain.PrimaryIdentifier;
+import edu.kit.datamanager.repo.domain.RelatedIdentifier;
+import edu.kit.datamanager.repo.domain.Scheme;
 import java.time.Instant;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import org.javers.core.Javers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -41,7 +44,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import org.springframework.security.test.context.support.WithSecurityContextTestExecutionListener;
-import org.springframework.security.web.FilterChainProxy;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
@@ -72,7 +75,7 @@ import org.springframework.web.multipart.MultipartFile;
   TransactionalTestExecutionListener.class,
   WithSecurityContextTestExecutionListener.class})
 @ActiveProfiles("test")
-@TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_util;DB_CLOSE_DELAY=-1"})
+@TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_util;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MetadataRecordUtilTest {
 
@@ -81,6 +84,7 @@ public class MetadataRecordUtilTest {
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
   private static final String METADATA_RECORD_ID = "test_id";
   private static final String PID = "anyPID";
+  private static final String LICENSE = "https://spdx.org/licenses/Apache-2.0";
   private static final String PRINCIPAL = "principal";
   private static final String SCHEMA_ID = "my_dc";
   private static final String INVALID_SCHEMA = "invalid_dc";
@@ -89,8 +93,6 @@ public class MetadataRecordUtilTest {
   private MockMvc mockMvc;
   @Autowired
   private WebApplicationContext context;
-  @Autowired
-  private FilterChainProxy springSecurityFilterChain;
   @Autowired
   private ILinkedMetadataRecordDao metadataRecordDao;
   @Autowired
@@ -130,7 +132,7 @@ public class MetadataRecordUtilTest {
 
     // setup mockMvc
     this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
-            .addFilters(springSecurityFilterChain)
+            .apply(springSecurity())
             .apply(documentationConfiguration(this.restDocumentation))
             .build();
   }
@@ -191,7 +193,7 @@ public class MetadataRecordUtilTest {
     System.out.println("createMetadataRecord");
     // invalid record document
     MetastoreConfiguration applicationProperties = metadataConfig;
-    MultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", new String("{nonsense}").getBytes());
+    MultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", "{nonsense}".getBytes());
     MultipartFile document = null;
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.createMetadataRecord(applicationProperties, recordDocument, document);
@@ -275,7 +277,7 @@ public class MetadataRecordUtilTest {
     MetadataRecord record = new MetadataRecord();
     // set id which is not allowed for create 
     record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(SCHEMA_ID));
-    record.setSchemaVersion(1l);
+    record.setSchemaVersion(1L);
     record.setRelatedResource(RELATED_RESOURCE);
     record.setId("anyId");
     ObjectMapper mapper = new ObjectMapper();
@@ -302,7 +304,7 @@ public class MetadataRecordUtilTest {
     MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MetastoreConfiguration applicationProperties = metadataConfig;
     // empty document
-    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);;
+    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.createMetadataRecord(applicationProperties, recordDocument, document);
     fail("Don't reach this line!");
@@ -316,7 +318,7 @@ public class MetadataRecordUtilTest {
     record.setRelatedResource(RELATED_RESOURCE);
     ObjectMapper mapper = new ObjectMapper();
 
-    MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", new String("{nonsense}").getBytes());
+    MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", "{nonsense}".getBytes());
     MetastoreConfiguration applicationProperties = metadataConfig;
     MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", mapper.writeValueAsString(record).getBytes());
     MetadataRecord expResult = null;
@@ -430,7 +432,7 @@ public class MetadataRecordUtilTest {
 
     MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", SCHEMA_ID.getBytes());
     MetastoreConfiguration applicationProperties = metadataConfig;
-    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);;
+    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.createMetadataRecord(applicationProperties, recordDocument, document);
     fail("Don't reach this line!");
@@ -446,7 +448,7 @@ public class MetadataRecordUtilTest {
 
     MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MetastoreConfiguration applicationProperties = metadataConfig;
-    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);;
+    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.createMetadataRecord(applicationProperties, recordDocument, document);
     fail("Don't reach this line!");
@@ -463,7 +465,7 @@ public class MetadataRecordUtilTest {
 
     MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MetastoreConfiguration applicationProperties = metadataConfig;
-    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);;
+    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.createMetadataRecord(applicationProperties, recordDocument, document);
     fail("Don't reach this line!");
@@ -480,7 +482,7 @@ public class MetadataRecordUtilTest {
 
     MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MetastoreConfiguration applicationProperties = metadataConfig;
-    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);;
+    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.createMetadataRecord(applicationProperties, recordDocument, document);
     fail("Don't reach this line!");
@@ -497,7 +499,7 @@ public class MetadataRecordUtilTest {
     String eTag = "";
     MultipartFile recordDocument = null;
     MultipartFile document = null;
-    Function<String, String> supplier = null;
+    UnaryOperator<String> supplier = null;
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.updateMetadataRecord(applicationProperties, resourceId, eTag, recordDocument, document, supplier);
     assertEquals(expResult, result);
@@ -516,7 +518,7 @@ public class MetadataRecordUtilTest {
     String eTag = "";
     MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", (byte[]) null);
     MultipartFile document = null;
-    Function<String, String> supplier = null;
+    UnaryOperator<String> supplier = null;
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.updateMetadataRecord(applicationProperties, resourceId, eTag, recordDocument, document, supplier);
     assertEquals(expResult, result);
@@ -537,9 +539,9 @@ public class MetadataRecordUtilTest {
     MetastoreConfiguration applicationProperties = null;
     String resourceId = "";
     String eTag = "";
-    MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", new String().getBytes());
+    MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", "".getBytes());
     MultipartFile document = null;
-    Function<String, String> supplier = null;
+    UnaryOperator<String> supplier = null;
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.updateMetadataRecord(applicationProperties, resourceId, eTag, recordDocument, document, supplier);
     assertEquals(expResult, result);
@@ -562,7 +564,7 @@ public class MetadataRecordUtilTest {
     String eTag = "";
     MockMultipartFile recordDocument = null;
     MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", (byte[]) null);
-    Function<String, String> supplier = null;
+    UnaryOperator<String> supplier = null;
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.updateMetadataRecord(applicationProperties, resourceId, eTag, recordDocument, document, supplier);
     assertEquals(expResult, result);
@@ -584,8 +586,8 @@ public class MetadataRecordUtilTest {
     String resourceId = "";
     String eTag = "";
     MockMultipartFile recordDocument = null;
-    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", new String().getBytes());
-    Function<String, String> supplier = null;
+    MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", "".getBytes());
+    UnaryOperator<String> supplier = null;
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.updateMetadataRecord(applicationProperties, resourceId, eTag, recordDocument, document, supplier);
     assertEquals(expResult, result);
@@ -608,7 +610,7 @@ public class MetadataRecordUtilTest {
     String eTag = "";
     MockMultipartFile recordDocument = new MockMultipartFile("record", "metadata-record.json", "application/json", SCHEMA_ID.getBytes());
     MultipartFile document = new MockMultipartFile("document", "metadata.xml", "application/xml", mapper.writeValueAsString(record).getBytes());
-    Function<String, String> supplier = null;
+    UnaryOperator<String> supplier = null;
     MetadataRecord expResult = null;
     MetadataRecord result = MetadataRecordUtil.updateMetadataRecord(applicationProperties, resourceId, eTag, recordDocument, document, supplier);
     assertEquals(expResult, result);
@@ -640,7 +642,7 @@ public class MetadataRecordUtilTest {
     System.out.println("migrateToDataResource");
     MetadataRecord record = new MetadataRecord();
     record.setId("08/15");
-    record.setRecordVersion(1l);
+    record.setRecordVersion(1L);
     record.setCreatedAt(Instant.now());
     record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(SCHEMA_ID));
     record.setRelatedResource(RELATED_RESOURCE);
@@ -664,34 +666,54 @@ public class MetadataRecordUtilTest {
     assertEquals(expResult, result);
     dataResource = DataResource.factoryNewDataResource();
     dataResource.getAlternateIdentifiers().clear();
+    setSchema(dataResource);
     // Test with id &  PrimaryIdentifier
     result = MetadataRecordUtil.migrateToMetadataRecord(applicationProperties, dataResource, false);
     assertNotNull(result.getId());
     assertEquals("Id should be the same!", result.getId(), dataResource.getId());
-    assertEquals("Version should be '1'", Long.valueOf(1l), result.getRecordVersion());
+    assertEquals("Version should be '1'", Long.valueOf(1L), result.getRecordVersion());
     assertTrue("ACL should be empty", result.getAcl().isEmpty());
+    assertNull("License should be 'null'", result.getLicenseUri());
     assertNull("PID should be empty", result.getPid());
     assertNull("Create date should be empty!", result.getCreatedAt());
     assertNull("Last update date should be empty!", result.getLastUpdate());
     // Test with one (internal) alternate identifier.
     dataResource = DataResource.factoryNewDataResource();
+    setSchema(dataResource);
     dataResource.getDates().add(Date.factoryDate(Instant.now(), Date.DATE_TYPE.ISSUED));
     result = MetadataRecordUtil.migrateToMetadataRecord(applicationProperties, dataResource, false);
     assertNotNull(result.getId());
     assertEquals("Id should be the same!", result.getId(), dataResource.getId());
-    assertEquals("Version should be '1'", Long.valueOf(1l), result.getRecordVersion());
+    assertEquals("Version should be '1'", Long.valueOf(1L), result.getRecordVersion());
     assertTrue("ACL should be empty", result.getAcl().isEmpty());
+    assertNull("License should be 'null'", result.getLicenseUri());
     assertNull("PID should be empty", result.getPid());
     assertNull("Create date should be empty!", result.getCreatedAt());
     assertNull("Last update date should be empty!", result.getLastUpdate());
-    
-    
+
     // Test migration of PID with two alternate identifiers (internal & UPC)
-    dataResource.getAlternateIdentifiers().add(Identifier.factoryIdentifier(PID, Identifier.IDENTIFIER_TYPE.UPC));
+    PrimaryIdentifier pid = PrimaryIdentifier.factoryPrimaryIdentifier();
+    pid.setValue(PID);
+    pid.setIdentifierType(Identifier.IDENTIFIER_TYPE.UPC.name());
+    dataResource.setIdentifier(pid);
     result = MetadataRecordUtil.migrateToMetadataRecord(applicationProperties, dataResource, false);
     assertNotNull(result.getId());
     assertEquals("Id should be the same!", result.getId(), dataResource.getId());
-    assertEquals("Version should be '1'", Long.valueOf(1l), result.getRecordVersion());
+    assertEquals("Version should be '1'", Long.valueOf(1L), result.getRecordVersion());
+    assertTrue("ACL should be empty", result.getAcl().isEmpty());
+    assertNull("License should be 'null'", result.getLicenseUri());
+    assertNull("Create date should be empty!", result.getCreatedAt());
+    assertNull("Last update date should be empty!", result.getLastUpdate());
+    // PID should be set
+    assertNotNull("PID shouldn't be NULL", result.getPid());
+    assertEquals(PID, result.getPid().getIdentifier());
+    assertEquals(ResourceIdentifier.IdentifierType.UPC, result.getPid().getIdentifierType());
+    // Test migration of PID with two alternate identifiers (internal & UPC)
+    dataResource.getRights().add(Scheme.factoryScheme("test", LICENSE));
+    result = MetadataRecordUtil.migrateToMetadataRecord(applicationProperties, dataResource, false);
+    assertNotNull(result.getId());
+    assertEquals("Id should be the same!", result.getId(), dataResource.getId());
+    assertEquals("Version should be '1'", Long.valueOf(1L), result.getRecordVersion());
     assertTrue("ACL should be empty", result.getAcl().isEmpty());
     assertNull("Create date should be empty!", result.getCreatedAt());
     assertNull("Last update date should be empty!", result.getLastUpdate());
@@ -699,11 +721,15 @@ public class MetadataRecordUtilTest {
     assertNotNull("PID shouldn't be NULL", result.getPid());
     assertEquals(PID, result.getPid().getIdentifier());
     assertEquals(ResourceIdentifier.IdentifierType.UPC, result.getPid().getIdentifierType());
+    // License should be set
+    assertNotNull("License shouldn't be NULL", result.getLicenseUri());
+    assertEquals(LICENSE, result.getLicenseUri());
+    
     // Add schemaID, resourceType, relatedIdentifier for schema
     //@ToDo Make this working again
 //    dataResource.getTitles().add(Title.factoryTitle(SCHEMA_ID));
 //    dataResource.setResourceType(ResourceType.createResourceType(SCHEMA_ID));
-//    RelatedIdentifier relId = RelatedIdentifier.factoryRelatedIdentifier(RelatedIdentifier.RELATION_TYPES.IS_DERIVED_FROM, SCHEMA_ID, null, null);
+//    RelatedIdentifier relId = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, SCHEMA_ID, null, null);
 //    relId.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
 //    dataResource.getRelatedIdentifiers().add(relId);
 //    // dataResourceService adds ACL
@@ -761,26 +787,27 @@ public class MetadataRecordUtilTest {
     result = MetadataRecordUtil.mergeRecords(managed, provided);
     assertNotNull(result);
     assertEquals(provided, result);
-    
+
     // Cannot test merging ACL list due to missing access rights
     managed = new MetadataRecord();
     provided = new MetadataRecord();
     provided.getAcl().add(new edu.kit.datamanager.repo.domain.acl.AclEntry(SCHEMA_ID, PERMISSION.WRITE));
     result = MetadataRecordUtil.mergeRecords(managed, provided);
     assertNotNull(result);
-    assertNotEquals(provided, result);
-    provided.getAcl().clear();
     assertEquals(provided, result);
-    
+
     managed = new MetadataRecord();
     provided = new MetadataRecord();
     provided.setRelatedResource(RELATED_RESOURCE);
     result = MetadataRecordUtil.mergeRecords(managed, provided);
     assertNotNull(result);
-    provided.setPid(result.getPid());
     assertEquals(provided, result);
   }
 
+  @Test
+  public void testMergeAclWithNullParameter() {
+    assertNotNull(MetadataRecordUtil.mergeAcl(null, null));
+  }
   /**
    * Test of setToken method, of class MetadataRecordUtil.
    */
@@ -789,6 +816,12 @@ public class MetadataRecordUtilTest {
     System.out.println("setToken");
     String bearerToken = "";
     MetadataRecordUtil.setToken(bearerToken);
+  }
+
+  private void setSchema(DataResource dataResource) {
+    RelatedIdentifier factoryRelatedIdentifier = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, "anySchema", null, null);
+    factoryRelatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
+    dataResource.getRelatedIdentifiers().add(factoryRelatedIdentifier);
   }
 
 }

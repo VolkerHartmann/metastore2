@@ -15,9 +15,8 @@
  */
 package edu.kit.datamanager.metastore2.configuration;
 
+import edu.kit.datamanager.annotations.LocalFolderURL;
 import edu.kit.datamanager.configuration.GenericApplicationProperties;
-import java.net.URL;
-import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +25,11 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.net.URL;
+import java.util.List;
+
 /**
+ * Properties for configuration of MetaStore.
  *
  * @author jejkal
  */
@@ -36,21 +39,33 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @RefreshScope
 @EqualsAndHashCode(callSuper = true)
-public class ApplicationProperties extends GenericApplicationProperties{
+public class ApplicationProperties extends GenericApplicationProperties {
 
-  @edu.kit.datamanager.annotations.LocalFolderURL
+  @LocalFolderURL
   @Value("${metastore.schema.schemaFolder}")
   private URL schemaFolder;
 
+  @Value("${metastore.schema.landingpage:/schema-landing-page?schemaId=$(id)&version=$(version)}")
+  private String schemaLandingPage;
+
   @Value("${metastore.schema.synchronization.enabled:FALSE}")
   private boolean synchronizationEnabled;
-  // @Value("${metastore.schema.synchronization.schemaSources}")
+  
+  //@Value("${metastore.schema.synchronization.schemaSources}")
   private List<SynchronizationSource> schemaSources;
 
+  @LocalFolderURL
   @Value("${metastore.metadata.metadataFolder}")
   private URL metadataFolder;
+
+  @Value("${metastore.metadata.landingpage:/metadata-landing-page?id=$(id)&version=$(version)}")
+  private String metadataLandingPage;
+
+  @Value("${metastore.metadata.storagepattern:dateBased}")
+  private String storagePattern;
+
   @Value("${metastore.metadata.schemaRegistries: }")
-  private String[] schemaRegistries;
+  private List<String> schemaRegistries;
 
   @Value("${metastore.javers.scope:20}")
   private int maxJaversScope;

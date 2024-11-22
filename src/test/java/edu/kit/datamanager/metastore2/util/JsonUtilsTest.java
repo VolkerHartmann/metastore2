@@ -25,12 +25,12 @@ import static org.junit.Assert.*;
 public class JsonUtilsTest {
 
   private final String emptySchema = "{}";
-  private final String jsonSchemaWithversiondraft04 = "{\"$schema\": \"http://json-schema.org/draft-04/schema#\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
-  private final String jsonSchemaWithversiondraft06 = "{\"$schema\": \"http://json-schema.org/draft-06/schema#\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
-  private final String jsonSchemaWithversiondraft07 = "{\"$schema\": \"http://json-schema.org/draft-07/schema#\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
-  private final String jsonSchemaWithversiondraft201909 = "{\"$schema\": \"http://json-schema.org/draft/2019-09/schema#\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
+  private final String jsonSchemaWithversiondraft04 = "{\"$schema\": \"https://json-schema.org/draft-04/schema\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
+  private final String jsonSchemaWithversiondraft06 = "{\"$schema\": \"https://json-schema.org/draft-06/schema\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
+  private final String jsonSchemaWithversiondraft07 = "{\"$schema\": \"https://json-schema.org/draft-07/schema\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
+  private final String jsonSchemaWithversiondraft201909 = "{\"$schema\": \"https://json-schema.org/draft/2019-09/schema\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
   private final String moreComplexExample = "{\n"
-          + "    \"$schema\": \"http://json-schema.org/draft/2019-09/schema#\",\n"
+          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
           + "    \"$id\": \"http://www.example.org/schema/json\",\n"
           + "    \"type\": \"object\",\n"
           + "    \"title\": \"Json schema for tests\",\n"
@@ -41,14 +41,12 @@ public class JsonUtilsTest {
           + "    ],\n"
           + "    \"properties\": {\n"
           + "        \"string\": {\n"
-          + "            \"$id\": \"#/properties/string\",\n"
           + "            \"type\": \"string\",\n"
           + "            \"title\": \"The string schema\",\n"
           + "            \"description\": \"An explanation about the purpose of this instance.\",\n"
           + "            \"default\": \"no default\"\n"
           + "        },\n"
           + "        \"number\": {\n"
-          + "            \"$id\": \"#/properties/number\",\n"
           + "            \"type\": \"integer\",\n"
           + "            \"title\": \"The number schema\",\n"
           + "            \"description\": \"An explanation about the purpose of this instance.\",\n"
@@ -58,7 +56,7 @@ public class JsonUtilsTest {
           + "    \"additionalProperties\": false\n"
           + "}";
   private final String dateExample = "{\n"
-          + "    \"$schema\": \"http://json-schema.org/draft/2019-09/schema#\",\n"
+          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
           + "    \"$id\": \"http://www.example.org/schema/json\",\n"
           + "    \"type\": \"object\",\n"
           + "    \"title\": \"Json schema for tests\",\n"
@@ -69,14 +67,13 @@ public class JsonUtilsTest {
           + "    ],\n"
           + "    \"properties\": {\n"
           + "        \"title\": {\n"
-          + "            \"$id\": \"#/properties/string\",\n"
           + "            \"type\": \"string\",\n"
           + "            \"title\": \"Title\",\n"
           + "            \"description\": \"Title of object.\"\n"
           + "        },\n"
           + "        \"date\": {\n"
-          + "            \"$id\": \"#/properties/string\",\n"
           + "            \"type\": \"string\",\n"
+          + "            \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",\n"
           + "            \"format\": \"date\",\n"
           + "            \"title\": \"Date\",\n"
           + "            \"description\": \"Date of object\"\n"
@@ -85,7 +82,7 @@ public class JsonUtilsTest {
           + "    \"additionalProperties\": false\n"
           + "}";
   private final String invalidJsonSchemaDocumentWithversiondraft201909 = "{\n"
-          + "  \"$schema\": \"http://json-schema.org/draft/2019-09/schema#\",\n"
+          + "  \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
           + "  \"$id\": \"http://localhost:8040/api/v1/schemas/Test\",\n"
           + "  \"title\": \"Test\",\n"
           + "  \"type\": \"object\",\n"
@@ -145,7 +142,7 @@ public class JsonUtilsTest {
     String schemaDocument = null;
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("argument \"content\" is null"));
@@ -161,7 +158,7 @@ public class JsonUtilsTest {
     InputStream schemaDocument = null;
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.ERROR_READING_INPUT_STREAM));
@@ -177,7 +174,7 @@ public class JsonUtilsTest {
     String schemaDocument = "";
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.ERROR_VALIDATING_SCHEMA));
@@ -195,7 +192,7 @@ public class JsonUtilsTest {
     InputStream schemaDocument = IOUtils.toInputStream("", ENCODING);
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.ERROR_VALIDATING_SCHEMA));
@@ -211,7 +208,7 @@ public class JsonUtilsTest {
     String schemaDocument = "{}";
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.EMPTY_SCHEMA_DETECTED));
@@ -229,7 +226,7 @@ public class JsonUtilsTest {
     InputStream schemaDocument = IOUtils.toInputStream("{}", ENCODING);
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.EMPTY_SCHEMA_DETECTED));
@@ -307,7 +304,7 @@ public class JsonUtilsTest {
     String schemaDocument = jsonSchemaWithversiondraft201909;
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument, SpecVersion.VersionFlag.V4);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("Unknown MetaSchema"));
@@ -323,7 +320,7 @@ public class JsonUtilsTest {
     String schemaDocument = invalidJsonSchemaDocumentWithversiondraft201909;
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.ERROR_VALIDATING_SCHEMA));
@@ -341,7 +338,7 @@ public class JsonUtilsTest {
     InputStream schemaDocument = IOUtils.toInputStream(jsonSchemaWithversiondraft201909, ENCODING);
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument, SpecVersion.VersionFlag.V4);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("Unknown MetaSchema"));
@@ -357,7 +354,7 @@ public class JsonUtilsTest {
     String schemaDocument = jsonSchemaWithversiondraft04;
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument, SpecVersion.VersionFlag.V201909);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("Unknown MetaSchema"));
@@ -375,7 +372,7 @@ public class JsonUtilsTest {
     InputStream schemaDocument = IOUtils.toInputStream(jsonSchemaWithversiondraft04, ENCODING);
     try {
       JsonUtils.validateJsonSchemaDocument(schemaDocument, SpecVersion.VersionFlag.V201909);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("Unknown MetaSchema"));
@@ -392,7 +389,7 @@ public class JsonUtilsTest {
       String schemaDocument = jsonSchemaWithversiondraft04;
       SpecVersion.VersionFlag version = null;
       JsonUtils.validateJsonSchemaDocument(schemaDocument, version);
-      assertTrue(false); //should not executed.
+      fail(); //should not executed.
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.MISSING_SCHEMA_VERSION));
@@ -411,7 +408,7 @@ public class JsonUtilsTest {
       InputStream schemaDocument = IOUtils.toInputStream(jsonSchemaWithversiondraft04, ENCODING);
       SpecVersion.VersionFlag version = null;
       JsonUtils.validateJsonSchemaDocument(schemaDocument, version);
-      assertTrue(false); //should not executed.
+      fail(); //should not executed.
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.MISSING_SCHEMA_VERSION));
@@ -428,7 +425,7 @@ public class JsonUtilsTest {
       String schemaDocument = null;
       SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
       JsonUtils.validateJsonSchemaDocument(schemaDocument, version);
-      assertTrue(false); //should not executed.
+      fail(); //should not executed.
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("argument \"content\" is null"));
@@ -445,7 +442,7 @@ public class JsonUtilsTest {
       InputStream schemaDocument = null;
       SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
       JsonUtils.validateJsonSchemaDocument(schemaDocument, version);
-      assertTrue(false); //should not executed.
+      fail(); //should not executed.
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.ERROR_READING_INPUT_STREAM));
@@ -590,7 +587,7 @@ public class JsonUtilsTest {
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
     try {
       JsonUtils.validateJson(jsonDocument, jsonSchema, version);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.EMPTY_SCHEMA_DETECTED));
@@ -610,7 +607,7 @@ public class JsonUtilsTest {
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
     try {
       JsonUtils.validateJson(jsonDocument, jsonSchema, version);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.EMPTY_SCHEMA_DETECTED));
@@ -628,7 +625,7 @@ public class JsonUtilsTest {
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V7;
     try {
       JsonUtils.validateJson(jsonDocument, jsonSchema, version);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("Unknown MetaSchema"));
@@ -648,7 +645,7 @@ public class JsonUtilsTest {
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V7;
     try {
       JsonUtils.validateJson(jsonDocument, jsonSchema, version);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains("Unknown MetaSchema"));

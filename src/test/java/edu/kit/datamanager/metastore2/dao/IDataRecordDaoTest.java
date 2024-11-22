@@ -6,19 +6,7 @@
 package edu.kit.datamanager.metastore2.dao;
 
 import edu.kit.datamanager.metastore2.domain.DataRecord;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -38,6 +26,16 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 import org.springframework.test.context.web.ServletTestExecutionListener;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.Assert.*;
 
 /**
  */
@@ -96,15 +94,15 @@ public class IDataRecordDaoTest {
     System.out.println("findByMetadataIdAndVersion");
     String metadataId = "metadataId1";
 //    IDataRecordDao instance = new IDataRecordDaoImpl();
-    Optional<DataRecord> result = instance.findByMetadataIdAndVersion(metadataId, 3l);
+    Optional<DataRecord> result = instance.findByMetadataIdAndVersion(metadataId, 3L);
     assertNotNull(result);
     assertTrue(result.isPresent());
 
-    result = instance.findByMetadataIdAndVersion(metadataId, 1l);
+    result = instance.findByMetadataIdAndVersion(metadataId, 1L);
     assertNotNull(result);
     assertFalse(result.isPresent());
     
-    result = instance.findByMetadataIdAndVersion("unknownId", 1l);
+    result = instance.findByMetadataIdAndVersion("unknownId", 1L);
     assertNotNull(result);
     assertFalse(result.isPresent());
   }
@@ -136,6 +134,28 @@ public class IDataRecordDaoTest {
     List<DataRecord> result = instance.findBySchemaId(schemaId);
     assertEquals(6, result.size());
     result = instance.findBySchemaId("invalidId");
+    assertEquals(0, result.size());
+  }
+
+  /**
+   * Test of findBySchemaId method, of class IDataRecordDao.
+   */
+  @Test
+  public void testFindBySchemaIdWithPage() {
+    System.out.println("findBySchemaId");
+    String schemaId = "schemaId";
+    int totalNoOfHits = 6;
+    int reducedPageSize = 4;
+    Pageable page1 = PageRequest.of(0, 20);
+    List<DataRecord> result = instance.findBySchemaId(schemaId, page1);
+    assertEquals(totalNoOfHits, result.size());
+    page1 = PageRequest.of(0, reducedPageSize);
+    result = instance.findBySchemaId(schemaId, page1);
+    assertEquals(reducedPageSize, result.size());
+     page1 = PageRequest.of(1, reducedPageSize);
+    result = instance.findBySchemaId(schemaId, page1);
+    assertEquals(totalNoOfHits - reducedPageSize, result.size());
+   result = instance.findBySchemaId("invalidId", page1);
     assertEquals(0, result.size());
   }
 
@@ -277,7 +297,8 @@ public class IDataRecordDaoTest {
     DataRecord dataRecord = new DataRecord();
     dataRecord.setDocumentHash(documentHash);
     dataRecord.setMetadataId(metadataId);
-    dataRecord.setVersion(Long.parseLong(version));
+    dataRecord.setVersion(Long.valueOf(version));
+    dataRecord.setSchemaVersion(1L);
     dataRecord.setSchemaId(schemaId);
     dataRecord.setLastUpdate(instant);
     dataRecord.setMetadataDocumentUri(metadataDocumentUri);

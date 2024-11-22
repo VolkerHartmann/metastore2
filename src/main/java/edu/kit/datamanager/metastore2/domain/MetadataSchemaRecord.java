@@ -24,25 +24,21 @@ import edu.kit.datamanager.entities.EtagSupport;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.util.json.CustomInstantDeserializer;
 import edu.kit.datamanager.util.json.CustomInstantSerializer;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.http.MediaType;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
-import javax.persistence.Transient;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import lombok.Data;
-import org.springframework.http.MediaType;
 
 /**
+ * Record for a metadata document.
  *
  * @author jejkal
  */
@@ -51,9 +47,9 @@ import org.springframework.http.MediaType;
 @Data
 public class MetadataSchemaRecord implements EtagSupport, Serializable {
 
-  public final static String RESOURCE_TYPE = "application/vnd.datamanager.schema-record+json";
+  public static final String RESOURCE_TYPE = "application/vnd.datamanager.schema-record+json";
 
-  public final static MediaType METADATA_SCHEMA_RECORD_MEDIA_TYPE = MediaType.valueOf(RESOURCE_TYPE);
+  public static final MediaType METADATA_SCHEMA_RECORD_MEDIA_TYPE = MediaType.valueOf(RESOURCE_TYPE);
 
   public enum SCHEMA_TYPE {
     JSON,
@@ -63,8 +59,8 @@ public class MetadataSchemaRecord implements EtagSupport, Serializable {
   @Id
   @NotBlank(message = "The unqiue identifier of the schema used in the metadata repository for identifying the schema.")
   private String schemaId;
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "identifier_id", referencedColumnName = "id")
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "identifier_id", referencedColumnName = "id")
   @NotBlank(message = "A globally unique identifier pointing to this record, e.g. DOI, Handle, PURL.")
   private ResourceIdentifier pid;
   @NotBlank(message = "The schema version. The version is set by the schema registry and cannot be provided manually. Typically, a new schema version is only for metadata changes via PUT. In a few cases, \"\n"
@@ -96,6 +92,8 @@ public class MetadataSchemaRecord implements EtagSupport, Serializable {
   private Instant lastUpdate;
   @Transient
   private final Set<AclEntry> acl = new HashSet<>();
+  @NotBlank(message = "The uri of the license, e.g. for Apache-2.0 license this would be 'https://spdx.org/licenses/Apache-2.0'.")
+  private String licenseUri;
   @NotBlank(message = "The schema document uri, e.g. pointing to a local file.")
   private String schemaDocumentUri;
   @NotBlank(message = "The SHA-1 hash of the associated schema file. The hash is used for comparison while synchonization.")
@@ -107,33 +105,39 @@ public class MetadataSchemaRecord implements EtagSupport, Serializable {
 
   /**
    * Set new access control list.
+   *
    * @param newAclList new list with acls.
    */
   public void setAcl(Set<AclEntry> newAclList) {
-    acl.clear();
-    if (newAclList != null) {
-      acl.addAll(newAclList);
+    if (acl != newAclList) {
+      acl.clear();
+      if (newAclList != null) {
+        acl.addAll(newAclList);
+      }
     }
   }
+
   /**
    * Set creation date (truncated to milliseconds).
+   *
    * @param instant creation date
    */
   public void setCreatedAt(Instant instant) {
     if (instant != null) {
-    createdAt = instant.truncatedTo(ChronoUnit.MILLIS);
+      createdAt = instant.truncatedTo(ChronoUnit.MILLIS);
     } else {
       createdAt = null;
     }
   }
-  
+
   /**
    * Set update date (truncated to milliseconds).
+   *
    * @param instant update date
    */
   public void setLastUpdate(Instant instant) {
     if (instant != null) {
-    lastUpdate = instant.truncatedTo(ChronoUnit.MILLIS);
+      lastUpdate = instant.truncatedTo(ChronoUnit.MILLIS);
     } else {
       lastUpdate = null;
     }

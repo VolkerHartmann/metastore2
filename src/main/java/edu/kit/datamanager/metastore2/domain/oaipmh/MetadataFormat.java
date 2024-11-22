@@ -16,13 +16,19 @@
 package edu.kit.datamanager.metastore2.domain.oaipmh;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.io.Serializable;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.validation.constraints.NotBlank;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
+ * Record for OAI-PMH holding
+ * <ul>
+ * <li> prefix </li>
+ * <li> schema </li>
+ * <li> namespace </li> </ul>
  *
  * @author jejkal
  */

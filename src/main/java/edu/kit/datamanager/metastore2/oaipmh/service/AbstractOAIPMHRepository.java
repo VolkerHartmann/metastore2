@@ -16,20 +16,15 @@
 package edu.kit.datamanager.metastore2.oaipmh.service;
 
 import edu.kit.datamanager.metastore2.oaipmh.util.OAIPMHBuilder;
+import org.openarchives.oai._2.DeletedRecordType;
+import org.openarchives.oai._2.DescriptionType;
+import org.openarchives.oai._2.GranularityType;
+import org.slf4j.LoggerFactory;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.TimeZone;
-import org.openarchives.oai._2.DeletedRecordType;
-import org.openarchives.oai._2.DescriptionType;
-import org.openarchives.oai._2.GranularityType;
-import static org.openarchives.oai._2.VerbType.GET_RECORD;
-import static org.openarchives.oai._2.VerbType.IDENTIFY;
-import static org.openarchives.oai._2.VerbType.LIST_IDENTIFIERS;
-import static org.openarchives.oai._2.VerbType.LIST_METADATA_FORMATS;
-import static org.openarchives.oai._2.VerbType.LIST_RECORDS;
-import static org.openarchives.oai._2.VerbType.LIST_SETS;
-import org.slf4j.LoggerFactory;
 
 /**
  * An abstract OAI-PMH repository implementation that can be used to implement
@@ -40,6 +35,8 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractOAIPMHRepository {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(AbstractOAIPMHRepository.class);
+    
+    private static final String VERSION = "2.0";
 
     private String name = null;
     private DateFormat df = null;
@@ -49,7 +46,7 @@ public abstract class AbstractOAIPMHRepository {
      *
      * @param repositoryName The repository name.
      */
-    public AbstractOAIPMHRepository(String repositoryName) {
+    protected AbstractOAIPMHRepository(String repositoryName) {
         name = repositoryName;
     }
 
@@ -212,7 +209,7 @@ public abstract class AbstractOAIPMHRepository {
      * @return The supported OAI-PMH protocol version.
      */
     public String getProtocolVersion() {
-        return "2.0";
+        return VERSION;
     }
 
     /**
@@ -225,9 +222,9 @@ public abstract class AbstractOAIPMHRepository {
             switch (getGranularity()) {
                 case YYYY_MM_DD:
                     df = new SimpleDateFormat("yyyy-MM-dd");
+                    break;
                 default:
                     df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-                    break;
             }
             df.setTimeZone(TimeZone.getTimeZone("UTC"));
         }

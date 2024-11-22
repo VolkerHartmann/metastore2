@@ -17,21 +17,20 @@ package edu.kit.datamanager.metastore2.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaException;
-import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.*;
 import com.networknt.schema.SpecVersion.VersionFlag;
-import com.networknt.schema.SpecVersionDetector;
-import com.networknt.schema.ValidationMessage;
 import edu.kit.datamanager.clients.SimpleServiceClient;
 import edu.kit.datamanager.metastore2.exception.JsonValidationException;
-import java.io.InputStream;
-import java.net.URI;
-import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+
+import java.io.InputStream;
+import java.net.URI;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Utility class for handling json documents
@@ -44,7 +43,7 @@ public class JsonUtils {
   public static final String ERROR_READING_INPUT_STREAM = "Error reading from inputstream: ";
   public static final String ERROR_VALIDATING_JSON_DOCUMENT = "Error validating json!";
   public static final String MISSING_SCHEMA_VERSION = "No version defined!";
-  public static final String UNKNOWN_JSON_SCHEMA = "Error: Unknown JSON schema version:";
+  public static final String UNKNOWN_JSON_SCHEMA = "Error: Unknown or not supported JSON schema version:";
   /**
    * Logger for messages.
    */
@@ -57,12 +56,16 @@ public class JsonUtils {
    * Mapper for parsing json.
    */
   private static final ObjectMapper mapper = new ObjectMapper();
+  
+  JsonUtils() {
+    //Utility class
+  }
 
   /**
    * Validate JSON schema document based on detected JSON schema or version
-   * 2019-09 if no schema is defined.
+   * 2020-12 if no schema is defined.
    *
-   * @see http://json-schema.org/draft/2019-09/json-schema-core.html
+   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
    * @param jsonSchemaStream schema document as string
    * @return true if schema is valid.
    */
@@ -74,9 +77,9 @@ public class JsonUtils {
 
   /**
    * Validate JSON schema document based on detected JSON schema or version
-   * 2019-09 if no schema is defined.
+   * 2020-12 if no schema is defined.
    *
-   * @see http://json-schema.org/draft/2019-09/json-schema-core.html
+   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
    * @param jsonSchema schema document as string
    * @return true if schema is valid.
    */
@@ -89,7 +92,7 @@ public class JsonUtils {
   /**
    * Validate JSON schema document based on JSON Schema.
    *
-   * @see http://json-schema.org/draft/2019-09/json-schema-core.html
+   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
    * @see VersionFlag
    * @param jsonSchemaStream schema document as string
    * @param version use specific version
@@ -104,7 +107,7 @@ public class JsonUtils {
   /**
    * Validate JSON schema document based on JSON Schema.
    *
-   * @see http://json-schema.org/draft/2019-09/json-schema-core.html
+   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
    * @see VersionFlag
    * @param jsonSchema schema document as string
    * @param version use specific version
@@ -115,8 +118,7 @@ public class JsonUtils {
     try {
       // validate schema with meta schema.
       validateJson(jsonSchema, getSchema(version));
-      JsonSchema schema = getJsonSchemaFromString(jsonSchema, version);
-      checkSchema(schema);
+      getJsonSchemaFromString(jsonSchema, version);
     } catch (Exception ex) {
       LOG.error("Unknown error", ex);
       String errorMessage = ex.getMessage();
@@ -183,7 +185,6 @@ public class JsonUtils {
     StringBuilder errorMessage = new StringBuilder(ERROR_VALIDATING_JSON_DOCUMENT);
     try {
       JsonSchema jsonSchemaFromString = getJsonSchemaFromString(jsonSchema, version);
-      checkSchema(jsonSchemaFromString);
       JsonNode jsonNode = getJsonNodeFromString(jsonDocument);
       Set<ValidationMessage> validate = jsonSchemaFromString.validate(jsonNode);
       for (ValidationMessage message : validate) {
@@ -211,7 +212,7 @@ public class JsonUtils {
    * @throws JsonValidationException if schema is not in correct format.
    */
   private static VersionFlag determineSchemaVersion(String jsonSchema) throws JsonValidationException {
-    VersionFlag version = VersionFlag.V201909;
+    VersionFlag version = VersionFlag.V202012;
     try {
       JsonNode jsonNode = getJsonNodeFromString(jsonSchema);
       version = SpecVersionDetector.detect(jsonNode);
@@ -235,7 +236,18 @@ public class JsonUtils {
    */
   protected static JsonSchema getJsonSchemaFromString(String schemaContent, VersionFlag version) throws Exception {
     JsonSchemaFactory factory = JsonSchemaFactory.getInstance(version);
-    return factory.getSchema(schemaContent);
+    JsonSchema schema = factory.getSchema(schemaContent);
+    checkSchema(schema);
+    Optional<VersionFlag> optionalVersionFound = SpecVersionDetector.detectOptionalVersion(schema.getSchemaNode(), false);
+    VersionFlag versionFound = version;
+    if (!optionalVersionFound.isEmpty()) {
+      versionFound = optionalVersionFound.get();
+    }
+    if (!Objects.equals(version, versionFound)) {
+      LOG.error("Unknown MetaSchema or not matching: Expected: '{}' <-> Found: '{}'", version, versionFound);
+      throw new JsonSchemaException("Unknown MetaSchema or not matching: Expected: '" + version + "' <-> Found: '" + versionFound + "'");
+    }
+    return schema;
   }
 
   /**
@@ -267,12 +279,12 @@ public class JsonUtils {
   }
 
   /**
-   * Test wether the schema has at least one validator.
+   * Test whether the schema has at least one validator.
    *
    * @param schema schema to check
    */
   protected static void checkSchema(JsonSchema schema) {
-    if (schema.getValidators().isEmpty()) {
+    if (schema.getSchemaNode().isEmpty()) {
       throw new JsonValidationException(EMPTY_SCHEMA_DETECTED);
     }
   }
@@ -290,19 +302,13 @@ public class JsonUtils {
     try {
       switch (version) {
         case V4:
-          resourceUrl = new URI("http://json-schema.org/draft-04/schema");
-          break;
         case V6:
-          resourceUrl = new URI("http://json-schema.org/draft-06/schema");
-          break;
         case V7:
-          resourceUrl = new URI("http://json-schema.org/draft-07/schema");
-          break;
         case V201909:
-          resourceUrl = new URI("http://json-schema.org/draft/2019-09/schema");
+        case V202012:
+          resourceUrl = new URI(version.getId());
           break;
         default:
-          resourceUrl = new URI("http://unknown.json.schema");
           String message = String.format(UNKNOWN_JSON_SCHEMA + " '%s'", version);
           LOG.error(message);
           throw new JsonValidationException(message);
@@ -312,8 +318,8 @@ public class JsonUtils {
               .accept(MediaType.TEXT_PLAIN)
               .getResource(String.class);
     } catch (Throwable tw) {
-      LOG.error("Error reading URI '" + resourceUrl.toString() + "'", tw);
-      throw new JsonValidationException("Error downloading resource from '" + resourceUrl.toString() + "'! -> " + tw.getMessage(), tw);
+      LOG.error("Error reading URI '" + resourceUrl + "'", tw);
+      throw new JsonValidationException("Error downloading resource from '" + resourceUrl + "'! -> " + tw.getMessage(), tw);
     }
 
     return content;

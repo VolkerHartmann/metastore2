@@ -16,14 +16,16 @@
 package edu.kit.datamanager.metastore2.dao;
 
 import edu.kit.datamanager.metastore2.domain.SchemaSynchronizationEvent;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 /**
+ * DAO for synchronization events.
  *
  * @author jejkal
  */
-public interface ISchemaSynchronizationEventDao extends JpaRepository<SchemaSynchronizationEvent, Long>{
+public interface ISchemaSynchronizationEventDao extends JpaRepository<SchemaSynchronizationEvent, Long> {
 
-  public Optional<SchemaSynchronizationEvent> findBySourceName(String sourceName);
+  Optional<SchemaSynchronizationEvent> findBySourceName(String sourceName);
 }

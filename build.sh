@@ -17,7 +17,7 @@
 ################################################################################
 function usage {
 ################################################################################
-  echo "Script for creating metastore service."
+  echo "Script for creating $REPO_NAME service."
   echo "USAGE:"
   echo "  $0 [/path/to/installation/dir]"
   echo "IMPORTANT: Please enter an empty or new directory as installation directory."
@@ -48,33 +48,32 @@ function checkParameters {
   INSTALLATION_DIRECTORY=$1
 
   # Check if directory exists
-  if [ ! -d "$INSTALLATION_DIRECTORY" ]; then
+  if [ ! -d "$INSTALLATION_DIRECTORY" ]; then 
     # Create directory if it doesn't exists.
-    mkdir -p "$INSTALLATION_DIRECTORY"
-    if [ $? -ne 0 ]; then
+    if ! mkdir -p "$INSTALLATION_DIRECTORY"; then
       echo "Error creating directory '$INSTALLATION_DIRECTORY'!"
       echo "Please make sure that you have the correct access permissions for the specified directory."
       exit 1
     fi
   fi
   # Check if directory is empty
-  if [ ! -z "$(ls -A "$INSTALLATION_DIRECTORY")" ]; then
+  if [ -n "$(ls -A "$INSTALLATION_DIRECTORY")" ]; then
      echo "Directory '$INSTALLATION_DIRECTORY' is not empty!"
      echo "Please enter an empty or a new directory!"
      exit 1
   fi
   # Convert variable of installation directory to an absolute path
-    cd "$INSTALLATION_DIRECTORY"
-    INSTALLATION_DIRECTORY=`pwd`
-    cd "$ACTUAL_DIR"
+  cd "$INSTALLATION_DIRECTORY" || { echo "Failure changing to directory $INSTALLATION_DIRECTORY"; exit 1; }
+  INSTALLATION_DIRECTORY=$(pwd)
+  cd "$ACTUAL_DIR" || { echo "Failure changing to directory $ACTUAL_DIR"; exit 1; }
 }
 
 ################################################################################
 function printInfo {
 ################################################################################
-echo "---------------------------------------------------------------------------"
-echo $*
-echo "---------------------------------------------------------------------------"
+  echo "---------------------------------------------------------------------------"
+  echo "$*"
+  echo "---------------------------------------------------------------------------"
 }
 
 ################################################################################
@@ -88,8 +87,7 @@ testForCommands="chmod cp dirname find java javac mkdir git"
 
 for command in $testForCommands
 do 
-  type $command >> /dev/null
-  if [ $? -ne 0 ]; then
+  if ! type "$command" >> /dev/null; then
     echo "Error: command '$command' is not installed!"
     exit 1
   fi
@@ -101,16 +99,16 @@ done
 ACTUAL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 ################################################################################
-# Check parameters
-################################################################################
-checkParameters $*
-
-################################################################################
 # Determine repo name 
 ################################################################################
-REPO_NAME=`./gradlew -q printProjectName`
+REPO_NAME=$(./gradlew -q printProjectName)
 # Use only last line
 REPO_NAME=${REPO_NAME##*$'\n'}
+
+################################################################################
+# Check parameters
+################################################################################
+checkParameters "$*"
 
 printInfo "Build microservice of $REPO_NAME at '$INSTALLATION_DIRECTORY'"
 
@@ -122,10 +120,18 @@ echo Build service...
 
 
 echo "Copy configuration to '$INSTALLATION_DIRECTORY'..."
-find ./settings -name application-default.properties -exec cp '{}' "$INSTALLATION_DIRECTORY"/application.properties \;
+find ./settings -name application-default.properties -exec cp '{}' "$INSTALLATION_DIRECTORY"/application.properties.temp \;
+
+################################################################################
+# Replace constants
+################################################################################
+while IFS='' read -r line; do
+    echo "${line//INSTALLATION_DIR/$INSTALLATION_DIRECTORY}"
+done < "$INSTALLATION_DIRECTORY"/application.properties.temp > "$INSTALLATION_DIRECTORY"/application.properties
+rm "$INSTALLATION_DIRECTORY"/application.properties.temp
 
 echo "Copy jar file to '$INSTALLATION_DIRECTORY'..."
-find . -name "$REPO_NAME*.jar" -exec cp '{}' "$INSTALLATION_DIRECTORY" \;
+find build/libs -name "$REPO_NAME*.jar" -exec cp '{}' "$INSTALLATION_DIRECTORY" \;
 
 echo "Create config directory"
 mkdir "$INSTALLATION_DIRECTORY"/config
@@ -140,38 +146,42 @@ mkdir "$INSTALLATION_DIRECTORY"/lib
 ################################################################################
 printInfo "Create run script ..."
 
-cd "$INSTALLATION_DIRECTORY"
+cd "$INSTALLATION_DIRECTORY" || { echo "Failure changing to directory $INSTALLATION_DIRECTORY"; exit 1; }
 
 # Determine name of jar file.
-jarFile=(`ls $REPO_NAME*.jar`)
+jarFile=($(ls $REPO_NAME*.jar))
+# Create soft link for jar file
+ln -s ${jarFile[0]} $REPO_NAME.jar
 
-echo "#!/bin/bash"                                                                              >  run.sh
-echo "################################################################################"         >> run.sh
-echo "# Run microservice '$REPO_NAME'"                                                          >> run.sh
-echo "# /"                                                                                      >> run.sh
-echo "# |- application.properties    - Default configuration for microservice"                  >> run.sh
-echo "# |- '$REPO_NAME'*.jar"        - Microservice                                             >> run.sh
-echo "# |- run.sh                    - Start script    "                                        >> run.sh
-echo "# |- lib/                      - Directory for plugins (if supported)"                    >> run.sh
-echo "# |- config/ "                                                                            >> run.sh
-echo "#    |- application.properties - Overwrites default configuration (optional)"             >> run.sh
-echo "################################################################################"         >> run.sh
-echo " "                                                                                        >> run.sh
-echo "################################################################################"         >> run.sh
-echo "# Define jar file"                                                                        >> run.sh
-echo "################################################################################"         >> run.sh
-echo jarFile=$jarFile                                                                           >> run.sh
-echo " "                                                                                        >> run.sh
-echo "################################################################################"         >> run.sh
-echo "# Determine directory of script."                                                         >> run.sh
-echo "################################################################################"         >> run.sh
-echo 'ACTUAL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"'           >> run.sh
-echo 'cd "$ACTUAL_DIR"'                                                                         >> run.sh
-echo " "                                                                                        >> run.sh
-echo "################################################################################"         >> run.sh
-echo "# Start micro service"                                                                    >> run.sh
-echo "################################################################################"         >> run.sh
-echo 'java -cp ".:$jarFile" -Dloader.path="file://$ACTUAL_DIR/$jarFile,./lib/,." -jar $jarFile' >> run.sh
+{
+  echo "#!/bin/bash"                                                                             
+  echo "################################################################################"        
+  echo "# Run microservice '$REPO_NAME'"                                                         
+  echo "# /"                                                                                     
+  echo "# |- application.properties    - Default configuration for microservice"                 
+  echo "# |- '$REPO_NAME'*.jar         - Microservice"
+  echo "# |- run.sh                    - Start script"                                       
+  echo "# |- lib/                      - Directory for plugins (if supported)"                   
+  echo "# |- config/"                                                                           
+  echo "#    |- application.properties - Overwrites default configuration (optional)"            
+  echo "################################################################################"        
+  echo " "                                                                                       
+  echo "################################################################################"        
+  echo "# Define jar file"                                                                       
+  echo "################################################################################"        
+  echo "jarFile=${REPO_NAME}.jar"
+  echo " "                                                                                       
+  echo "################################################################################"        
+  echo "# Determine directory of script."                                                        
+  echo "################################################################################"        
+  echo "ACTUAL_DIR=\"\$( cd \"\$( dirname \"\${BASH_SOURCE[0]}\" )\" >/dev/null 2>&1 && pwd )\""
+  echo "cd \"\$ACTUAL_DIR\""                                                                       
+  echo " "                                                                                       
+  echo "################################################################################"        
+  echo "# Start micro service"                                                                   
+  echo "################################################################################"        
+  echo "java -cp \".:\$jarFile\" -Dloader.path=\"file://\$ACTUAL_DIR/\$jarFile,./lib/,.\" -jar \$jarFile \$*"
+} > run.sh
 
 # make script executable
 chmod 755 run.sh

@@ -15,6 +15,7 @@
  */
 package edu.kit.datamanager.metastore2.web;
 
+import edu.kit.datamanager.metastore2.domain.ElasticWrapper;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,35 +26,34 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import java.net.URISyntaxException;
-import java.time.Instant;
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
+import org.springframework.boot.actuate.info.InfoContributor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.List;
+
 /**
- *
- * @author jejkal
+ * Interface for metadata documents controller.
+ * @deprecated version 3 please use IMetadataController_v2 instead
  */
 @ApiResponses(value = {
   @ApiResponse(responseCode = "401", description = "Unauthorized is returned if authorization in required but was not provided."),
   @ApiResponse(responseCode = "403", description = "Forbidden is returned if the caller has no sufficient privileges.")})
-public interface IMetadataController {
+@Deprecated
+public interface IMetadataController extends InfoContributor {
 
   @Operation(summary = "Ingest a new metadata document and its record.", description = "This endpoint allows to create a new metadata record by providing the record metadata as JSON document as well as the actual metadata as file upload. The record metadata mainly contains "
           + "the resource identifier the record is associated with as well as the identifier of the schema which can be used to validate the provided metadata document. In the current version, both parameters are required. If no schema version is given (if 'INTERNAL' reference"
@@ -64,10 +64,10 @@ public interface IMetadataController {
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no schema for the provided schema id was found."),
             @ApiResponse(responseCode = "409", description = "A Conflict is returned, if there is already a record for the related resource id and the provided schema id.")})
 
-  @RequestMapping(path = "", method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+  @RequestMapping(value = {"","/"}, method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
   @ResponseBody
-  public ResponseEntity createRecord(
-          @Parameter(description = "Json representation of the metadata record.", required = true) @RequestPart(name = "record", required = true) final MultipartFile record,
+  ResponseEntity createRecord(
+          @Parameter(description = "Json representation of the metadata record.", required = true) @RequestPart(name = "record", required = true) final MultipartFile metadataRecord,
           @Parameter(description = "The metadata document associated with the record. The document must match the schema selected by the record.", required = true) @RequestPart(name = "document", required = true) final MultipartFile document,
           final HttpServletRequest request,
           final HttpServletResponse response,
@@ -81,12 +81,36 @@ public interface IMetadataController {
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datamanager.metadata-record+json"})
-  @ResponseBody
-  public ResponseEntity getRecordById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-          @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
-          WebRequest wr,
-          HttpServletResponse hsr);
+  ResponseEntity<MetadataRecord> getRecordById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
+                                               @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                               WebRequest wr,
+                                               HttpServletResponse hsr);
 
+  @Operation(summary = "Get a metadata record by id.", description = "Obtain a single record by its resource identifier. "
+          + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
+          + "by providing a version number as request parameter.",
+          responses = {
+            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = MetadataRecord.class))),
+            @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
+
+  @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datamanager.acl+json"})
+  ResponseEntity<ElasticWrapper> getAclById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
+                                       @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                       WebRequest wr,
+                                       HttpServletResponse hsr);
+
+  @Operation(summary = "Get a landing page by id.", description = "Obtain a single record by its resource identifier. "
+          + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
+          + "by providing a version number as request parameter.",
+          responses = {
+            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = MetadataRecord.class))),
+            @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
+
+  @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"text/html"})
+  ModelAndView getLandingpageById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
+                                  @Parameter(description = "The version of the metadata document. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                  WebRequest wr,
+                                  HttpServletResponse hsr);
   @Operation(summary = "Get a metadata document by record identifier.", description = "Obtain a single metadata document identified by its resource identifier."
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
           + "Furthermore, a specific version of the metadata document can be returned by providing a version number as request parameter.",
@@ -96,10 +120,10 @@ public interface IMetadataController {
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET})
   @ResponseBody
-  public ResponseEntity getMetadataDocumentById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-          @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
-          WebRequest wr,
-          HttpServletResponse hsr);
+  ResponseEntity getMetadataDocumentById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
+                                         @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                         WebRequest wr,
+                                         HttpServletResponse hsr);
 
   @Operation(summary = "Get all records.", description = "List all records in a paginated and sorted form. The result can be refined by providing id, specific related resource id(s) and/or metadata schema id(s) valid records must match. "
           + "If 'id' is provided all available versions for given 'id' will be returned and all other parameters will be ignored."
@@ -108,17 +132,17 @@ public interface IMetadataController {
           + "at the provided date, 3) Providing both returns all records updated within the provided date range."
           + "If no parameters are provided, all accessible records are listed. If versioning is enabled, only the most recent version is listed (except in case of 'id' is provided).",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK and a list of records or an empty list of no record matches.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = MetadataRecord.class))))})
-  @RequestMapping(value = {""}, method = {RequestMethod.GET})
+            @ApiResponse(responseCode = "200", description = "OK and a list of records or an empty list if no record matches.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = MetadataRecord.class))))})
+  @RequestMapping(value = {"", "/"}, method = {RequestMethod.GET})
   @PageableAsQueryParam
   @ResponseBody
-  public ResponseEntity<List<MetadataRecord>> getRecords(
+  ResponseEntity<List<MetadataRecord>> getRecords(
           @Parameter(description = "ID of the metadata document.", required = false) @RequestParam(value = "id", required = false) String id,
           @Parameter(description = "A list of related resource identifiers.", required = false) @RequestParam(value = "resourceId", required = false) List<String> relatedIds,
           @Parameter(description = "A list of metadata schema identifiers.", required = false) @RequestParam(value = "schemaId", required = false) List<String> schemaIds,
           @Parameter(description = "The UTC time of the earliest update of a returned record.", required = false) @RequestParam(name = "from", required = false) Instant updateFrom,
           @Parameter(description = "The UTC time of the latest update of a returned record.", required = false) @RequestParam(name = "until", required = false) Instant updateUntil,
-          @PageableDefault(sort = {"lastUpdate"}, direction = Sort.Direction.DESC) Pageable pgbl,
+          @Parameter(hidden = true) @PageableDefault(sort = {"lastUpdate"}, direction = Sort.Direction.DESC) Pageable pgbl,
           WebRequest wr,
           HttpServletResponse hsr,
           UriComponentsBuilder ucb);
@@ -130,13 +154,13 @@ public interface IMetadataController {
                     + "The updated record is returned in the response.", content = @Content(schema = @Schema(implementation = MetadataRecord.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided metadata record is invalid or if the validation using the provided schema failed."),
             @ApiResponse(responseCode = "404", description = "Not Found is returned if no record for the provided id or no schema for the provided schema id was found.")})
-  @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = {"application/json"})
+  @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {"application/json"})
   @Parameters({
     @Parameter(name = "If-Match", description = "ETag of the object. Please use quotation marks!", required = true, in = ParameterIn.HEADER)
   })
   ResponseEntity updateRecord(
           @Parameter(description = "The resource identifier.", required = true) @PathVariable("id") String id,
-          @Parameter(description = "JSON representation of the metadata record.", required = false) @RequestPart(name = "record", required = false) final MultipartFile record,
+          @Parameter(description = "JSON representation of the metadata record.", required = false) @RequestPart(name = "record", required = false) final MultipartFile metadataRecord,
           @Parameter(description = "The metadata document associated with the record. The document must match the schema defined in the record.", required = false) @RequestPart(name = "document", required = false) final MultipartFile document,
           final WebRequest request,
           final HttpServletResponse response,
@@ -153,5 +177,5 @@ public interface IMetadataController {
     @Parameter(name = "If-Match", description = "ETag of the object. Please use quotation marks!", required = true, in = ParameterIn.HEADER)
   })
   @ResponseBody
-  public ResponseEntity deleteRecord(@Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") String id, WebRequest wr, HttpServletResponse hsr);
+  ResponseEntity deleteRecord(@Parameter(description = "The resource identifier.", required = true) @PathVariable(value = "id") String id, WebRequest wr, HttpServletResponse hsr);
 }

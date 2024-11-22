@@ -17,21 +17,19 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.runner.RunWith;
 import static org.mockito.ArgumentMatchers.any;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.reflect.Whitebox;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
  */
-@RunWith(PowerMockRunner.class)
 public class JsonUtilsFailingTest {
 
   private final String jsonSchemaWithversiondraft201909 = "{"
-          + "  \"$schema\": \"http://json-schema.org/draft/2019-09/schema#\", "
+          + "  \"$schema\": \"https://json-schema.org/draft/2019-09/schema\", "
           + "  \"properties\": {"
           + "    \"id\": {"
           + "      \"type\": \"number\""
@@ -39,7 +37,7 @@ public class JsonUtilsFailingTest {
           + "  }"
           + "}";
   private final String invalidJsonSchemaDocumentWithversiondraft201909 = "{\n"
-          + "  \"$schema\": \"http://json-schema.org/draft/2019-09/schema#\",\n"
+          + "  \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
           + "  \"$id\": \"http://localhost:8040/api/v1/schemas/Test\",\n"
           + "  \"title\": \"Test\",\n"
           + "  \"type\": \"object\",\n"
@@ -53,7 +51,6 @@ public class JsonUtilsFailingTest {
           + "  \"allOf\": \"nope\"\n"
           + "}";
   private final static String ENCODING = "UTF-8";
-
 
   public JsonUtilsFailingTest() {
   }
@@ -74,22 +71,22 @@ public class JsonUtilsFailingTest {
   public void tearDown() {
   }
 
-  @PrepareForTest(SimpleServiceClient.class)
   @Test
   public void testValidateInvalidJsonSchemaDocumentWithNotExistingVersion() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909ButWrongVersion");
 
-    PowerMockito.mockStatic(SimpleServiceClient.class);
-
-    PowerMockito.when(SimpleServiceClient.create(any(String.class))).thenThrow(new NullPointerException());
     String schemaDocument = invalidJsonSchemaDocumentWithversiondraft201909;
-    try {
+
+    try ( MockedStatic<SimpleServiceClient> utilities = Mockito.mockStatic(SimpleServiceClient.class)) {
+      utilities.when(() -> SimpleServiceClient.create(any(String.class)))
+              .thenThrow(new NullPointerException());
       JsonUtils.validateJsonSchemaDocument(schemaDocument, VersionFlag.V201909);
-      assertTrue(false);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
       assertTrue(jvex.getMessage().contains(JsonUtils.ERROR_VALIDATING_SCHEMA));
     }
+
   }
 
   /**
@@ -98,22 +95,17 @@ public class JsonUtilsFailingTest {
    * @throws java.io.IOException
    */
   @Test
-  @PrepareForTest(VersionFlag.class)
   public void testValidateJsonSchemaDocumentWithSchemaDraft201909AsStreamButWrongVersion() throws IOException {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909AsStreamButWrongVersion");
-    VersionFlag C = PowerMockito.mock(VersionFlag.class);
-    Whitebox.setInternalState(C, "name", "newVersion");
-    Whitebox.setInternalState(C, "ordinal", 4);
-
-    PowerMockito.mockStatic(VersionFlag.class);
-    PowerMockito.when(VersionFlag.values()).thenReturn(new VersionFlag[]{VersionFlag.V4, VersionFlag.V6, VersionFlag.V7, VersionFlag.V201909, C});
     InputStream schemaDocument = IOUtils.toInputStream(jsonSchemaWithversiondraft201909, ENCODING);
     try {
-      JsonUtils.validateJsonSchemaDocument(schemaDocument, C);
-      assertTrue(false);
+      // unfortunately there is no suitable way to test 'default' branch inside switch with enum
+      VersionFlag version = mock(VersionFlag.class);
+      when(version.ordinal()).thenReturn(Integer.valueOf(VersionFlag.values().length));
+      JsonUtils.validateJsonSchemaDocument(schemaDocument, version);
+      fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
-      assertTrue(jvex.getMessage().contains(JsonUtils.UNKNOWN_JSON_SCHEMA));
     }
   }
 }

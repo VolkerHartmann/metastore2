@@ -16,22 +16,25 @@
 package edu.kit.datamanager.metastore2.util;
 
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
+ * Utility class for (XML) schema documents.
  *
  * @author jejkal
  */
@@ -41,8 +44,12 @@ public class SchemaUtils {
 
   private static final int MAX_LENGTH_OF_HEADER = 100;
 
-  private static final Pattern JSON_FIRST_BYTE = Pattern.compile("(\\R\\s)*\\s*\\{\\s*\"\\$(.|\\s)*");//^\\s{\\s*\".*");
+  private static final Pattern JSON_FIRST_BYTE = Pattern.compile("(\\R\\s)*\\s*\\{\\s*\"\\$(.|\\s)*");//
   private static final Pattern XML_FIRST_BYTE = Pattern.compile("((.|\\s)*<\\?xml[^<]*)?\\s*<\\s*(\\w{2,3}:)?schema(.|\\s)*", Pattern.MULTILINE);
+
+  SchemaUtils() {
+    //Utility class
+  }
 
   /**
    * Guess type of schema document.
@@ -54,7 +61,7 @@ public class SchemaUtils {
     // Cut schema to a maximum of MAX_LENGTH_OF_HEADER characters.
     if (schema != null) {
       int length = schema.length > MAX_LENGTH_OF_HEADER ? MAX_LENGTH_OF_HEADER : schema.length;
-      String schemaAsString = new String(schema, 0, length);
+      String schemaAsString = new String(schema, 0, length, StandardCharsets.UTF_8);
       LOG.trace("Guess type for '{}'", schemaAsString);
 
       Matcher m = JSON_FIRST_BYTE.matcher(schemaAsString);
@@ -74,7 +81,40 @@ public class SchemaUtils {
     return null;
   }
 
-  public static String getTargetNamespaceFromSchema(byte[] schema) {
+  /**
+   * Guess type of schema document.
+   *
+   * @param schema schema document.
+   * @return Mimetype of document.
+   */
+  public static String guessMimetype(byte[] schema) {
+    // Cut schema to a maximum of MAX_LENGTH_OF_HEADER characters.
+    if (schema != null) {
+      int length = schema.length > MAX_LENGTH_OF_HEADER ? MAX_LENGTH_OF_HEADER : schema.length;
+      String schemaAsString = new String(schema, 0, length, StandardCharsets.UTF_8);
+      LOG.trace("Guess type for '{}'", schemaAsString);
+
+      Matcher m = JSON_FIRST_BYTE.matcher(schemaAsString);
+      if (schemaAsString.contains("{") && m.matches()) {
+          return MediaType.APPLICATION_JSON_VALUE;
+      } else {
+        if (schemaAsString.contains("<")) {
+          m = XML_FIRST_BYTE.matcher(schemaAsString);
+          if (m.matches()) {
+            return MediaType.APPLICATION_XML_VALUE;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Determine target namespace from schema.
+   * @param schema Schema document.
+   * @return Namespace.
+   */    
+   public static String getTargetNamespaceFromSchema(byte[] schema) {
     String namespace = null;
     try {
       DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -83,7 +123,7 @@ public class SchemaUtils {
       documentBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
       DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
       Document document = documentBuilder.parse(new ByteArrayInputStream(schema));
-      NamedNodeMap map = ((Element) document.getDocumentElement()).getAttributes();
+      NamedNodeMap map = document.getDocumentElement().getAttributes();
       namespace = map.getNamedItem("targetNamespace").getNodeValue();
     } catch (ParserConfigurationException | SAXException | IOException ex) {
       java.util.logging.Logger.getLogger(SchemaUtils.class.getName()).log(Level.SEVERE, null, ex);

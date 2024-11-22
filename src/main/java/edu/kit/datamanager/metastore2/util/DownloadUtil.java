@@ -17,6 +17,12 @@ package edu.kit.datamanager.metastore2.util;
 
 import edu.kit.datamanager.clients.SimpleServiceClient;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -27,11 +33,6 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
 
 /**
  * Utility class for downloading resources from internet.
@@ -53,12 +54,17 @@ public class DownloadUtil {
 
   private static final int MAX_LENGTH_OF_HEADER = 100;
 
-  private static final Pattern JSON_FIRST_BYTE = Pattern.compile("(\\R\\s)*\\s*\\{\\s*\"(.|\\s)*", Pattern.MULTILINE);//^\\s{\\s*\".*");
+  private static final Pattern JSON_FIRST_BYTE = Pattern.compile("(\\R\\s)*\\s*\\{\\s*\"(.|\\s)*", Pattern.MULTILINE);
   private static final Pattern XML_FIRST_BYTE = Pattern.compile("((.|\\s)*<\\?xml[^<]*)?\\s*<\\s*(\\w+:)?\\w+(.|\\s)*", Pattern.MULTILINE);
+
+  DownloadUtil() {
+    // Utility class
+  }
 
   /**
    * Downloads or copy the file behind the given URI and returns its path on
-   * local disc. You should delete or move the file to another location afterwards.
+   * local disc. You should delete or move the file to another location
+   * afterwards.
    *
    * @param resourceURL the given URI
    * @return the path to the created file.
@@ -86,8 +92,8 @@ public class DownloadUtil {
         }
       }
     } catch (Throwable tw) {
-      LOGGER.error("Error reading URI '" + resourceURL.toString() + "'", tw);
-      throw new CustomInternalServerError("Error downloading resource from '" + resourceURL.toString() + "'!");
+      LOGGER.error("Error reading URI '" + resourceURL + "'", tw);
+      throw new CustomInternalServerError("Error downloading resource from '" + resourceURL + "'!");
     }
     downloadedFile = fixFileExtension(downloadedFile);
 
@@ -104,19 +110,17 @@ public class DownloadUtil {
     Path returnFile = pathToFile;
     Path renamedFile = pathToFile;
     try {
-      if ((pathToFile != null) && (pathToFile.toFile().exists())) {
+      if ((pathToFile != null) && pathToFile.toFile().exists()) {
         String contentOfFile = FileUtils.readFileToString(pathToFile.toFile(), StandardCharsets.UTF_8);
-        String newExtension = guessFileExtension(contentOfFile.getBytes());
-        if (newExtension != null) {
-          if (!pathToFile.toString().endsWith(newExtension)) {
-            renamedFile = Paths.get(pathToFile.toString() + newExtension);
-            FileUtils.moveFile(pathToFile.toFile(), renamedFile.toFile());
-            returnFile = renamedFile;
-          }
+        String newExtension = guessFileExtension(contentOfFile.getBytes(StandardCharsets.UTF_8));
+        if ((newExtension != null) && !pathToFile.toString().endsWith(newExtension)) {
+          renamedFile = Paths.get(pathToFile + newExtension);
+          FileUtils.moveFile(pathToFile.toFile(), renamedFile.toFile());
+          returnFile = renamedFile;
         }
       }
     } catch (IOException ex) {
-      LOGGER.error("Error moving file '{}' to '{}'.", pathToFile.toString(), renamedFile.toString());
+      LOGGER.error("Error moving file '{}' to '{}'.", pathToFile, renamedFile);
     }
     return returnFile;
   }
@@ -132,8 +136,8 @@ public class DownloadUtil {
    */
   public static Path createTempFile(String prefix, String suffix) {
     Path tempFile = null;
-    prefix = ((prefix == null) || (prefix.trim().isEmpty())) ? DEFAULT_PREFIX : prefix;
-    suffix = ((suffix == null) || (suffix.trim().isEmpty())) ? DEFAULT_SUFFIX : suffix;
+    prefix = ((prefix == null) || prefix.trim().isEmpty()) ? DEFAULT_PREFIX : prefix;
+    suffix = ((suffix == null) || suffix.trim().isEmpty()) ? DEFAULT_SUFFIX : suffix;
     try {
       tempFile = Files.createTempFile(prefix, suffix);
     } catch (IllegalArgumentException | IOException ioe) {
@@ -152,15 +156,14 @@ public class DownloadUtil {
     try {
       Files.deleteIfExists(tempFile);
     } catch (IOException ioe) {
-      throw new CustomInternalServerError("Error removing file '" + tempFile.toString() + "'!");
+      throw new CustomInternalServerError("Error removing file '" + tempFile + "'!");
     }
-    return;
   }
 
   private static String guessFileExtension(byte[] schema) {
     // Cut schema to a maximum of MAX_LENGTH_OF_HEADER characters.
     int length = schema.length > MAX_LENGTH_OF_HEADER ? MAX_LENGTH_OF_HEADER : schema.length;
-    String schemaAsString = new String(schema, 0, length);
+    String schemaAsString = new String(schema, 0, length, StandardCharsets.UTF_8);
     LOGGER.trace("Guess type for '{}'", schemaAsString);
 
     Matcher m = JSON_FIRST_BYTE.matcher(schemaAsString);

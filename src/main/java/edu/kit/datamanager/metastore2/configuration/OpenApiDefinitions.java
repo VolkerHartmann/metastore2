@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2020 Karlsruhe Institute of Technology.
  *
@@ -16,17 +15,16 @@
  */
 package edu.kit.datamanager.metastore2.configuration;
 
-import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- *
+ * Configuration for OAI (swagger)
  * @author jejkal
  */
 @Configuration
@@ -38,7 +36,7 @@ public class OpenApiDefinitions{
             .components(new Components())
             .info(new Info().title("MetaStore Microservice - RESTful API").
                     description("This webpage describes the RESTful interface of the KIT Data Manager MetaStore Microservice.").
-                    version("0.1").
+                    version("2.0.0").
                     contact(
                             new Contact().
                                     name("KIT Data Manager Support").

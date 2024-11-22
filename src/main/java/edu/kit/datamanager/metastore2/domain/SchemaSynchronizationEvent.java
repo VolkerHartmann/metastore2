@@ -15,20 +15,22 @@
  */
 package edu.kit.datamanager.metastore2.domain;
 
-import java.time.Instant;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.Data;
 
+import java.time.Instant;
+
 /**
+ * Event for synchronization.
  *
  * @author jejkal
  */
 @Entity
 @Data
-public class SchemaSynchronizationEvent{
+public class SchemaSynchronizationEvent {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
