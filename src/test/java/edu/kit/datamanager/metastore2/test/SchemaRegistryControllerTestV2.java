@@ -914,6 +914,262 @@ public class SchemaRegistryControllerTestV2 {
     Assert.assertNull("Check definition for 'null'", getDefinition(record2));
   }
 
+
+  // Update only record
+  @Test
+  public void testUpdateOnlyRecordMultipleTimes() throws Exception {
+    String schemaId = "updateRecord";
+    String newComment = "new comment";
+    String newLabel = "label changed!";
+    ingestXmlDataResource(schemaId);
+    MvcResult result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    String etag = result.getResponse().getHeader("ETag");
+    String body = result.getResponse().getContentAsString();
+    
+    ObjectMapper mapper = new ObjectMapper();
+    DataResource record = mapper.readValue(body, DataResource.class);
+    String mimeTypeBefore = record.getFormats().iterator().next();
+    String version = record.getVersion();
+    // Get current version with version number
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
+            header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE).
+            param("version", version)).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andReturn();
+    String etagWithVersion = result.getResponse().getHeader("ETag");
+    Assert.assertEquals("Etag should be the same than without version number", etag, etagWithVersion);
+    validateDescriptions(record, schemaId, DEFINITION, COMMENT);
+//    Assert.assertEquals(DEFINITION, record.getDesDefinition());
+//    Assert.assertEquals(LABEL, record.getTitle());
+//    Assert.assertEquals(COMMENT, record.getComment());
+    setDefinition(record, null);
+    setComment(record, newComment);
+    setTitle(record, newLabel);
+    MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
+    MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", KIT_SCHEMA_V2.getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
+            file(recordFile).
+            file(schemaFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=*"))
+            .andReturn();
+    body = result.getResponse().getContentAsString();
+
+    DataResource record2 = mapper.readValue(body, DataResource.class);
+    Assert.assertEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type is not allowed to be changed.
+
+//    Assert.assertEquals(record.getCreatedAt(), record2.getCreatedAt());
+    validateCreateDates(record.getDates(), record2.getDates());
+    // Version shouldn't be updated
+//    Assert.assertEquals(record.getSchemaDocumentUri(), record2.getSchemaDocumentUri());
+//    Assert.assertEquals(record.getSchemaHash(), record2.getSchemaHash());
+    Assert.assertEquals(record.getId(), record2.getId());
+    Assert.assertEquals(Long.parseLong(record.getVersion()) + 1, Long.parseLong(record2.getVersion()));//version is changing for metadata update
+    validateSets(record.getAcls(), record2.getAcls());
+//    if (record.getAcl() != null) {
+//      Assert.assertTrue(record.getAcl().containsAll(record2.getAcl()));
+//    }
+    Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
+    Assert.assertEquals("Check label: ", getTitle(record), getTitle(record2));
+    Assert.assertEquals("Check comment: ", getComment(record), getComment(record2));
+    Assert.assertEquals("Check definition: ", getDefinition(record), getDefinition(record2));
+    Assert.assertEquals("Check label: ", newLabel, getTitle(record2));
+    Assert.assertEquals("Check comment: ", newComment, getComment(record2));
+    Assert.assertNull("Check definition for 'null'", getDefinition(record2));
+    
+    // one more update...
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId)).andDo(print()).andExpect(status().isOk()).andReturn();
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    etag = result.getResponse().getHeader("ETag");
+    body = result.getResponse().getContentAsString();
+    record2 = mapper.readValue(body, DataResource.class);
+    version = record2.getVersion();
+   // Get current version with version number
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
+            header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE).
+            param("version", version)).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andReturn();
+    etagWithVersion = result.getResponse().getHeader("ETag");
+    Assert.assertEquals("Etag should be the same than without version number", etag, etagWithVersion);
+
+     record2.getTitles().add(Title.factoryTitle("subtitle", Title.TYPE.SUBTITLE));
+    // Change sid for ACLEntry 'test'
+    Set<AclEntry> acls = record2.getAcls();
+    for (AclEntry aclEntry : acls) {
+      System.out.println("ACL Entry 1: " + aclEntry);
+      if (aclEntry.getSid().equalsIgnoreCase("test")) {
+        aclEntry.setSid("test1");
+      }
+    }
+    record2.setAcls(acls);
+    
+    recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record2).getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
+            file(recordFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=*")).
+            andReturn();
+    
+    // one more update...
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId)).andDo(print()).andExpect(status().isOk()).andReturn();
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    etag = result.getResponse().getHeader("ETag");
+    body = result.getResponse().getContentAsString();
+    // Get current version with version number
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
+            header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE).
+            param("version", version)).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andReturn();
+    etagWithVersion = result.getResponse().getHeader("ETag");
+    Assert.assertEquals("Etag should be the same than without version number", etag, etagWithVersion);
+
+    record2 = mapper.readValue(body, DataResource.class);
+    record2.getTitles().add(Title.factoryTitle("subtitle", Title.TYPE.SUBTITLE));
+    // Change sid for ACLEntry 'test1'
+    acls = record2.getAcls();
+     record2.setAcls(acls);
+    AclEntry deleteThis = null;
+    for (AclEntry aclEntry : acls) {
+      System.out.println("ACL Entry 2: " + aclEntry);
+      if (aclEntry.getSid().equalsIgnoreCase("test1")) {
+        deleteThis = aclEntry;
+      }
+    }
+    acls.remove(deleteThis);
+    AclEntry newEntry = new AclEntry("test2", PERMISSION.READ);
+    acls.add(newEntry);
+    recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record2).getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
+            file(recordFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=*")).
+            andReturn();
+   
+    // one more update...
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId)).andDo(print()).andExpect(status().isOk()).andReturn();
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    etag = result.getResponse().getHeader("ETag");
+    body = result.getResponse().getContentAsString();
+
+    record2 = mapper.readValue(body, DataResource.class);
+    record2.getTitles().add(Title.factoryTitle("subtitle", Title.TYPE.SUBTITLE));
+    // Change sid for ACLEntry 'test'
+   acls = record2.getAcls();
+    deleteThis = null;
+    for (AclEntry aclEntry : acls) {
+       System.out.println("ACL Entry 3: " + aclEntry);
+     if (aclEntry.getSid().equalsIgnoreCase("test1")) {
+        deleteThis = aclEntry;
+      }
+    }
+    acls.remove(deleteThis);
+    AclEntry newerEntry = new AclEntry("test3", PERMISSION.READ);
+    acls.add(newerEntry);
+    record2.setAcls(acls);
+    recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record2).getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
+            file(recordFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=*")).
+            andReturn();
+   
+    // one more update...
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId)).andDo(print()).andExpect(status().isOk()).andReturn();
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    etag = result.getResponse().getHeader("ETag");
+    // Get current version with version number
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
+            header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE).
+            param("version", version)).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andReturn();
+    etagWithVersion = result.getResponse().getHeader("ETag");
+    Assert.assertEquals("Etag should be the same than without version number", etag, etagWithVersion);
+    body = result.getResponse().getContentAsString();
+
+    record2 = mapper.readValue(body, DataResource.class);
+    record2.getTitles().add(Title.factoryTitle("subtitle", Title.TYPE.SUBTITLE));
+    // Change sid for ACLEntry 'test'
+    deleteThis = null;
+    acls = record2.getAcls();
+    for (AclEntry aclEntry : acls) {
+       System.out.println("ACL Entry 4: " + aclEntry);
+     if (aclEntry.getSid().equalsIgnoreCase("test3")) {
+        deleteThis = aclEntry;
+     }
+    }
+    acls.remove(deleteThis);
+    record2.setAcls(acls);
+    
+    recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record2).getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
+            file(recordFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=*")).
+            andReturn();
+  
+    // one more update...
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId)).andDo(print()).andExpect(status().isOk()).andReturn();
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    etag = result.getResponse().getHeader("ETag");
+    // Get current version with version number
+    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
+            header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE).
+            param("version", version)).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andReturn();
+    etagWithVersion = result.getResponse().getHeader("ETag");
+    Assert.assertEquals("Etag should be the same than without version number", etag, etagWithVersion);
+    body = result.getResponse().getContentAsString();
+
+    record2 = mapper.readValue(body, DataResource.class);
+    record2.getTitles().add(Title.factoryTitle("subtitle", Title.TYPE.SUBTITLE));
+
+     acls = record2.getAcls();
+    newerEntry = new AclEntry("test4", PERMISSION.READ);
+    acls.add(newerEntry);
+    record2.setAcls(acls);
+    recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record2).getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
+            file(recordFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).
+            andExpect(status().isOk()).
+            andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=*")).
+            andReturn();
+
+    
+  }
+
   // Update only record
   @Test
   public void testUpdateRecordRemovingLabel() throws Exception {

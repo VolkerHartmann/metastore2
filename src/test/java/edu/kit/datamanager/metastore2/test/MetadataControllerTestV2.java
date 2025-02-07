@@ -1511,6 +1511,59 @@ public class MetadataControllerTestV2 {
   }
 
   @Test
+  public void testUpdateOnlyRecordMultipleTimes() throws Exception {
+    String metadataRecordId = createDCMetadataRecord();
+    ObjectMapper mapper = new ObjectMapper();
+    // Get ETag
+    MvcResult result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
+            accept(DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    String etag = result.getResponse().getHeader("ETag");
+    String body = result.getResponse().getContentAsString();
+    // Update Record first time
+    DataResource record = mapper.readValue(body, DataResource.class);
+    record.getTitles().add(Title.factoryTitle("Subtitle", Title.TYPE.SUBTITLE));
+    MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
+ 
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_METADATA_PATH + record.getId()).
+            file(recordFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).andExpect(status().isOk()).andReturn();
+    // Get new ETag
+    result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
+            accept(DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    etag = result.getResponse().getHeader("ETag");
+    body = result.getResponse().getContentAsString();
+    // Update record second time
+    record = mapper.readValue(body, DataResource.class);
+    record.getTitles().add(Title.factoryTitle("AnotherTitle", Title.TYPE.OTHER));
+    recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
+     MockMultipartFile metadataFile = new MockMultipartFile("document", "metadata.xml", "application/xml", DC_DOCUMENT_VERSION_2.getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_METADATA_PATH + record.getId()).
+            file(recordFile).
+            file(metadataFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).andExpect(status().isOk()).andReturn();
+    // Get new ETag
+    result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
+            accept(DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    etag = result.getResponse().getHeader("ETag");
+    body = result.getResponse().getContentAsString();
+    // Update record third time
+    record = mapper.readValue(body, DataResource.class);
+    record.getTitles().add(Title.factoryTitle("Alternative title", Title.TYPE.ALTERNATIVE_TITLE));
+    recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
+ 
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_METADATA_PATH + record.getId()).
+            file(recordFile).
+            header("If-Match", etag).
+            with(putMultipart())).
+            andDo(print()).andExpect(status().isOk()).andReturn();
+  }
+
+  @Test
   public void testUpdateRecordWithWrongVersion() throws Exception {
     String metadataRecordId = createDCMetadataRecord();
     MvcResult result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
