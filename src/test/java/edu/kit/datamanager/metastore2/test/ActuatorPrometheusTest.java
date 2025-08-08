@@ -5,19 +5,10 @@
  */
 package edu.kit.datamanager.metastore2.test;
 
-import edu.kit.datamanager.configuration.SearchConfiguration;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
-import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
-import edu.kit.datamanager.repo.dao.IContentInformationDao;
-import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.metastore2.runner.MonitoringScheduler;
 import org.hamcrest.Matchers;
-import org.hamcrest.core.IsNot;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -39,21 +30,11 @@ import org.springframework.test.context.transaction.TransactionalTestExecutionLi
 import org.springframework.test.context.web.ServletTestExecutionListener;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -62,7 +43,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- *
  * @author Torridity
  */
 @RunWith(SpringRunner.class)
@@ -72,10 +52,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ComponentScan({"edu.kit.datamanager"})
 @AutoConfigureMockMvc
 @TestExecutionListeners(listeners = {ServletTestExecutionListener.class,
-  DependencyInjectionTestExecutionListener.class,
-  DirtiesContextTestExecutionListener.class,
-  TransactionalTestExecutionListener.class,
-  WithSecurityContextTestExecutionListener.class})
+        DependencyInjectionTestExecutionListener.class,
+        DirtiesContextTestExecutionListener.class,
+        TransactionalTestExecutionListener.class,
+        WithSecurityContextTestExecutionListener.class})
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"server.port=41426"})
 @TestPropertySource(properties = {"metastore.schema.schemaFolder=file:///tmp/metastore2/prometheus/schema"})
@@ -85,52 +65,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"spring.jpa.defer-datasource-initialization=true"})
 @TestPropertySource(properties = {"metastore.monitoring.enabled=true"})
 @TestPropertySource(properties = {"management.endpoint.prometheus.enabled=true"})
-//@TestPropertySource(properties = {"management.endpoint.prometheus.access=unrestricted"})
 @TestPropertySource(properties = {"management.endpoints.web.exposure.include=info,health,prometheus"})
+@TestPropertySource(properties = {"metastore.monitoring.cron4schedule=* * * * * *"})
+@TestPropertySource(properties = {"metastore.monitoring.cron4cleanUp=*/2 * * * * *"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureObservability
 public class ActuatorPrometheusTest {
 
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/prometheus/";
-  private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
-  private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
 
   private static Boolean alreadyInitialized = Boolean.FALSE;
-
+  @Rule
+  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
   private MockMvc mockMvc;
   @Autowired
   private WebApplicationContext context;
   @Autowired
-  private ILinkedMetadataRecordDao metadataRecordDao;
-  @Autowired
-  private IDataResourceDao dataResourceDao;
-  @Autowired
-  private IDataRecordDao dataRecordDao;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
-  @Autowired
-  private IContentInformationDao contentInformationDao;
-  @Autowired
-  private IAllIdentifiersDao allIdentifiersDao;
-  @Autowired
   private MetastoreConfiguration metadataConfig;
   @Autowired
-  private SearchConfiguration elasticConfig;
-  @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  private MonitoringScheduler monitoringScheduler;
+
+  public static synchronized boolean isInitialized() {
+    boolean returnValue = alreadyInitialized;
+    alreadyInitialized = Boolean.TRUE;
+
+    return returnValue;
+  }
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("------MetadataControllerTest--------------------------");
+    System.out.println("------ActuatorPrometheusTest--------------------------");
     System.out.println("------" + this.metadataConfig);
     System.out.println("------------------------------------------------------");
-
-    contentInformationDao.deleteAll();
-    dataResourceDao.deleteAll();
-    metadataRecordDao.deleteAll();
-    schemaRecordDao.deleteAll();
-    dataRecordDao.deleteAll();
-    allIdentifiersDao.deleteAll();
 
     try {
       // setup mockMvc
@@ -139,17 +105,14 @@ public class ActuatorPrometheusTest {
               .apply(documentationConfiguration(this.restDocumentation).uris()
                       .withPort(41416))
               .build();
-      // Create schema only once.
-      try (Stream<Path> walk = Files.walk(Paths.get(URI.create("file://" + TEMP_DIR_4_SCHEMAS)))) {
-        walk.sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
-      }
-      Paths.get(TEMP_DIR_4_SCHEMAS).toFile().mkdir();
-      Paths.get(TEMP_DIR_4_METADATA).toFile().mkdir();
-    } catch (IOException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    monitoringScheduler.shutdown(); // ensure that the monitoring scheduler is stopped
   }
 
   @Test
@@ -167,21 +130,17 @@ public class ActuatorPrometheusTest {
     this.mockMvc.perform(get("/actuator/mappings")).andDo(print()).andExpect(status().isNotFound());
 //    this.mockMvc.perform(get("/actuator/prometheus")).andDo(print()).andExpect(status().isNotFound());
   }
-    @Test
-    public void testActuator() throws Exception {
-      // /actuator/info
-      MvcResult result = this.mockMvc.perform(get("/actuator/prometheus")).andDo(print()).andExpect(status().isOk())
-              .andExpect(content().string(Matchers.containsString("# TYPE metastore_metadata_documents")))
-              .andExpect(content().string(Matchers.containsString("# TYPE metastore_metadata_schemas")))
-              .andExpect(content().string(Matchers.containsString("# TYPE metastore_requests_served_total")))
-              .andExpect(content().string(Matchers.containsString("# TYPE metastore_unique_users")))
-              .andReturn();
-        }
 
-  public static synchronized boolean isInitialized() {
-    boolean returnValue = alreadyInitialized;
-    alreadyInitialized = Boolean.TRUE;
+  @Test
+  public void testActuator() throws Exception {
+    // test for endpoint /actuator/prometheus
+    Thread.sleep(3000); // wait for the monitoring scheduler to run at least once
 
-    return returnValue;
+    MvcResult result = this.mockMvc.perform(get("/actuator/prometheus")).andDo(print()).andExpect(status().isOk())
+            .andExpect(content().string(Matchers.containsString("# TYPE metastore_metadata_documents")))
+            .andExpect(content().string(Matchers.containsString("# TYPE metastore_metadata_schemas")))
+            .andExpect(content().string(Matchers.containsString("# TYPE metastore_requests_served_total")))
+            .andExpect(content().string(Matchers.containsString("# TYPE metastore_unique_users")))
+            .andReturn();
   }
 }
