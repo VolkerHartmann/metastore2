@@ -101,5 +101,10 @@ public class MonitoringScheduler {
       LOG.info(MONITORING_DISABLED);
     }
   }
+
+  public void shutdown() {
+    LOG.info("Shutting down monitoring scheduler...");
+    scheduler4Monitoring.shutdown();
+  }
 }
 
