@@ -15,11 +15,9 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Database linking hash of IP address to last visit
- * @author Torridity
+ * Database linking hash of IP address to last visit.
  */
 public interface IIpMonitoringDao extends JpaRepository<IpMonitoring, String>, JpaSpecificationExecutor<IpMonitoring> {
-  Optional<IpMonitoring> findByIpHash(String ipHash);
   @Modifying
   @Query(nativeQuery = true, value = "DELETE FROM ip_monitoring m WHERE m.last_visit < :lastDate")
   void deleteAllEntriesOlderThan(Instant lastDate);

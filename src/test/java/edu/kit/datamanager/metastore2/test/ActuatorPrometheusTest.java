@@ -29,7 +29,6 @@ import org.springframework.test.context.support.DirtiesContextTestExecutionListe
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 import org.springframework.test.context.web.ServletTestExecutionListener;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -43,7 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * @author Torridity
+ * Test for the Prometheus actuator endpoint.
+ * This test checks that the Prometheus endpoint is correctly exposed and that it contains the expected metrics.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT) //RANDOM_PORT)
@@ -71,8 +71,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureObservability
 public class ActuatorPrometheusTest {
-
-  private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/prometheus/";
 
   private static Boolean alreadyInitialized = Boolean.FALSE;
   @Rule
@@ -136,7 +134,7 @@ public class ActuatorPrometheusTest {
     // test for endpoint /actuator/prometheus
     Thread.sleep(3000); // wait for the monitoring scheduler to run at least once
 
-    MvcResult result = this.mockMvc.perform(get("/actuator/prometheus")).andDo(print()).andExpect(status().isOk())
+    this.mockMvc.perform(get("/actuator/prometheus")).andDo(print()).andExpect(status().isOk())
             .andExpect(content().string(Matchers.containsString("# TYPE metastore_metadata_documents")))
             .andExpect(content().string(Matchers.containsString("# TYPE metastore_metadata_schemas")))
             .andExpect(content().string(Matchers.containsString("# TYPE metastore_requests_served_total")))

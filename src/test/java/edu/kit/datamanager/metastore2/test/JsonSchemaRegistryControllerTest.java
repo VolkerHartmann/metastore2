@@ -5,7 +5,6 @@
  */
 package edu.kit.datamanager.metastore2.test;
 
-import com.beust.ah.A;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
@@ -13,12 +12,11 @@ import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.SchemaRecord;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
-import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.*;
+import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import org.junit.Assert;
 import org.junit.Before;
@@ -72,8 +70,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- *
- * @author Torridity
+ * Test for the JsonSchemaRegistryController.
+ * This test checks the creation, retrieval, and update of JSON schema records.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -304,7 +302,7 @@ public class JsonSchemaRegistryControllerTest {
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andExpect(redirectedUrlPattern("http://*:*/**/" + record.getSchemaId() + "?version=1")).andReturn();
     String locationUri = result.getResponse().getHeader("Location");
-    String content = result.getResponse().getContentAsString();
+    result.getResponse().getContentAsString();
 
     // URL should point to API v2. Therefor accept header is not allowed. 
     this.mockMvc.perform(get(locationUri).header("Accept", MetadataSchemaRecord.METADATA_SCHEMA_RECORD_MEDIA_TYPE)).andDo(print()).andExpect(status().isNotAcceptable());
@@ -411,7 +409,7 @@ public class JsonSchemaRegistryControllerTest {
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.json", "application/json", JSON_SCHEMA.getBytes());
 
-    MvcResult res = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/schemas/").
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/schemas/").
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isUnprocessableEntity()).andReturn();
   }
@@ -714,7 +712,6 @@ public class JsonSchemaRegistryControllerTest {
     ObjectMapper mapper = new ObjectMapper();
     MetadataSchemaRecord record = mapper.readValue(body, MetadataSchemaRecord.class);
     String mimeTypeBefore = record.getMimeType();
-    String definitionBefore = record.getDefinition();
     String labelBefore = record.getLabel();
     String commentBefore = record.getComment();
     record.setMimeType(MediaType.APPLICATION_XML.toString());
@@ -790,7 +787,6 @@ public class JsonSchemaRegistryControllerTest {
     ObjectMapper mapper = new ObjectMapper();
     MetadataSchemaRecord record = mapper.readValue(body, MetadataSchemaRecord.class);
     String mimeTypeBefore = record.getMimeType();
-    String definitionBefore = record.getDefinition();
     String labelBefore = record.getLabel();
     String commentBefore = record.getComment();
     record.getAcl().add(new AclEntry("updateACL", PERMISSION.READ));

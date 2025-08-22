@@ -15,7 +15,6 @@ import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
-import edu.kit.datamanager.metastore2.domain.oaipmh.MetadataFormat;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -24,9 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,7 +41,6 @@ import javax.xml.transform.stream.StreamSource;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 import javax.xml.XMLConstants;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -94,8 +90,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.xml.sax.SAXException;
 
 /**
- *
- * @author Torridity
+ * Test for the OAI-PMH controller.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT) //RANDOM_PORT)
@@ -170,8 +165,6 @@ public class OaiPmhControllerTest {
           + "    \"additionalProperties\": false\n"
           + "}";
 
-  private final static String JSON_DOCUMENT = "{\"title\":\"%s\",\"date\": \"2020-10-16\"}";
-
   private MockMvc mockMvc;
   @Autowired
   private WebApplicationContext context;
@@ -189,8 +182,6 @@ public class OaiPmhControllerTest {
   private IAllIdentifiersDao allIdentifiersDao;
   @Autowired
   private MetastoreConfiguration metadataConfig;
-  @Autowired
-  private MetastoreConfiguration schemaConfig;
   @Autowired
   private IMetadataFormatDao metadataFormatDao;
   @Rule
@@ -248,7 +239,6 @@ public class OaiPmhControllerTest {
     System.out.println("List all Schemas...");
     MvcResult res;
     OAIPMHtype result;
-    String schema1 = String.format(SCHEMA, SCHEMA_ID_1);
     res = this.mockMvc.perform(get("/oaipmh")
             .param("verb", VerbType.LIST_METADATA_FORMATS.value())).andDo(print()).andExpect(status().isOk()).andReturn();
     result = getResponse(res);
@@ -328,7 +318,6 @@ public class OaiPmhControllerTest {
     String metadata3_1 = String.format(XML_DOCUMENT, SCHEMA_ID_3, "Title 3.1");
     String metadata3_2 = String.format(XML_DOCUMENT, SCHEMA_ID_3, "Title 3.2");
     String metadata3_3 = String.format(XML_DOCUMENT, SCHEMA_ID_3, "Title 3.3");
-    String jsonSchema1 = JSON_SCHEMA;
     System.out.println("Add schemas!");
     Instant startDate = truncateDate(Instant.now().truncatedTo(ChronoUnit.SECONDS));
     Thread.sleep(1000);
@@ -986,10 +975,6 @@ public class OaiPmhControllerTest {
     record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(schemaId));
     UUID randomUUID = UUID.randomUUID();
     record.setRelatedResource(ResourceIdentifier.factoryUrlResourceIdentifier("http://example.org/" + randomUUID));
-    Set<AclEntry> aclEntries = new HashSet<>();
-//    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
-//    aclEntries.add(new AclEntry("test2",PERMISSION.ADMINISTRATE));
-//    record.setAcl(aclEntries);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -1012,7 +997,7 @@ public class OaiPmhControllerTest {
   }
 
   private OAIPMHtype getResponse(MvcResult res, boolean validate) throws JAXBException, UnsupportedEncodingException {
-    OAIPMHtype result = null;
+    OAIPMHtype result;
     JAXBContext jaxbContext = JAXBContext.newInstance(OAIPMHtype.class);
     String resultString = res.getResponse().getContentAsString();
     if (validate) {
@@ -1029,36 +1014,6 @@ public class OaiPmhControllerTest {
   private void validateResponse(String response) {
     File schemaFile = new File("src/test/resources/OAI-PMH.xsd"); // etc.
     Source xmlFile = new StreamSource(new ByteArrayInputStream(response.getBytes()));
-    SchemaFactory schemaFactory = SchemaFactory
-            .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-    try {
-      Schema schema = schemaFactory.newSchema(schemaFile);
-      Validator validator = schema.newValidator();
-      validator.validate(xmlFile);
-    } catch (SAXException e) {
-      Assert.fail("Response is not valid!" + e.getMessage());
-    } catch (IOException e) {
-      Assert.fail(e.getMessage());
-    }
-
-  }
-
-  private void validateResponse(String schemaId, String response) throws MalformedURLException {
-    Optional<MetadataFormat> findById = metadataFormatDao.findById(schemaId);
-    String schemaUrl;
-    if (findById.isPresent()) {
-      schemaUrl = findById.get().getSchema();
-    } else {
-      if (schemaId.equals("oai_dc")) {
-        schemaUrl = "http://www.openarchives.org/OAI/2.0/oai_dc.xsd";
-      } else {
-        schemaUrl = "http://schema.datacite.org/meta/kernel-4.1/metadata.xsd";
-      }
-    }
-    URL schemaFile = new URL(schemaUrl);
-    System.out.println("*****" + schemaUrl + "++++++++");
-    System.out.println("*****" + response.trim() + "++++++++");
-    Source xmlFile = new StreamSource(new ByteArrayInputStream(response.trim().getBytes()));
     SchemaFactory schemaFactory = SchemaFactory
             .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
     try {

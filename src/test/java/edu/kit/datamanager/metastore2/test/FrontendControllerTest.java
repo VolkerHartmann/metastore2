@@ -67,8 +67,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- *
- * @author Torridity
+ * Test for the FrontendController.
+ * This test checks that the frontend controller correctly handles requests for metadata and schema records,
+ * and that it returns the expected results in both JSON and Tabulator formats.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT) //RANDOM_PORT)
@@ -165,16 +166,16 @@ public class FrontendControllerTest {
 
   @Test
   public void testGetMetadataRecords4Tabulator1() throws Exception {
-    MvcResult res = this.mockMvc.perform(get("/api/v1/ui/metadata")).
+    this.mockMvc.perform(get("/api/v1/ui/metadata")).
             andDo(print()).
             andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$", IsNot.not(Matchers.hasKey("data")))).
             andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasKey("last_page"))).
             andReturn();
-    //String metadataRecordId = 
+
     createDCMetadataRecord();
 
-    res = this.mockMvc.perform(get("/api/v1/ui/metadata?page=1")).
+    this.mockMvc.perform(get("/api/v1/ui/metadata?page=1")).
             andDo(print()).
             andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$.data", Matchers.hasSize(1))).
@@ -184,7 +185,7 @@ public class FrontendControllerTest {
 
   @Test
   public void testGetMetadataRecords4Tabulator2() throws Exception {
-    MvcResult res = this.mockMvc.perform(get("/api/v1/ui/metadata").
+    this.mockMvc.perform(get("/api/v1/ui/metadata").
             accept("application/tabulator+json")).
             andDo(print()).
             andExpect(status().isOk()).
@@ -194,7 +195,7 @@ public class FrontendControllerTest {
     //String metadataRecordId = 
     createDCMetadataRecord();
 
-    res = this.mockMvc.perform(get("/api/v1/ui/metadata?page=1").
+    this.mockMvc.perform(get("/api/v1/ui/metadata?page=1").
             accept("application/tabulator+json")).
             andDo(print()).
             andExpect(status().isOk()).
@@ -205,7 +206,7 @@ public class FrontendControllerTest {
 
   @Test
   public void testGetSchemaRecords4Tabulator1() throws Exception {
-    MvcResult res = this.mockMvc.perform(get("/api/v1/ui/schemas")).
+    this.mockMvc.perform(get("/api/v1/ui/schemas")).
             andDo(print()).
             andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$.data", Matchers.hasSize(1))).
@@ -215,7 +216,7 @@ public class FrontendControllerTest {
 
   @Test
   public void testGetSchemaRecords4Tabulator2() throws Exception {
-    MvcResult res = this.mockMvc.perform(get("/api/v1/ui/schemas").
+    this.mockMvc.perform(get("/api/v1/ui/schemas").
             accept("application/tabulator+json")).
             andDo(print()).
             andExpect(status().isOk()).
@@ -226,7 +227,7 @@ public class FrontendControllerTest {
 
   @Test
   public void testGetSchemaRecords4Tabulator3() throws Exception {
-    MvcResult res = this.mockMvc.perform(get("/api/v1/ui/schemas?page=1")).
+    this.mockMvc.perform(get("/api/v1/ui/schemas?page=1")).
             andDo(print()).
             andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$.data", Matchers.hasSize(1))).
@@ -236,7 +237,7 @@ public class FrontendControllerTest {
 
   @Test
   public void testGetSchemaRecords4Tabulator4() throws Exception {
-    MvcResult res = this.mockMvc.perform(get("/api/v1/ui/schemas?page=1").
+    this.mockMvc.perform(get("/api/v1/ui/schemas?page=1").
             accept("application/tabulator+json")).
             andDo(print()).
             andExpect(status().isOk()).

@@ -16,7 +16,6 @@ import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
-import edu.kit.datamanager.metastore2.domain.SchemaRecord;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
 import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtilTest;
@@ -68,13 +67,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 import org.apache.commons.lang.StringUtils;
@@ -87,8 +84,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- *
- * @author Torridity
+ * Test for the SchemaRegistryController. (API v2)
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -119,7 +115,6 @@ public class SchemaRegistryControllerTestV2 {
   private static final ResourceIdentifier.IdentifierType PID_TYPE = ResourceIdentifier.IdentifierType.HANDLE;
   private static final String SCHEMA_ID = "dc";
   private static final String INVALID_SCHEMA_ID = "invalid/my_dc";
-  private static final String LABEL = "any unique label for test";
   private static final String DEFINITION = "any unique definition for test";
   private static final String COMMENT = "any unique comment for test";
   private static final String KIT_SCHEMA = CreateSchemaUtil.KIT_SCHEMA;
@@ -149,7 +144,6 @@ public class SchemaRegistryControllerTestV2 {
   private static final String XML_DOCUMENT_V3 = CreateSchemaUtil.XML_DOCUMENT_V3;
   private static final String JSON_DOCUMENT = "{\"title\":\"any string\",\"date\": \"2020-10-16\"}";
   private static final String RELATED_RESOURCE_STRING = "anyResourceId";
-  private static final ResourceIdentifier RELATED_RESOURCE = ResourceIdentifier.factoryInternalResourceIdentifier(RELATED_RESOURCE_STRING);
   private final static String JSON_SCHEMA = "{\n"
           + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
           + "    \"$id\": \"http://www.example.org/schema/json\",\n"
@@ -494,7 +488,7 @@ public class SchemaRegistryControllerTestV2 {
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", KIT_SCHEMA.getBytes());
 
-    MvcResult res = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isUnprocessableEntity()).andReturn();
   }
@@ -602,7 +596,7 @@ public class SchemaRegistryControllerTestV2 {
     DataResource result = mapper.readValue(res.getResponse().getContentAsString(), DataResource.class);
     Assert.assertEquals(result.getVersion(), Long.toString(1L));
     // Can't create same resource twice -> Conflict
-    res = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isConflict()).andReturn();
   }
@@ -676,7 +670,7 @@ public class SchemaRegistryControllerTestV2 {
     String schemaId = "testFindRecordsBySchemaIdWithAlternateEndpoint".toLowerCase(Locale.getDefault());
     ingestXmlDataResource(schemaId);
     // alternate endpoint is no longer available!
-    MvcResult res = this.mockMvc.perform(get(ALTERNATE_API_SCHEMA_PATH).param("schemaId", schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isNotFound()).andReturn();
+    this.mockMvc.perform(get(ALTERNATE_API_SCHEMA_PATH).param("schemaId", schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isNotFound()).andReturn();
   }
 
   @Test
@@ -918,8 +912,6 @@ public class SchemaRegistryControllerTestV2 {
   @Test
   public void testUpdateRecordRemovingLabel() throws Exception {
     String schemaId = "updateRecord".toLowerCase(Locale.getDefault());
-    String newComment = "new comment";
-    String newLabel = "label changed!";
     ingestXmlDataResource(schemaId);
     MvcResult result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
     String etag = result.getResponse().getHeader("ETag");
@@ -980,7 +972,6 @@ public class SchemaRegistryControllerTestV2 {
       entry.setPermission(PERMISSION.WRITE);
     }
     String mimeTypeBefore = record.getFormats().iterator().next();
-    String definitionBefore = getDefinition(record);
     String labelBefore = getTitle(record);
     String commentBefore = getComment(record);
     setDefinition(record, "");
@@ -1553,7 +1544,7 @@ public class SchemaRegistryControllerTestV2 {
             Assert.fail("Unknown document: '" + document + "'");
         }
 
-        ResultMatcher resultMatcher = null;
+        ResultMatcher resultMatcher;
         if (version == document) {
           resultMatcher = status().isNoContent();
         } else {
@@ -1589,8 +1580,6 @@ public class SchemaRegistryControllerTestV2 {
    * **************************************************************************
    * Moved tests from MetadataSchemaRecordUtilTest
    * **************************************************************************
-   */
-  /**
    * Test of migrateToDataResource method, of class MetadataSchemaRecordUtil.
    */
   @Test
@@ -1599,7 +1588,7 @@ public class SchemaRegistryControllerTestV2 {
     RepoBaseConfiguration applicationProperties = schemaConfig;
     // Test with all possible values PID shouldn't be an URL
     MetadataSchemaRecord metadataSchemaRecord = new MetadataSchemaRecordUtilTest().createSchemaRecord(5, 7, 11, 12);
-    MetadataSchemaRecord expResult = null;
+    MetadataSchemaRecord expResult;
     DataResource result = MetadataSchemaRecordUtil.migrateToDataResource(applicationProperties, metadataSchemaRecord);
     expResult = MetadataSchemaRecordUtil.migrateToMetadataSchemaRecord(applicationProperties, result, false);
     assertEquals(metadataSchemaRecord, expResult);
@@ -1666,14 +1655,13 @@ public class SchemaRegistryControllerTestV2 {
     result = this.mockMvc.perform(get(API_SCHEMA_PATH).param("schemaId", schemaId).header(HttpHeaders.ACCEPT, "application/json")).andDo(print()).andExpect(status().isOk()).andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(2))).andReturn();
     Assert.assertTrue("Reference to " + COMMENT + version + " is not available", result.getResponse().getContentAsString().contains("\"" + COMMENT + version + "\""));
 
-    result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "1")).andDo(print()).andExpect(status().isOk()).andReturn();
-    String content = result.getResponse().getContentAsString();
+    this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "1")).andDo(print()).andExpect(status().isOk()).andReturn();
 
     String dcSchema = SCHEMA_V1;
 
 //    Assert.assertEquals(dcMetadata, content);
     result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "2")).andDo(print()).andExpect(status().isOk()).andReturn();
-    content = result.getResponse().getContentAsString();
+    String content = result.getResponse().getContentAsString();
 
     Assert.assertNotEquals(dcSchema, content);
     Assert.assertEquals("Length must differ!", SCHEMA_V2.length(), content.length());
@@ -1814,60 +1802,6 @@ public class SchemaRegistryControllerTestV2 {
             file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andReturn();
   }
 
-  private void ingestSchemaRecord() throws Exception {
-    DataResource dataResource = DataResource.factoryNewDataResource(SCHEMA_ID);
-    dataResource.getCreators().add(Agent.factoryAgent(null, "SELF"));
-    dataResource.getTitles().add(Title.factoryTitle(LABEL, null));
-    dataResource.setPublisher("SELF");
-    Instant now = Instant.now();
-    dataResource.setPublicationYear(Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));
-    dataResource.setResourceType(ResourceType.createResourceType(DataResourceRecordUtil.XML_SCHEMA_TYPE, ResourceType.TYPE_GENERAL.MODEL));
-    dataResource.getDates().add(Date.factoryDate(now, Date.DATE_TYPE.CREATED));
-    dataResource.getFormats().add(MediaType.APPLICATION_XML_VALUE);
-    dataResource.setLastUpdate(now);
-    dataResource.setState(DataResource.State.VOLATILE);
-    dataResource.setVersion("1");
-    Set<AclEntry> aclEntries = dataResource.getAcls();
-    aclEntries.add(new AclEntry("test", PERMISSION.READ));
-    aclEntries.add(new AclEntry("SELF", PERMISSION.ADMINISTRATE));
-    Set<Description> descriptions = dataResource.getDescriptions();
-    descriptions.add(Description.factoryDescription(LABEL, Description.TYPE.OTHER));
-    descriptions.add(Description.factoryDescription(COMMENT, Description.TYPE.ABSTRACT));
-    descriptions.add(Description.factoryDescription(DEFINITION, Description.TYPE.TECHNICAL_INFO));
-    descriptions.add(Description.factoryDescription("not used yet", Description.TYPE.METHODS));
-    ContentInformation ci = ContentInformation.createContentInformation(
-            SCHEMA_ID, "schema.xsd", (String[]) null);
-    ci.setVersion(1);
-    ci.setFileVersion("1");
-    ci.setVersioningService("simple");
-    ci.setDepth(1);
-    ci.setContentUri("file:///tmp/schema_dc.xsd");
-    ci.setUploader("SELF");
-    ci.setMediaType("text/plain");
-    ci.setHash("sha1:400dfe162fd702a619c4d11ddfb3b7550cb9dec7");
-    ci.setSize(1097);
-
-    schemaConfig.getDataResourceService().create(dataResource, "SELF");
-//    dataResource = dataResourceDao.save(dataResource);
-    ci = contentInformationDao.save(ci);
-
-    SchemaRecord schemaRecord = new SchemaRecord();
-    schemaRecord.setSchemaId(dataResource.getId() + "/1");
-    schemaRecord.setVersion(1L);
-    schemaRecord.setType(MetadataSchemaRecord.SCHEMA_TYPE.XML);
-    schemaRecord.setSchemaDocumentUri(ci.getContentUri());
-    schemaRecord.setDocumentHash(ci.getHash());
-    schemaRecordDao.save(schemaRecord);
-
-    File dcFile = new File("/tmp/schema_dc.xsd");
-    if (!dcFile.exists()) {
-      try (FileOutputStream fout = new FileOutputStream(dcFile)) {
-        fout.write(KIT_SCHEMA.getBytes());
-        fout.flush();
-      }
-    }
-  }
-
   private void ingestSchemaWithVersion(String schemaId, long version) throws Exception {
     DataResource record = createDataResource4Schema(schemaId);
     setComment(record, COMMENT + version);
@@ -1910,8 +1844,8 @@ public class SchemaRegistryControllerTestV2 {
     String body = result.getResponse().getContentAsString();
 
     record = mapper.readValue(body, DataResource.class);
-    Long versionAfter = Long.parseLong(record.getVersion());
-    Assert.assertEquals("Wrong version created!", version, (long) versionAfter);
+    long versionAfter = Long.parseLong(record.getVersion());
+    Assert.assertEquals("Wrong version created!", version, versionAfter);
 
   }
 
@@ -2086,13 +2020,17 @@ public class SchemaRegistryControllerTestV2 {
    * Update schema in MetaStore as user 'test_user'. If schema already exists
    * and noUpdate is false update schema.
    *
-   * @param mockMvc
-   * @param schemaId
-   * @param schemaContent
-   * @param jwtSecret
-   * @param noUpdate Only ingest or do update also
-   * @return
-   * @throws Exception
+   * @param mockMvc MockMvc instance to use for the request
+   * @param schemaId ID of the schema to ingest or update
+   * @param schemaContent Content of the schema to ingest or update
+   * @param jwtSecret JWT secret to use for authentication, if null default
+   *                 secret will be used
+   * @param update If true, update existing schema, if false, only ingest new
+   *               schema
+   * @param expectedStatus Expected HTTP status of the response
+   * @return Location URI of the ingested or updated schema record, or null if
+   *         the schema was not ingested or updated
+   * @throws Exception Some error occurred during the request processing
    */
   public static String ingestOrUpdateXmlSchemaRecord(MockMvc mockMvc, String schemaId, String schemaContent, String jwtSecret, boolean update, ResultMatcher expectedStatus) throws Exception {
     String locationUri = null;
