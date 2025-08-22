@@ -6,9 +6,7 @@
 package edu.kit.datamanager.metastore2.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
@@ -23,8 +21,8 @@ import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
-import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.*;
+import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -82,8 +80,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- *
- * @author Torridity
+ * Test for the SchemaRegistryController.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -461,7 +458,7 @@ public class SchemaRegistryControllerTest {
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", KIT_SCHEMA.getBytes());
 
-    MvcResult res = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isUnprocessableEntity()).andReturn();
   }
@@ -1196,7 +1193,7 @@ public class SchemaRegistryControllerTest {
 //    MvcResult result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).header("Accept", MetadataSchemaRecord.METADATA_SCHEMA_RECORD_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
     String etag = result.getResponse().getHeader("ETag");
     schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", CreateSchemaUtil.XML_SCHEMA_V1_TYPO.getBytes());
-    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH + schemaId).
             file(schemaFile).
             header("If-Match", etag).
             with(putMultipart())).
@@ -1452,8 +1449,6 @@ public class SchemaRegistryControllerTest {
    * **************************************************************************
    * Moved tests from MetadataSchemaRecordUtilTest
    * **************************************************************************
-   */
-  /**
    * Test of migrateToDataResource method, of class MetadataSchemaRecordUtil.
    */
   @Test
@@ -1462,7 +1457,7 @@ public class SchemaRegistryControllerTest {
     RepoBaseConfiguration applicationProperties = schemaConfig;
     // Test with all possible values PID shouldn't be an URL
     MetadataSchemaRecord metadataSchemaRecord = new MetadataSchemaRecordUtilTest().createSchemaRecord(5, 7, 11, 12);
-    MetadataSchemaRecord expResult = null;
+    MetadataSchemaRecord expResult;
     DataResource result = MetadataSchemaRecordUtil.migrateToDataResource(applicationProperties, metadataSchemaRecord);
     expResult = MetadataSchemaRecordUtil.migrateToMetadataSchemaRecord(applicationProperties, result, false);
     assertEquals(metadataSchemaRecord, expResult);
@@ -1530,13 +1525,12 @@ public class SchemaRegistryControllerTest {
     Assert.assertTrue("Reference to " + COMMENT + version + " is not available", result.getResponse().getContentAsString().contains("\"" + COMMENT + version + "\""));
 
     result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "1")).andDo(print()).andExpect(status().isOk()).andReturn();
-    String content = result.getResponse().getContentAsString();
 
     String dcSchema = SCHEMA_V1;
 
 //    Assert.assertEquals(dcMetadata, content);
     result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "2")).andDo(print()).andExpect(status().isOk()).andReturn();
-    content = result.getResponse().getContentAsString();
+    String content = result.getResponse().getContentAsString();
 
     Assert.assertNotEquals(dcSchema, content);
     Assert.assertEquals("Length must differ!", SCHEMA_V2.length(), content.length());

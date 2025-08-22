@@ -63,8 +63,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- *
- * @author Torridity
+ * Test for the metadata controller with filter functionality.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -132,7 +131,6 @@ public class MetadataControllerFilterTest {
           + "</ex:metadata>";
   public static boolean initialize = true;
   public final static int MAX_NO_OF_SCHEMAS = 4;
-  public final static int NO_OF_DOCUMENTS_PER_TYPE = ((MAX_NO_OF_SCHEMAS + 1) * MAX_NO_OF_SCHEMAS) / 2;
   private static final String JSON_SCHEMA_ID = "json_schema_";
   private static final String XML_SCHEMA_ID = "xml_schema_";
   private static final String RELATED_RESOURCE = "resource_";
@@ -413,12 +411,9 @@ public class MetadataControllerFilterTest {
   @Test
   public void testFindRecordsByMultipleButWrongResourceIds() throws Exception {
     ObjectMapper map = new ObjectMapper();
-    int noOfResults;
     for (int i = 1; i <= MAX_NO_OF_SCHEMAS; i++) {
       MockHttpServletRequestBuilder get = get("/api/v1/metadata/");
-      noOfResults = 0;
       for (int j = 1; j <= i; j++) {
-        noOfResults += j;
         String schemaId = JSON_SCHEMA_ID + j;
         get.param("resourceId", schemaId);
       }
@@ -517,16 +512,12 @@ public class MetadataControllerFilterTest {
    *
    * @param schemaId schema
    * @param resource related resource
-   * @throws Exception
+   * @throws Exception Some error occurred
    */
   public void ingestMetadataDocument(String schemaId, String resource) throws Exception {
     MetadataRecord record = new MetadataRecord();
     record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(schemaId));
     record.setRelatedResource(ResourceIdentifier.factoryInternalResourceIdentifier(resource));
-    Set<AclEntry> aclEntries = new HashSet<>();
-//    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
-//    aclEntries.add(new AclEntry("test2",PERMISSION.ADMINISTRATE));
-//    record.setAcl(aclEntries);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -545,7 +536,7 @@ public class MetadataControllerFilterTest {
   /**
    * Prepare repository with schemas and metadata documents.
    *
-   * @throws Exception
+   * @throws Exception Some error occurred
    */
   private void prepareRepo() throws Exception {
     if (initialize) {
@@ -588,7 +579,7 @@ public class MetadataControllerFilterTest {
   /**
    * Register MAX_NO_OF_SCHEMAS schemas for json and xml
    *
-   * @throws Exception
+   * @throws Exception Some error occurred
    */
   private void prepareSchemas() throws Exception {
     // Prepare 5 different schemas
@@ -603,7 +594,7 @@ public class MetadataControllerFilterTest {
    * For first schema (xml and json) add one metadata document For second schema
    * add two metadata documents For ...
    *
-   * @throws Exception
+   * @throws Exception Some error occurred
    */
   private void prepareMetadataDocuments() throws Exception {
     for (int i = 1; i <= MAX_NO_OF_SCHEMAS; i++) {
