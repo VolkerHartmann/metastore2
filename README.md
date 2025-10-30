@@ -5,14 +5,7 @@
 [![Codecov](https://codecov.io/gh/kit-data-manager/metastore2/graph/badge.svg)](https://codecov.io/gh/kit-data-manager/metastore2)
 [![CodeQL](https://github.com/kit-data-manager/metastore2/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/kit-data-manager/metastore2/actions/workflows/codeql-analysis.yml)
 ![License](https://img.shields.io/github/license/kit-data-manager/metastore2.svg)
-[![docker]](https://github.com/kit-data-manager/metastore2/pkgs/container/metastore2)
-[![currentVersion]](https://github.com/kit-data-manager/metastore2/pkgs/container/metastore2)
-[![size]](https://github.com/kit-data-manager/metastore2/pkgs/container/metastore2)
-
-
-[docker]: <https://ghcr-badge.egpl.dev/kit-data-manager/metastore2/tags?trim=major&color=steelblue&ignore=main,latest&label=docker versions>
-[currentVersion]: <https://ghcr-badge.egpl.dev/kit-data-manager/metastore2/latest_tag?trim=major&color=steelblue&label=current version>
-[size]: <https://ghcr-badge.egpl.dev/kit-data-manager/metastore2/size?color=steelblue&label=size>
+![current Version](https://img.shields.io/github/v/release/kit-data-manager/metastore2)
 
 MetaStore is a research data repository software for storing metadata documents and schemas.
 Quality and consistency are ensured by associating and validating each document against a schema.
