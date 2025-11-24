@@ -16,22 +16,24 @@
 package edu.kit.datamanager.metastore2.runner;
 
 
-import edu.kit.datamanager.metastore2.configuration.MonitoringConfiguration;
+import edu.kit.datamanager.metastore2.configuration.MetaStoreMonitoringConfiguration;
+import edu.kit.datamanager.repo.configuration.MonitoringConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class MonitoringSchedulerTest {
   MonitoringConfiguration monitoringConfiguration;
+  MetaStoreMonitoringConfiguration metaStoreMonitoringConfiguration;
   MonitoringScheduler monitoringScheduler;
 
   @Before
   public void setUp() {
     monitoringConfiguration = new MonitoringConfiguration();
     monitoringConfiguration.setEnabled(true);
-    monitoringConfiguration.setCron4schedule("* * * * * *"); // Every second
-    monitoringConfiguration.setCron4cleanUp("*/2 * * * * *"); // Every two seconds
-    monitoringScheduler = new MonitoringScheduler(monitoringConfiguration, null);
+    metaStoreMonitoringConfiguration = new MetaStoreMonitoringConfiguration();
+    metaStoreMonitoringConfiguration.setCron4schedule("* * * * * *"); // Every second
+    monitoringScheduler = new MonitoringScheduler(monitoringConfiguration, metaStoreMonitoringConfiguration, null);
     monitoringScheduler.scheduleMonitoring();
   }
 
