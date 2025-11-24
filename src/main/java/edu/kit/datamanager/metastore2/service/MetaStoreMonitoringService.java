@@ -15,9 +15,9 @@
  */
 package edu.kit.datamanager.metastore2.service;
 
-import edu.kit.datamanager.metastore2.configuration.MonitoringConfiguration;
+import edu.kit.datamanager.metastore2.configuration.MetaStoreMonitoringConfiguration;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MonitoringUtil;
+import edu.kit.datamanager.repo.configuration.MonitoringConfiguration;
 import io.micrometer.common.lang.NonNull;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -26,52 +26,55 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class MonitoringService implements MeterBinder {
+public class MetaStoreMonitoringService implements MeterBinder {
   /**
    * Prefix for metrics.
    */
-  public static final String PREFIX_METRICS = "metastore.";
+  public static String PREFIX_METRICS = "metastore.";
   /**
    * Label for metrics of metadata documents.
    */
-  public static final String LABEL_METADATA_DOCUMENTS = "metadata_documents";
+  public static final String LABEL_METADATA_DOCUMENTS = "_metadata_documents";
   /**
    * Label for metrics of metadata schemas.
    */
-  public static final String LABEL_METADATA_SCHEMAS = "metadata_schemas";
+  public static final String LABEL_METADATA_SCHEMAS = "_metadata_schemas";
   /**
    * Label for metrics of schema id.
    */
-  public static final String LABEL_SCHEMA_ID = "schema_id";
+  public static final String LABEL_SCHEMA_ID = "_schema_id";
   /**
    * Label for metrics of documents per schema.
    */
-  public static final String LABEL_DOCUMENTS_PER_SCHEMA = "documents_per_schema";
+  public static final String LABEL_DOCUMENTS_PER_SCHEMA = "_documents_per_schema";
 
   /**
    * Logger.
    */
-  private static final Logger LOG = LoggerFactory.getLogger(MonitoringService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MetaStoreMonitoringService.class);
   private final Set<String> registeredSchemas = ConcurrentHashMap.newKeySet();
   private Map<String, Long> documentsPerSchema = null;
   private MeterRegistry meterRegistry;
 
+  private final MetaStoreMonitoringConfiguration metaStoreMonitoringConfiguration;
   private final MonitoringConfiguration monitoringConfiguration;
 
   /**
    * Constructor.
    *
-   * @param monitoringConfiguration Configuration for monitoring.
+   * @param metaStoreMonitoringConfiguration Configuration for monitoring.
    */
-  public MonitoringService(@org.springframework.lang.NonNull MonitoringConfiguration monitoringConfiguration) {
+  public MetaStoreMonitoringService(@org.springframework.lang.NonNull MonitoringConfiguration monitoringConfiguration,
+                                    @org.springframework.lang.NonNull MetaStoreMonitoringConfiguration metaStoreMonitoringConfiguration) {
     this.monitoringConfiguration = monitoringConfiguration;
+    this.metaStoreMonitoringConfiguration = metaStoreMonitoringConfiguration;
+    PREFIX_METRICS = monitoringConfiguration.getServiceName();
   }
 
   @Override
@@ -101,7 +104,7 @@ public class MonitoringService implements MeterBinder {
               entrySet().
               stream().
               sorted(Map.Entry.<String, Long>comparingByValue().reversed()).
-              limit(monitoringConfiguration.getNoOfSchemas()).
+              limit(metaStoreMonitoringConfiguration.getNoOfSchemas()).
               forEach(entry -> {
                 String schemaId = entry.getKey();
                 if (registeredSchemas.add(schemaId)) {
@@ -152,13 +155,5 @@ public class MonitoringService implements MeterBinder {
    */
   private Long getDocumentsPerSchema(String schemaId) {
     return documentsPerSchema.getOrDefault(schemaId, 0L);
-  }
-
-  /**
-   * Clean up the metrics for IP addresses that are older than the configured number of days.
-   */
-  @Transactional
-  public void cleanUpMetrics() {
-    MonitoringUtil.cleanupMetrics();
   }
 }

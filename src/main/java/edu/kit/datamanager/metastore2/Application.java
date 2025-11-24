@@ -22,17 +22,20 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.configuration.SearchConfiguration;
 import edu.kit.datamanager.entities.messaging.IAMQPSubmittable;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
+import edu.kit.datamanager.metastore2.configuration.MetaStoreMonitoringConfiguration;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.configuration.MonitoringConfiguration;
 import edu.kit.datamanager.metastore2.configuration.OaiPmhConfiguration;
-import edu.kit.datamanager.metastore2.dao.*;
+import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
+import edu.kit.datamanager.metastore2.dao.IMetadataFormatDao;
+import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
+import edu.kit.datamanager.metastore2.dao.IUrl2PathDao;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.metastore2.util.MetadataRecordUtil;
 import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
-import edu.kit.datamanager.metastore2.util.MonitoringUtil;
 import edu.kit.datamanager.metastore2.validation.IValidator;
 import edu.kit.datamanager.repo.configuration.DateBasedStorageProperties;
 import edu.kit.datamanager.repo.configuration.IdBasedStorageProperties;
+import edu.kit.datamanager.repo.configuration.MonitoringConfiguration;
 import edu.kit.datamanager.repo.configuration.StorageServiceProperties;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -46,6 +49,7 @@ import edu.kit.datamanager.repo.service.impl.ContentInformationAuditService;
 import edu.kit.datamanager.repo.service.impl.ContentInformationService;
 import edu.kit.datamanager.repo.service.impl.DataResourceAuditService;
 import edu.kit.datamanager.repo.service.impl.DataResourceService;
+import edu.kit.datamanager.repo.util.MonitoringUtil;
 import edu.kit.datamanager.security.filter.KeycloakJwtProperties;
 import edu.kit.datamanager.security.filter.KeycloakTokenFilter;
 import edu.kit.datamanager.security.filter.KeycloakTokenValidator;
@@ -116,8 +120,6 @@ public class Application {
   @Autowired
   private IMetadataFormatDao metadataFormatDao;
   @Autowired
-  private IIpMonitoringDao ipMonitoringDao;
-  @Autowired
   private List<IValidator> validators;
 
   @Bean
@@ -160,6 +162,11 @@ public class Application {
   @Bean
   public OaiPmhConfiguration oaiPmhConfiguration() {
     return new OaiPmhConfiguration();
+  }
+
+  @Bean
+  public MetaStoreMonitoringConfiguration metastoreMonitoringConfiguration() {
+    return new MetaStoreMonitoringConfiguration();
   }
 
   @Bean
@@ -294,7 +301,6 @@ public class Application {
     DataResourceRecordUtil.setSchemaConfig(rbc);
     DataResourceRecordUtil.setUrl2PathDao(url2PathDao);
     DataResourceRecordUtil.setAllIdentifiersDao(allIdentifiersDao);
-    MonitoringUtil.setIpMonitoringDao(ipMonitoringDao);
     MonitoringUtil.setMonitoringConfiguration(monitoringConfiguration());
 
 

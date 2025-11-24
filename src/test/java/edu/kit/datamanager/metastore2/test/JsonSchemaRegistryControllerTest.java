@@ -15,8 +15,8 @@ import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
-import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.*;
+import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,9 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockMultipartFile;
@@ -67,11 +70,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- *
- * @author Torridity
+ * Test for the JsonSchemaRegistryController.
+ * This test checks the creation, retrieval, and update of JSON schema records.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@EntityScan("edu.kit.datamanager")
+@EnableJpaRepositories("edu.kit.datamanager")
+@ComponentScan({"edu.kit.datamanager"})
 @AutoConfigureMockMvc
 @TestExecutionListeners(listeners = {ServletTestExecutionListener.class,
   DependencyInjectionTestExecutionListener.class,
@@ -296,7 +302,7 @@ public class JsonSchemaRegistryControllerTest {
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andExpect(redirectedUrlPattern("http://*:*/**/" + record.getSchemaId() + "?version=1")).andReturn();
     String locationUri = result.getResponse().getHeader("Location");
-    String content = result.getResponse().getContentAsString();
+    result.getResponse().getContentAsString();
 
     // URL should point to API v2. Therefor accept header is not allowed. 
     this.mockMvc.perform(get(locationUri).header("Accept", MetadataSchemaRecord.METADATA_SCHEMA_RECORD_MEDIA_TYPE)).andDo(print()).andExpect(status().isNotAcceptable());
@@ -403,7 +409,7 @@ public class JsonSchemaRegistryControllerTest {
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.json", "application/json", JSON_SCHEMA.getBytes());
 
-    MvcResult res = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/schemas/").
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/schemas/").
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isUnprocessableEntity()).andReturn();
   }
@@ -706,7 +712,6 @@ public class JsonSchemaRegistryControllerTest {
     ObjectMapper mapper = new ObjectMapper();
     MetadataSchemaRecord record = mapper.readValue(body, MetadataSchemaRecord.class);
     String mimeTypeBefore = record.getMimeType();
-    String definitionBefore = record.getDefinition();
     String labelBefore = record.getLabel();
     String commentBefore = record.getComment();
     record.setMimeType(MediaType.APPLICATION_XML.toString());
@@ -782,7 +787,6 @@ public class JsonSchemaRegistryControllerTest {
     ObjectMapper mapper = new ObjectMapper();
     MetadataSchemaRecord record = mapper.readValue(body, MetadataSchemaRecord.class);
     String mimeTypeBefore = record.getMimeType();
-    String definitionBefore = record.getDefinition();
     String labelBefore = record.getLabel();
     String commentBefore = record.getComment();
     record.getAcl().add(new AclEntry("updateACL", PERMISSION.READ));
@@ -1089,9 +1093,11 @@ public class JsonSchemaRegistryControllerTest {
     ci.setHash("sha1:400dfe162fd702a619c4d11ddfb3b7550cb9dec7");
     ci.setSize(1097);
 
-    schemaConfig.getDataResourceService().create(dataResource, "SELF");
-//    dataResourceDao.save(dataResource);
+    dataResource = schemaConfig.getDataResourceService().create(dataResource, "SELF");
+    ci.setParentResource(dataResource);
+
     contentInformationDao.save(ci);
+    schemaConfig.getContentInformationAuditService().captureAuditInformation(ci, "SELF");
 
     SchemaRecord schemaRecord = new SchemaRecord();
     schemaRecord.setSchemaId(dataResource.getId() + "/1");

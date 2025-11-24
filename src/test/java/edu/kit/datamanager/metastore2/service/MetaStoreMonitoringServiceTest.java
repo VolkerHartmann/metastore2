@@ -16,9 +16,10 @@
 package edu.kit.datamanager.metastore2.service;
 
 
-import edu.kit.datamanager.metastore2.configuration.MonitoringConfiguration;
+import edu.kit.datamanager.metastore2.configuration.MetaStoreMonitoringConfiguration;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MonitoringUtil;
+import edu.kit.datamanager.repo.util.MonitoringUtil;
+import edu.kit.datamanager.repo.configuration.MonitoringConfiguration;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Assert;
@@ -33,18 +34,23 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class MonitoringServiceTest {
+public class MetaStoreMonitoringServiceTest {
   private SimpleMeterRegistry meterRegistry;
-  private MonitoringService metrics;
+  private MetaStoreMonitoringService metrics;
+  MetaStoreMonitoringConfiguration metaStoreMonitoringConfiguration;
   MonitoringConfiguration monitoringConfiguration;
+  public final static String PREFIX_METRICS = "MetaStoreMonitoringServiceTest.";
+
 
   @Before
   public void setUp() {
     meterRegistry = new SimpleMeterRegistry();
     monitoringConfiguration = new MonitoringConfiguration();
     monitoringConfiguration.setEnabled(true);
+    monitoringConfiguration.setServiceName(PREFIX_METRICS);
+    metaStoreMonitoringConfiguration = new MetaStoreMonitoringConfiguration();
     MonitoringUtil.setMonitoringConfiguration(monitoringConfiguration);
-    metrics = new MonitoringService(monitoringConfiguration);
+    metrics = new MetaStoreMonitoringService(monitoringConfiguration, metaStoreMonitoringConfiguration);
   }
 
   @Test
@@ -55,9 +61,11 @@ public class MonitoringServiceTest {
       dataResourceRecordUtilMockedStatic.when(DataResourceRecordUtil::collectDocumentsPerSchema).thenReturn(Map.ofEntries(
               Map.entry("schema1", 10L)
       ));
+      MetaStoreMonitoringConfiguration metaStoreMonitoringConfiguration = new MetaStoreMonitoringConfiguration();
       MonitoringConfiguration monitoringConfiguration = new MonitoringConfiguration();
       monitoringConfiguration.setEnabled(false);
-      MonitoringService metrics = new MonitoringService(monitoringConfiguration);
+      monitoringConfiguration.setServiceName(PREFIX_METRICS);
+      MetaStoreMonitoringService metrics = new MetaStoreMonitoringService(monitoringConfiguration, metaStoreMonitoringConfiguration);
       metrics.updateMetrics();
       monitoringConfiguration.setEnabled(true);
       metrics.updateMetrics();
@@ -89,11 +97,11 @@ public class MonitoringServiceTest {
               Map.entry("schema11", 110L)
       ));
       metrics.bindTo(meterRegistry);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MonitoringService.LABEL_SCHEMA_ID, "schema6").gauge().value()).isEqualTo(60);
+      assertThat(meterRegistry.get(PREFIX_METRICS+ MetaStoreMonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MetaStoreMonitoringService.LABEL_SCHEMA_ID, "schema6").gauge().value()).isEqualTo(60);
       try {
-        assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MonitoringService.LABEL_SCHEMA_ID, "schema1").gauge().value()).isEqualTo(10);
+        assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MetaStoreMonitoringService.LABEL_SCHEMA_ID, "schema1").gauge().value()).isEqualTo(10);
         Assert.fail();
       } catch (MeterNotFoundException mnfe) {
         // This exception is expected because the schema1 is not registered
@@ -103,7 +111,7 @@ public class MonitoringServiceTest {
         // This exception is not expected
         Assert.fail();
       }
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).meters()).hasSize(monitoringConfiguration.getNoOfSchemas());
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).meters()).hasSize(metaStoreMonitoringConfiguration.getNoOfSchemas());
     }
   }
 
@@ -121,10 +129,10 @@ public class MonitoringServiceTest {
               Map.entry("schema3", 30L)
       ));
       metrics.bindTo(meterRegistry);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MonitoringService.LABEL_SCHEMA_ID, "schema2").gauge().value()).isEqualTo(20);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).meters()).hasSize(3);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MetaStoreMonitoringService.LABEL_SCHEMA_ID, "schema2").gauge().value()).isEqualTo(20);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).meters()).hasSize(3);
       // read metrics with new values
       expectedCountMetadataDocuments = 500;
       expectedCountSchemaDocuments = 4;
@@ -137,10 +145,10 @@ public class MonitoringServiceTest {
               Map.entry("schema4", 140L)
       ));
       metrics.bindTo(meterRegistry);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MonitoringService.LABEL_SCHEMA_ID, "schema2").gauge().value()).isEqualTo(120);
-      assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).meters()).hasSize(4);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MetaStoreMonitoringService.LABEL_SCHEMA_ID, "schema2").gauge().value()).isEqualTo(120);
+      assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).meters()).hasSize(4);
     }
   }
 
@@ -169,10 +177,10 @@ public class MonitoringServiceTest {
       monitoringUtilMockedStatic.when(MonitoringUtil::isMonitoringEnabled).thenReturn(false);
       metrics.bindTo(meterRegistry);
       try {
-        assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
-        assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
-        assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MonitoringService.LABEL_SCHEMA_ID, "schema6").gauge().value()).isEqualTo(60);
-        assertThat(meterRegistry.get(MonitoringService.PREFIX_METRICS + MonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MonitoringService.LABEL_SCHEMA_ID, "schema1").gauge().value()).isEqualTo(10);
+        assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_METADATA_DOCUMENTS).gauge().value()).isEqualTo(expectedCountMetadataDocuments);
+        assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_METADATA_SCHEMAS).gauge().value()).isEqualTo(expectedCountSchemaDocuments);
+        assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MetaStoreMonitoringService.LABEL_SCHEMA_ID, "schema6").gauge().value()).isEqualTo(60);
+        assertThat(meterRegistry.get(PREFIX_METRICS + MetaStoreMonitoringService.LABEL_DOCUMENTS_PER_SCHEMA).tags(MetaStoreMonitoringService.LABEL_SCHEMA_ID, "schema1").gauge().value()).isEqualTo(10);
         Assert.fail();
       } catch (MeterNotFoundException mnfe) {
         // This exception is expected because the s monitoring is disabled.
