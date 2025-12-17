@@ -15,8 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.validation;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
-
 import java.io.File;
 import java.io.InputStream;
 
@@ -34,18 +32,6 @@ public interface IValidator {
   default IValidator getInstance() {
     return this;
   }
-
-  /**
-   * Supports the given schema type.
-   *
-   * @see MetadataSchemaRecord#type
-   * @param type Type of the schema.
-   * 
-   * @return supports schema type or not.
-   * @deprecated Should be replaced by 'supportsMimeType'.
-   */
-  @Deprecated
-  boolean supportsSchemaType(MetadataSchemaRecord.SCHEMA_TYPE type);
 
   /**
    * Supports the given MIME type.

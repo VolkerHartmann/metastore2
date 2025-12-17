@@ -15,8 +15,7 @@
  */
 package edu.kit.datamanager.metastore2.web;
 
-import edu.kit.datamanager.metastore2.domain.MetadataRecord;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.repo.domain.DataResource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,7 +41,7 @@ public interface ILandingPageControllerV2 {
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
           + "Furthermore, a specific version of the schema can be returned by providing a version number as request parameter. If no version is specified, all versions will be returned.",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK and the landingpage is returned if the id exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+            @ApiResponse(responseCode = "200", description = "OK and the landingpage is returned if the id exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id and version was found.")})
   @RequestMapping(value = {"/schema-landing-page-v2"}, method = {RequestMethod.GET}, produces = {"text/html"})
   String getLandingPageOfSchemaWithId(
@@ -56,7 +55,7 @@ public interface ILandingPageControllerV2 {
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
           + "by providing a version number as request parameter.",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = MetadataRecord.class))),
+            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
 
   @RequestMapping(value = {"/metadata-landing-page-v2"}, method = {RequestMethod.GET}, produces = {"text/html"})

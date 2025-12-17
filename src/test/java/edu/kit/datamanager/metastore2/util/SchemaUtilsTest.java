@@ -5,7 +5,6 @@
  */
 package edu.kit.datamanager.metastore2.util;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.test.CreateSchemaUtil;
 import org.junit.After;
 import org.junit.AfterClass;

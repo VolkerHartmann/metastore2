@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.util;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -57,7 +56,7 @@ public class SchemaUtils {
    * @param schema schema document.
    * @return Schema type of document.
    */
-  public static MetadataSchemaRecord.SCHEMA_TYPE guessType(byte[] schema) {
+  public static String guessType(byte[] schema) {
     // Cut schema to a maximum of MAX_LENGTH_OF_HEADER characters.
     if (schema != null) {
       int length = schema.length > MAX_LENGTH_OF_HEADER ? MAX_LENGTH_OF_HEADER : schema.length;
@@ -67,13 +66,13 @@ public class SchemaUtils {
       Matcher m = JSON_FIRST_BYTE.matcher(schemaAsString);
       if (schemaAsString.contains("{")) {
         if (m.matches()) {
-          return MetadataSchemaRecord.SCHEMA_TYPE.JSON;
+          return DataResourceRecordUtil.JSON_SCHEMA_TYPE;
         }
       } else {
         if (schemaAsString.contains("<")) {
           m = XML_FIRST_BYTE.matcher(schemaAsString);
           if (m.matches()) {
-            return MetadataSchemaRecord.SCHEMA_TYPE.XML;
+            return DataResourceRecordUtil.XML_SCHEMA_TYPE;
           }
         }
       }

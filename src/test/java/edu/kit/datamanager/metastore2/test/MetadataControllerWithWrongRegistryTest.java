@@ -6,7 +6,6 @@
 package edu.kit.datamanager.metastore2.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import org.junit.Before;
 import org.junit.Test;

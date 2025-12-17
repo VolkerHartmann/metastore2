@@ -5,7 +5,6 @@
  */
 package edu.kit.datamanager.metastore2.dao;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.Url2Path;
 import org.junit.*;
 import org.junit.runner.RunWith;

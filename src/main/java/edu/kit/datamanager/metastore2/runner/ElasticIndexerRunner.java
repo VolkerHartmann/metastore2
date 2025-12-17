@@ -22,8 +22,6 @@ import edu.kit.datamanager.configuration.SearchConfiguration;
 import edu.kit.datamanager.entities.RepoServiceRole;
 import edu.kit.datamanager.entities.messaging.MetadataResourceMessage;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.dao.IUrl2PathDao;
 import edu.kit.datamanager.metastore2.domain.*;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
@@ -137,16 +135,6 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticIndexerRunner.class);
 
   /**
-   * DAO for all schema records.
-   */
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
-  /**
-   * DAO for all data records.
-   */
-  @Autowired
-  private IDataRecordDao dataRecordDao;
-  /**
    * DAO for linking URLS to files and format.
    */
   @Autowired
@@ -243,12 +231,26 @@ public class ElasticIndexerRunner implements CommandLineRunner {
    */
   private void updateElasticsearchIndex() throws InterruptedException {
     LOG.info("Start ElasticIndexer Runner for indices '{}' and update date '{}'", indices, updateDate);
-    LOG.info("No of schemas: '{}'", schemaRecordDao.count());
+    LOG.info("No of schemas: '{}'", DataResourceRecordUtil.getNoOfSchemaDocuments());
     // Try to determine URL of repository
 
     determineIndices(indices);
     for (String index : indices) {
       LOG.info("Reindex '{}'", index);
+     Specification<DataResource> specification = DataResourceRecordUtil.findByResourceType(null,   DataResourceRecordUtil.METADATA_SUFFIX);
+      specification = DataResourceRecordUtil.findByUpdateDates(specification, updateDate.toInstant(), null);
+      // Hide revoked and gone data resources.
+      specification = DataResourceRecordUtil.findByStateWithAuthorization(specification, DataResource.State.FIXED, DataResource.State.VOLATILE);
+      int entriesPerPage = 20;
+      int page = 0;
+      LOG.debug("Performing query for records.");
+      Pageable pgbl = PageRequest.of(page, entriesPerPage);
+      Page<DataResource> records = DataResourceRecordUtil.queryDataResources(specification, pgbl);
+      int noOfEntries = records.getNumberOfElements();
+      int noOfPages = records.getTotalPages();
+
+      LOG.debug("Found '{}' schemas!", noOfEntries);
+
       List<DataRecord> findBySchemaId = dataRecordDao.findBySchemaIdAndLastUpdateAfter(index, updateDate.toInstant());
       LOG.trace("Search for documents for schema '{}' and update date '{}'", index, updateDate);
       LOG.trace("No of documents: '{}'", findBySchemaId.size());
@@ -325,35 +327,15 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   }
 
   /**
-   * Transform DataRecord to MetadataRecord.
-   *
-   * @param dataRecord DataRecord holding all information about metadata
-   * document.
-   * @param baseUrl Base URL for accessing service.
-   * @return MetadataRecord of metadata document.
-   */
-  private MetadataRecord toMetadataRecord(DataRecord dataRecord, String baseUrl) {
-    String metadataIdWithVersion = baseUrl + WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(MetadataControllerImplV2.class).getMetadataDocumentById(dataRecord.getMetadataId(), dataRecord.getVersion(), null, null)).toUri();
-    MetadataRecord returnValue = new MetadataRecord();
-    returnValue.setId(dataRecord.getMetadataId());
-    returnValue.setSchemaVersion(dataRecord.getSchemaVersion());
-    returnValue.setRecordVersion(dataRecord.getVersion());
-    returnValue.setMetadataDocumentUri(metadataIdWithVersion);
-    returnValue.setSchema(ResourceIdentifier.factoryUrlResourceIdentifier(toSchemaUrl(dataRecord, baseUrl)));
-
-    return returnValue;
-  }
-
-  /**
    * Transform schemaID to URL if it is an internal
    *
    * @param dataRecord DataRecord holding schemaID and schema version.
    * @param baseUrl Base URL for accessing service.
    * @return URL to Schema as String.
    */
-  private String toSchemaUrl(DataRecord dataRecord, String baseUrl) {
+  private String toSchemaUrl(DataResource dataRecord, String baseUrl) {
     String schemaUrl;
-    schemaUrl = baseUrl + WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(SchemaRegistryControllerImplV2.class).getSchemaDocumentById(dataRecord.getSchemaId(), dataRecord.getVersion(), null, null)).toUri();
+    schemaUrl = baseUrl + WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(SchemaRegistryControllerImplV2.class).getSchemaDocumentById(dataRecord.getId(), dataRecord.getVersion(), null, null)).toUri();
     return schemaUrl;
   }
 

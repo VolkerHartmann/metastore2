@@ -23,7 +23,7 @@ import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.util.ActuatorUtil;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
+import edu.kit.datamanager.metastore2.util.SemanticVersion;
 import edu.kit.datamanager.metastore2.web.ISchemaRegistryControllerV2;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.domain.ContentInformation;
@@ -135,12 +135,12 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   @Override
   public ResponseEntity<DataResource> getRecordById(
           @PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr) {
-    LOG.trace("Performing getRecordById({}, {}).", schemaId, version);
+    LOG.trace("Performing getRecordById({}, {}).", schemaId, semanticVersion);
 
-    DataResource schemaRecord = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, schemaId, version);
+    DataResource schemaRecord = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, schemaId, semanticVersion);
     String etag = schemaRecord.getEtag();
 
     LOG.trace("Returning result.");
@@ -150,12 +150,12 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   @Override
   public ResponseEntity<ContentInformation> getContentInformationById(
           @PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr) {
-    LOG.trace("Performing getContentInformationById({}, {}).", schemaId, version);
+    LOG.trace("Performing getContentInformationById({}, {}).", schemaId, semanticVersion);
 
-    ContentInformation contentInformation = DataResourceRecordUtil.getContentInformationByIdAndVersion(schemaConfig, schemaId, version);
+    ContentInformation contentInformation = DataResourceRecordUtil.getContentInformationByIdAndVersion(schemaConfig, schemaId, semanticVersion);
     DataResource minimalDataResource = DataResource.factoryNewDataResource(contentInformation.getParentResource().getId());
     URI locationUri;
     locationUri = DataResourceRecordUtil.getMetadataDocumentUri(schemaId, contentInformation.getVersion().toString());
@@ -168,17 +168,17 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
 
   @Override
   public ModelAndView getLandingPageById(@PathVariable(value = "schemaId") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr) {
-    LOG.trace("Performing Landing page for schema document with ({}, {}).", id, version);
+    LOG.trace("Performing Landing page for schema document with ({}, {}).", id, semanticVersion);
     String redirectUrl = applicationProperties.getSchemaLandingPage();
-    redirectUrl = redirectUrl.replace(MetadataControllerImpl.PLACEHOLDER_ID, id);
+    redirectUrl = redirectUrl.replace(DataResourceRecordUtil.PLACEHOLDER_ID, id);
     String versionString = "";
-    if (version != null) {
-      versionString = version.toString();
+    if (semanticVersion != null) {
+      versionString = semanticVersion.toString();
     }
-    redirectUrl = "redirect:" + redirectUrl.replace(MetadataControllerImpl.PLACEHOLDER_VERSION, versionString);
+    redirectUrl = "redirect:" + redirectUrl.replace(DataResourceRecordUtil.PLACEHOLDER_VERSION, versionString);
 
     LOG.trace("Redirect to '{}'", redirectUrl);
 
@@ -188,12 +188,13 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   @Override
   public ResponseEntity getSchemaDocumentById(
           @PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr) {
-    LOG.trace("Performing getSchemaDocumentById({}, {}).", schemaId, version);
-
-    DataResource schemaRecord = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, schemaId, version);
+    LOG.trace("Performing getSchemaDocumentById({}, {}).", schemaId, semanticVersion);
+    // Transform version if necessary
+    semanticVersion = SemanticVersion.parseVersion(semanticVersion);
+    DataResource schemaRecord = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, schemaId, semanticVersion);
     ContentInformation contentInfo = DataResourceRecordUtil.getContentInformationByIdAndVersion(schemaConfig, schemaRecord.getId(), Long.valueOf(schemaRecord.getVersion()));
     MediaType contentType = MediaType.valueOf(contentInfo.getMediaType());
     URI pathToFile = URI.create(contentInfo.getContentUri());
@@ -239,12 +240,12 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
 
   @Override
   public ResponseEntity validate(@PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           MultipartFile document,
           WebRequest wr,
           HttpServletResponse hsr) {
-    LOG.trace("Performing validate({}, {}, {}).", schemaId, version, "#document");
-    DataResourceRecordUtil.validateMetadataDocument(schemaConfig, document, schemaId, version);
+    LOG.trace("Performing validate({}, {}, {}).", schemaId, semanticVersion, "#document");
+    DataResourceRecordUtil.validateMetadataDocument(schemaConfig, document, schemaId, semanticVersion);
     LOG.trace("Metadata document validation succeeded. Returning HTTP NOT_CONTENT.");
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
@@ -313,8 +314,6 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
     UnaryOperator<String> getById;
     getById = t -> WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getRecordById(t, null, request, hsr)).toString();
     String eTag = ControllerUtils.getEtagFromHeader(request);
-
-    MetadataSchemaRecordUtil.deleteMetadataSchemaRecord(schemaConfig, schemaId, eTag, getById);
 
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }

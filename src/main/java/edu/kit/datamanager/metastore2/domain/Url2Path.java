@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.domain;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord.SCHEMA_TYPE;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -42,7 +41,4 @@ public class Url2Path implements Serializable {
   private String path;
   @NotNull(message = "Version of the schema document.")
   private Long version;
-  @Enumerated(EnumType.STRING)
-  @NotNull(message = "The schema type used for quick decision making, e.g. to select a proper validator.")
-  private SCHEMA_TYPE type;
 }

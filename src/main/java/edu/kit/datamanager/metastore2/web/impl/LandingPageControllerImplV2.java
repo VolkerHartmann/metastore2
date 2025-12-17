@@ -17,8 +17,6 @@ package edu.kit.datamanager.metastore2.web.impl;
 
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.domain.MetadataRecord;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import static edu.kit.datamanager.metastore2.util.DataResourceRecordUtil.fixSchemaUrl;
 import edu.kit.datamanager.metastore2.web.ILandingPageControllerV2;
@@ -47,7 +45,7 @@ import java.util.List;
 @Schema(description = "Landing page for all digital objects stored in this repo.")
 public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
 
-  private static final Logger LOG = LoggerFactory.getLogger(LandingPageControllerImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LandingPageControllerImplV2.class);
 
   private final MetastoreConfiguration metadataConfig;
 
@@ -72,7 +70,7 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
 
   @Override
   public String getLandingPageOfSchemaWithId(@RequestParam(value = "schemaId") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) Long version,
           WebRequest wr,
           HttpServletResponse hsr,
           Model model) {
@@ -105,7 +103,7 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
 
   @Override
   public String getLandingPageOfMetadataDocumentWithId(@PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) Long version,
           WebRequest wr,
           HttpServletResponse hsr,
           Model model

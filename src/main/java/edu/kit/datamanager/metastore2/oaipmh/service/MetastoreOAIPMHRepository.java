@@ -17,11 +17,11 @@ package edu.kit.datamanager.metastore2.oaipmh.service;
 
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.configuration.OaiPmhConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
 import edu.kit.datamanager.metastore2.dao.IMetadataFormatDao;
-import edu.kit.datamanager.metastore2.domain.DataRecord;
 import edu.kit.datamanager.metastore2.domain.oaipmh.MetadataFormat;
 import edu.kit.datamanager.metastore2.oaipmh.util.OAIPMHBuilder;
+import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.util.xml.DataCiteMapper;
 import edu.kit.datamanager.util.xml.DublinCoreMapper;
@@ -103,8 +103,6 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
 
   private final OaiPmhConfiguration pluginConfiguration;
 
-  @Autowired
-  private IDataRecordDao dataRecordDao;
   @Autowired
   private IMetadataFormatDao metadataFormatDao;
   @Autowired
@@ -298,7 +296,7 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    *
    * @return The metadata document or null.
    */
-  private Document getMetadataDocument(DataRecord object, String schemaId) {
+  private Document getMetadataDocument(DataResource object, String schemaId) {
     LOGGER.trace("Obtaining metadata document for schema {} and resource identifier {}", schemaId, object.getId());
     ByteArrayOutputStream bout = new ByteArrayOutputStream();
     boolean wasError = true;
@@ -376,7 +374,7 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    * @param result The digital object to add a record for.
    * @param builder The OAIPMHBuilder.
    */
-  private void addRecordEntry(DataRecord result, OAIPMHBuilder builder) {
+  private void addRecordEntry(DataResource result, OAIPMHBuilder builder) {
     LOGGER.trace("Adding record for object identifier {} to response.", result.getId());
     Document doc = getMetadataDocument(result, builder.getMetadataPrefix());
     if (doc != null) {
@@ -400,11 +398,11 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    *
    * @return A entity which might be null.
    */
-  private DataRecord getEntity(OAIPMHBuilder builder) {
+  private DataResource getEntity(OAIPMHBuilder builder) {
     LOGGER.trace("Performing getEntity().");
-    DataRecord entity = null;
+    DataResource entity = null;
 
-    Optional<DataRecord> findEntity = dataRecordDao.findTopByMetadataIdOrderByVersionDesc(builder.getIdentifier());
+    Optional<DataResource> findEntity = IDataResourceDao.findTopByMetadataIdOrderByVersionDesc(builder.getIdentifier());
     if (findEntity.isPresent()) {
       entity = findEntity.get();
     }
@@ -426,8 +424,8 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    * @return A list of entities which might be empty.
    */
   @SuppressWarnings("StringSplitter")
-  private List<DataRecord> getEntities(OAIPMHBuilder builder) {
-    List<DataRecord> results;
+  private List<DataResource> getEntities(OAIPMHBuilder builder) {
+    List<DataResource> results;
 
     String prefix = builder.getMetadataPrefix();
     LOGGER.trace("Getting entities for metadata prefix {} from repository.", prefix);
@@ -473,21 +471,14 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
         }
       }
       LOGGER.trace("findBySchemaIdAndLastUpdateBetween({},{},{}, Page({},{}))", findMetadataPrefix, from, until, page, maxElementsPerList);
-      overallCount = dataRecordDao.countBySchemaIdInAndLastUpdateBetween(findMetadataPrefix, from, until);
-      results = dataRecordDao.findBySchemaIdInAndLastUpdateBetween(findMetadataPrefix, from, until, PageRequest.of(page, maxElementsPerList));
-      LOGGER.trace("Found '" + results.size() + "' elements of '" + dataRecordDao.count() + "' elements in total!");
+      overallCount = DataResourceRecordUtil.countBySchemaIdInAndLastUpdateBetween(findMetadataPrefix, from, until);
+      results = DataResourceRecordUtil.findBySchemaIdInAndLastUpdateBetween(findMetadataPrefix, from, until, PageRequest.of(page, maxElementsPerList));
+      LOGGER.trace("Found '" + results.size() + "' elements of '" + overallCount + "' elements in total!");
     } else {
       LOGGER.trace("findBySchemaIdAndLastUpdateBetween({},{},{}, Page({},{}))", prefix, from, until, page, maxElementsPerList);
-      overallCount = dataRecordDao.countBySchemaIdAndLastUpdateBetween(prefix, from, until);
-      results = dataRecordDao.findBySchemaIdAndLastUpdateBetween(prefix, from, until, PageRequest.of(page, maxElementsPerList));
-      LOGGER.trace("Found '" + results.size() + "' elements of '" + dataRecordDao.count() + "' elements in total!");
-    }
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("List top 100 of all items:");
-      List<DataRecord> findAll = dataRecordDao.findAll(PageRequest.of(0, 100)).getContent();
-      for (DataRecord item : findAll) {
-        LOGGER.trace("-> " + item);
-      }
+      overallCount = DataResourceRecordUtil.countBySchemaIdAndLastUpdateBetween(prefix, from, until);
+      results = DataResourceRecordUtil.findBySchemaIdAndLastUpdateBetween(prefix, from, until, PageRequest.of(page, maxElementsPerList));
+      LOGGER.trace("Found '" + results.size() + "' elements of '" + overallCount + "' elements in total!");
     }
     LOGGER.trace("Setting next resumption token.");
     int cursor = currentCursor + results.size();

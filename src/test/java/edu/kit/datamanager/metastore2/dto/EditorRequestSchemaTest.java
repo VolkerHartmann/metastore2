@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.dto;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import org.json.simple.JSONObject;
 import org.junit.*;
 

@@ -298,7 +298,7 @@
       function readSchemaRecord(rowColumnValue, callback) {
         $.ajax({
           type: "GET",
-          url: "api/v1/schemas/" + rowColumnValue.schemaId + "?version=" + rowColumnValue.schemaVersion,
+          url: "api/v1/schemas/" + rowColumnValue.schemaId + "?semanticVersion=" + rowColumnValue.schemaVersion,
           contentType: "application/json",
           dataType: 'json',
           headers: {

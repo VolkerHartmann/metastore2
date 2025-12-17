@@ -74,58 +74,58 @@ public interface IMetadataControllerV2 extends InfoContributor {
 
   @Operation(summary = "Get a metadata record by id.", description = "Obtain a single record by its resource identifier. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
-          + "by providing a version number as request parameter.",
+          + "by providing a semantic version number as request parameter.",
           responses = {
             @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datacite.org+json"})
   ResponseEntity<DataResource> getRecordById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                             @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                             @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") String semanticVersion,
                                              WebRequest wr,
                                              HttpServletResponse hsr);
 
   @Operation(summary = "Get a content information record by id.", description = "Obtain a single record by its resource identifier. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
-          + "by providing a version number as request parameter.",
+          + "by providing a semantic version number as request parameter.",
           responses = {
             @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datamanager.content-information+json"})
   ResponseEntity<ContentInformation> getContentInformationById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                                               @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                                               @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") String semanticVersion,
                                                                WebRequest wr,
                                                                HttpServletResponse hsr);
 
   @Operation(summary = "Get a metadata record by id.", description = "Obtain a single record by its resource identifier. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
-          + "by providing a version number as request parameter.",
+          + "by providing a semantic version number as request parameter.",
           responses = {
             @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datamanager.acl+json"})
   ResponseEntity<ElasticWrapper> getAclById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                       @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                       @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") String semanticVersion,
                                        WebRequest wr,
                                        HttpServletResponse hsr);
 
   @Operation(summary = "Get a landing page by id.", description = "Obtain a single record by its resource identifier. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. Furthermore, a specific version of the record can be returned "
-          + "by providing a version number as request parameter.",
+          + "by providing a semantic version number as request parameter.",
           responses = {
             @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"text/html"})
   ModelAndView getLandingpageById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                  @Parameter(description = "The version of the metadata document. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                  @Parameter(description = "The version of the metadata document. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") String semanticVersion,
                                   WebRequest wr,
                                   HttpServletResponse hsr);
   @Operation(summary = "Get a metadata document by record identifier.", description = "Obtain a single metadata document identified by its resource identifier."
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
-          + "Furthermore, a specific version of the metadata document can be returned by providing a version number as request parameter.",
+          + "Furthermore, a specific version of the metadata document can be returned by providing a semantic version number as request parameter.",
           responses = {
             @ApiResponse(responseCode = "200", description = "OK and the metadata document is returned if the record exists and the user has sufficient permission."),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id or version was found.")})
@@ -133,7 +133,7 @@ public interface IMetadataControllerV2 extends InfoContributor {
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET})
   @ResponseBody
   ResponseEntity getMetadataDocumentById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                         @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                         @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") String semanticVersion,
                                          WebRequest wr,
                                          HttpServletResponse hsr);
 

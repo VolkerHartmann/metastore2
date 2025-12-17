@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.web;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,7 +60,7 @@ public interface ISchemaRegistryControllerV2 extends InfoContributor {
           description = "This endpoint allows to register a schema document and its (datacite) record. "
           + "The record must contain at least an unique identifier (schemaId) and the type of the schema (type).",
           responses = {
-            @ApiResponse(responseCode = "201", description = "Created is returned only if the record has been validated, persisted and the document was successfully validated and stored.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+            @ApiResponse(responseCode = "201", description = "Created is returned only if the record has been validated, persisted and the document was successfully validated and stored.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided metadata record is invalid or if the validation of the provided schema failed."),
             @ApiResponse(responseCode = "409", description = "A Conflict is returned, if there is already a record for the provided schema id.")})
   @RequestMapping(value = {"/"}, method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
@@ -77,40 +76,40 @@ public interface ISchemaRegistryControllerV2 extends InfoContributor {
           summary = "Get schema record by schema id (and version).", 
           description = "Obtain is single schema record by its schema id. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
-          + "Furthermore, a specific version of the record can be returned by providing a version number as request parameter. If no version is specified, the most recent version is returned.",
+          + "Furthermore, a specific version of the record can be returned by providing a semantic version number as request parameter. If no version is specified, the most recent version is returned.",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id and version was found.")})
   @RequestMapping(value = {"/{schemaId}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datacite.org+json"})
   @ResponseBody
   ResponseEntity<DataResource> getRecordById(@Parameter(description = "The record identifier or schema identifier.", required = true) @PathVariable(value = "schemaId") String id,
-                                             @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) Long version,
+                                             @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) String semanticVersion,
                                              WebRequest wr,
                                              HttpServletResponse hsr);
   @Operation(operationId = "getContentInformationRecordOfSchema",
           summary = "Get content information record by schema id (and version).", 
           description = "Obtain is single schema record by its schema id. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
-          + "Furthermore, a specific version of the record can be returned by providing a version number as request parameter. If no version is specified, the most recent version is returned.",
+          + "Furthermore, a specific version of the record can be returned by providing a semantic version number as request parameter. If no version is specified, the most recent version is returned.",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+            @ApiResponse(responseCode = "200", description = "OK and the record is returned if the record exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id and version was found.")})
   @RequestMapping(value = {"/{schemaId}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datamanager.content-information+json"})
   @ResponseBody
   ResponseEntity<ContentInformation> getContentInformationById(@Parameter(description = "The record identifier or schema identifier.", required = true) @PathVariable(value = "schemaId") String id,
-                                                               @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) Long version,
+                                                               @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) String semanticVersion,
                                                                WebRequest wr,
                                                                HttpServletResponse hsr);
 
   @Operation(summary = "Get landing page of schema by schema id (and version).", description = "Show landing page by its schema id. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
-          + "Furthermore, a specific version of the schema can be returned by providing a version number as request parameter. If no version is specified, all versions will be returned.",
+          + "Furthermore, a specific version of the schema can be returned by providing a semantic version number as request parameter. If no version is specified, all versions will be returned.",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK and the landingpage is returned if the id exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+            @ApiResponse(responseCode = "200", description = "OK and the landingpage is returned if the id exists and the user has sufficient permission.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id and version was found.")})
   @RequestMapping(value = {"/{schemaId}"}, method = {RequestMethod.GET}, produces = {"text/html"})
   ModelAndView getLandingPageById(@Parameter(description = "The record identifier or schema identifier.", required = true) @PathVariable(value = "schemaId") String id,
-                                  @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) Long version,
+                                  @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) String semanticVersion,
                                   WebRequest wr,
                                   HttpServletResponse hsr);
 
@@ -125,21 +124,21 @@ public interface ISchemaRegistryControllerV2 extends InfoContributor {
   @RequestMapping(value = {"/{schemaId}/validate"}, method = {RequestMethod.POST}, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
   @ResponseBody
   ResponseEntity validate(@Parameter(description = "The record identifier or schema identifier.", required = true) @PathVariable(value = "schemaId") String id,
-                          @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) Long version,
+                          @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) String semanticVersion,
                           @Parameter(description = "The metadata file to validate against the addressed schema.", required = true) @RequestPart(name = "document", required = true) final MultipartFile document,
                           WebRequest wr,
                           HttpServletResponse hsr);
 
   @Operation(summary = "Get a schema document by schema id.", description = "Obtain a single schema document identified by its schema id. "
           + "Depending on a user's role, accessing a specific record may be allowed or forbidden. "
-          + "Furthermore, a specific version of the schema document can be returned by providing a version number as request parameter. If no version is specified, the most recent version is returned.",
+          + "Furthermore, a specific version of the schema document can be returned by providing a semantic version number as request parameter. If no version is specified, the most recent version is returned.",
           responses = {
             @ApiResponse(responseCode = "200", description = "OK and the schema document is returned if the record exists and the user has sufficient permission."),
             @ApiResponse(responseCode = "404", description = "Not found is returned, if no record for the provided id and version was found.")})
   @RequestMapping(value = {"/{schemaId}"}, method = {RequestMethod.GET}, produces = {"application/json", "application/xml"})
   @ResponseBody
   ResponseEntity getSchemaDocumentById(@Parameter(description = "The schema id.", required = true) @PathVariable(value = "schemaId") String id,
-                                       @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) Long version,
+                                       @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) String semanticVersion,
                                        WebRequest wr,
                                        HttpServletResponse hsr);
 
@@ -150,7 +149,7 @@ public interface ISchemaRegistryControllerV2 extends InfoContributor {
           + "at the provided date, 3) Providing both returns all records updated within the provided date range. "
           + "If no parameters are provided, all accessible records are listed. With regard to schema versions, only the most recent version of each schema is listed.",
           responses = {
-            @ApiResponse(responseCode = "200", description = "OK and a list of records or an empty list of no record matches.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = MetadataSchemaRecord.class))))})
+            @ApiResponse(responseCode = "200", description = "OK and a list of records or an empty list of no record matches.", content = @Content(array = @ArraySchema(schema = @Schema(implementation = DataResource.class))))})
   @RequestMapping(value = {"/"}, method = {RequestMethod.GET})
   @ResponseBody
   @PageableAsQueryParam
@@ -170,7 +169,7 @@ public interface ISchemaRegistryControllerV2 extends InfoContributor {
           + "A new version is only created while providing a (new) schema document.",
           responses = {
             @ApiResponse(responseCode = "200", description = "OK is returned in case of a successful update. "
-                    + "The updated record is returned in the response.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+                    + "The updated record is returned in the response.", content = @Content(schema = @Schema(implementation = DataResource.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided schema record/schema document is invalid."),
             @ApiResponse(responseCode = "404", description = "Not Found is returned if no record for the provided id was found.")})
   @RequestMapping(value = "/{schemaId}", method = RequestMethod.PUT, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})

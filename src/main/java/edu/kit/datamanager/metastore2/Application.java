@@ -27,8 +27,6 @@ import edu.kit.datamanager.metastore2.configuration.MonitoringConfiguration;
 import edu.kit.datamanager.metastore2.configuration.OaiPmhConfiguration;
 import edu.kit.datamanager.metastore2.dao.*;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
 import edu.kit.datamanager.metastore2.util.MonitoringUtil;
 import edu.kit.datamanager.metastore2.validation.IValidator;
 import edu.kit.datamanager.repo.configuration.DateBasedStorageProperties;
@@ -103,12 +101,6 @@ public class Application {
   private List<IRepoVersioningService> versioningServices;
   @Autowired
   private List<IRepoStorageService> storageServices;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
-  @Autowired
-  private IDataRecordDao dataRecordDao;
-  @Autowired
-  private IDataResourceDao dataResourceDao;
   @Autowired
   private IUrl2PathDao url2PathDao;
   @Autowired
@@ -281,16 +273,6 @@ public class Application {
     rbc.setMaxJaversScope(this.applicationProperties.getMaxJaversScope());
     rbc.setSchemaRegistries(checkRegistries(applicationProperties.getSchemaRegistries()));
     rbc.setValidators(validators);
-    MetadataRecordUtil.setSchemaConfig(rbc);
-    MetadataRecordUtil.setDataRecordDao(dataRecordDao);
-    MetadataSchemaRecordUtil.setSchemaRecordDao(schemaRecordDao);
-    MetadataSchemaRecordUtil.setMetadataFormatDao(metadataFormatDao);
-    MetadataSchemaRecordUtil.setUrl2PathDao(url2PathDao);
-    MetadataSchemaRecordUtil.setDataRecordDao(dataRecordDao);
-    DataResourceRecordUtil.setDataRecordDao(dataRecordDao);
-    DataResourceRecordUtil.setDataResourceDao(dataResourceDao);
-    DataResourceRecordUtil.setMetadataFormatDao(metadataFormatDao);
-    DataResourceRecordUtil.setSchemaRecordDao(schemaRecordDao);
     DataResourceRecordUtil.setSchemaConfig(rbc);
     DataResourceRecordUtil.setUrl2PathDao(url2PathDao);
     DataResourceRecordUtil.setAllIdentifiersDao(allIdentifiersDao);
@@ -403,7 +385,7 @@ public class Application {
     String basePath = config.getBasepath().toString();
     LOG.trace("fixBasePath: '{}'", basePath);
     try {
-      basePath = MetadataSchemaRecordUtil.fixRelativeURI(basePath);
+      basePath = DataResourceRecordUtil.fixRelativeURI(basePath);
       LOG.trace("fixBasePath: --> '{}'", basePath);
       config.setBasepath(URI.create(basePath).toURL());
     } catch (MalformedURLException ex) {

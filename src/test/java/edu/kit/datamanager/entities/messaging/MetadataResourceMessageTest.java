@@ -7,7 +7,6 @@ package edu.kit.datamanager.entities.messaging;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import edu.kit.datamanager.exceptions.MessageValidationException;
-import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import org.junit.*;
 

@@ -5,7 +5,6 @@
  */
 package edu.kit.datamanager.metastore2.validation.impl;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.validation.IValidator;
 import org.apache.xerces.impl.Constants;
 import org.slf4j.Logger;
@@ -37,11 +36,6 @@ public class XmlValidator implements IValidator {
   private static final Logger LOG = LoggerFactory.getLogger(XmlValidator.class);
 
   private String errorMessage;
-
-  @Override
-  public boolean supportsSchemaType(MetadataSchemaRecord.SCHEMA_TYPE type) {
-    return MetadataSchemaRecord.SCHEMA_TYPE.XML.equals(type);
-  }
 
   @Override
   public boolean supportsMimetype(String type) {

@@ -16,21 +16,16 @@
 package edu.kit.datamanager.metastore2.web.impl;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.entities.messaging.MetadataResourceMessage;
 import edu.kit.datamanager.exceptions.AccessForbiddenException;
 import edu.kit.datamanager.exceptions.BadArgumentException;
-import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UnprocessableEntityException;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.domain.ElasticWrapper;
-import edu.kit.datamanager.metastore2.domain.SchemaRecord;
 import edu.kit.datamanager.metastore2.util.ActuatorUtil;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataRecordUtil;
+import edu.kit.datamanager.metastore2.util.SemanticVersion;
 import edu.kit.datamanager.metastore2.web.IMetadataControllerV2;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -82,8 +77,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-import static edu.kit.datamanager.entities.Identifier.IDENTIFIER_TYPE.INTERNAL;
-
 /**
  * Controller for metadata documents.
  */
@@ -92,8 +85,6 @@ import static edu.kit.datamanager.entities.Identifier.IDENTIFIER_TYPE.INTERNAL;
 @Tag(name = "Metadata Repository")
 @Schema(description = "Metadata Resource Management")
 public class MetadataControllerImplV2 implements IMetadataControllerV2 {
-
-  public static final String POST_FILTER = "post_filter";
   /**
    * Placeholder string for id of resource. (landingpage)
    */
@@ -109,8 +100,6 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
 
   private final MetastoreConfiguration metadataConfig;
 
-  private final ISchemaRecordDao schemaRecordDao;
-
   @Autowired
   private MeterRegistry meterRegistry;
 
@@ -122,33 +111,19 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Autowired
   private Optional<IMessagingService> messagingService;
 
-  private final String guestToken;
-
   /**
    * Constructor for metadata documents controller.
    *
    * @param applicationProperties Configuration for controller.
    * @param metadataConfig Configuration for metadata documents repository.
-   * @param metadataRecordDao DAO for metadata records.
-   * @param schemaRecordDao DAO for schema records.
    */
   public MetadataControllerImplV2(ApplicationProperties applicationProperties,
-          MetastoreConfiguration metadataConfig,
-          ILinkedMetadataRecordDao metadataRecordDao,
-          ISchemaRecordDao schemaRecordDao) {
+          MetastoreConfiguration metadataConfig) {
     this.applicationProperties = applicationProperties;
     this.metadataConfig = metadataConfig;
-    this.schemaRecordDao = schemaRecordDao;
     LOG.info("------------------------------------------------------");
     LOG.info("------{}", this.metadataConfig);
     LOG.info("------------------------------------------------------");
-    LOG.trace("Create guest token");
-    guestToken = edu.kit.datamanager.util.JwtBuilder.createUserToken("guest", RepoUserRole.GUEST).
-            addSimpleClaim("email", "metastore@localhost").
-            addSimpleClaim("loginFailures", 0).
-            addSimpleClaim("active", true).
-            addSimpleClaim("locked", false).getCompactToken(applicationProperties.getJwtSecret());
-    MetadataRecordUtil.setToken(guestToken);
   }
 
   @Override
@@ -184,19 +159,8 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
     schemaIdentifier = DataResourceRecordUtil.getSchemaIdentifier(metadataRecord);
     switch (schemaIdentifier.getIdentifierType()) {
       case INTERNAL:
-        // nothing to do
-        break;
       case URL:
-        SchemaRecord schemaRecord = schemaRecordDao.findByAlternateId(schemaIdentifier.getValue());
-        if (schemaRecord == null) {
-          String message = "External URLs are not supported yet!\n"
-                  + "But '" + schemaIdentifier.getValue() + "' seems not to be an internal one!\n"
-                  + "Hint: Maybe version number is missing (e.g.: [...]?version=1";
-          LOG.error(message);
-          throw new ResourceNotFoundException(message);
-        }
-        schemaIdentifier.setValue(schemaRecord.getSchemaId());
-        schemaIdentifier.setIdentifierType(INTERNAL);
+        // nothing to do
         break;
       default:
         throw new UnprocessableEntityException("Schema referenced by '" + schemaIdentifier.getIdentifierType().toString() + "' is not supported yet!");
@@ -211,7 +175,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
     DataResourceRecordUtil.fixSchemaUrl(result);
 
     URI locationUri;
-    locationUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getRecordById(result.getId(), Long.valueOf(result.getVersion()), null, null)).toUri();
+    locationUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getRecordById(result.getId(), result.getVersion(), null, null)).toUri();
 
     LOG.trace("Sending CREATE event.");
     messagingService.orElse(new LogfileMessagingService()).
@@ -225,14 +189,15 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity<DataResource> getRecordById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
-    LOG.trace("Performing getRecordById({}, {}).", id, version);
+    LOG.trace("Performing getRecordById({}, {}).", id, semanticVersion);
+    semanticVersion = SemanticVersion.parseVersion(semanticVersion);
 
-    LOG.trace("Obtaining metadata record with id {} and version {}.", id, version);
-    DataResource metadataRecord = DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, version);
+    LOG.trace("Obtaining metadata record with id {} and version {}.", id, semanticVersion);
+    DataResource metadataRecord = DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, semanticVersion);
     LOG.trace("Metadata record found. Prepare response.");
     //if security enabled, check permission -> if not matching, return HTTP UNAUTHORIZED or FORBIDDEN
     LOG.trace("Get ETag of DataResource.");
@@ -249,14 +214,15 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity<ContentInformation> getContentInformationById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
-    LOG.trace("Performing getContentInformationById({}, {}).", id, version);
+    LOG.trace("Performing getContentInformationById({}, {}).", id, semanticVersion);
+    semanticVersion = SemanticVersion.parseVersion(semanticVersion);
 
-    LOG.trace("Obtaining metadata record with id {} and version {}.", id, version);
-    ContentInformation contentInformation = DataResourceRecordUtil.getContentInformationByIdAndVersion(metadataConfig, id, version);
+    LOG.trace("Obtaining metadata record with id {} and version {}.", id, semanticVersion);
+    ContentInformation contentInformation = DataResourceRecordUtil.getContentInformationByIdAndVersion(metadataConfig, id, semanticVersion);
     LOG.trace("ContentInformation record found. Prepare response...");
     DataResource minimalDataResource = DataResource.factoryNewDataResource(contentInformation.getParentResource().getId());
     URI locationUri;
@@ -272,16 +238,17 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity<ElasticWrapper> getAclById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
-    LOG.info("Performing getAclById({}, {}).", id, version);
+    LOG.info("Performing getAclById({}, {}).", id, semanticVersion);
+    semanticVersion = SemanticVersion.parseVersion(semanticVersion);
     if (!AuthenticationHelper.isAuthenticatedAsService()) {
       throw new AccessForbiddenException("Only for services!");
     }
 
-    DataResource metadataRecord = DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, version);
+    DataResource metadataRecord = DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, semanticVersion);
     DataResourceRecordUtil.fixSchemaUrl(metadataRecord);
     ElasticWrapper aclRecord = new ElasticWrapper(metadataRecord);
 
@@ -291,13 +258,14 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity getMetadataDocumentById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
-    LOG.trace("Performing getMetadataDocumentById({}, {}).", id, version);
+    LOG.trace("Performing getMetadataDocumentById({}, {}).", id, semanticVersion);
+    semanticVersion = SemanticVersion.parseVersion(semanticVersion);
 
-    Path metadataDocumentPath = DataResourceRecordUtil.getMetadataDocumentByIdAndVersion(metadataConfig, id, version);
+    Path metadataDocumentPath = DataResourceRecordUtil.getMetadataDocumentByIdAndVersion(metadataConfig, id, semanticVersion);
 
     return ResponseEntity.
             ok().
@@ -308,15 +276,16 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ModelAndView getLandingpageById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "semanticVersion", required = false) String semanticVersion,
           WebRequest wr,
           HttpServletResponse hsr) {
-    LOG.trace("Performing Landing page for metadata document with ({}, {}).", id, version);
+    LOG.trace("Performing Landing page for metadata document with ({}, {}).", id, semanticVersion);
+    semanticVersion = SemanticVersion.parseVersion(semanticVersion);
     String redirectUrl = applicationProperties.getMetadataLandingPage();
     redirectUrl = redirectUrl.replace(PLACEHOLDER_ID, id);
     String versionString = "";
-    if (version != null) {
-      versionString = version.toString();
+    if (semanticVersion != null) {
+      versionString = semanticVersion.toString();
     }
     redirectUrl = "redirect:" + redirectUrl.replace(PLACEHOLDER_VERSION, versionString);
 

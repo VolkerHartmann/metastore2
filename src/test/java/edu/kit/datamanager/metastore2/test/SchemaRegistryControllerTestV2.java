@@ -13,13 +13,8 @@ import edu.kit.datamanager.entities.Identifier.IDENTIFIER_TYPE;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtilTest;
-import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -1576,36 +1571,6 @@ public class SchemaRegistryControllerTestV2 {
     }
   }
 
-  /**
-   * **************************************************************************
-   * Moved tests from MetadataSchemaRecordUtilTest
-   * **************************************************************************
-   * Test of migrateToDataResource method, of class MetadataSchemaRecordUtil.
-   */
-  @Test
-  public void testMigrateToDataResource() {
-    System.out.println("migrateToDataResource");
-    RepoBaseConfiguration applicationProperties = schemaConfig;
-    // Test with all possible values PID shouldn't be an URL
-    MetadataSchemaRecord metadataSchemaRecord = new MetadataSchemaRecordUtilTest().createSchemaRecord(5, 7, 11, 12);
-    MetadataSchemaRecord expResult;
-    DataResource result = MetadataSchemaRecordUtil.migrateToDataResource(applicationProperties, metadataSchemaRecord);
-    expResult = MetadataSchemaRecordUtil.migrateToMetadataSchemaRecord(applicationProperties, result, false);
-    assertEquals(metadataSchemaRecord, expResult);
-    // Test with all possible values containing valid PID.
-    metadataSchemaRecord = new MetadataSchemaRecordUtilTest().createSchemaRecord(5, 7, 11, 12);
-    ResourceIdentifier correctPid = ResourceIdentifier.factoryResourceIdentifier(PID, PID_TYPE);
-    metadataSchemaRecord.setPid(correctPid);
-    result = MetadataSchemaRecordUtil.migrateToDataResource(applicationProperties, metadataSchemaRecord);
-    expResult = MetadataSchemaRecordUtil.migrateToMetadataSchemaRecord(applicationProperties, result, false);
-    assertEquals(metadataSchemaRecord, expResult);
-    // Test skipping pid
-    metadataSchemaRecord = new MetadataSchemaRecordUtilTest().createSchemaRecord(5, 7, 10, 11, 12);
-    result = MetadataSchemaRecordUtil.migrateToDataResource(applicationProperties, metadataSchemaRecord);
-    expResult = MetadataSchemaRecordUtil.migrateToMetadataSchemaRecord(applicationProperties, result, false);
-    assertEquals(metadataSchemaRecord, expResult);
-  }
-
   @Test
   public void testIssue52() throws Exception {
     String schemaId = "test4Issue52".toLowerCase(Locale.getDefault());
@@ -1889,7 +1854,7 @@ public class SchemaRegistryControllerTestV2 {
     // the following fields are optional
     setComment(record, COMMENT);
     setDefinition(record, DEFINITION);
-    record.setResourceType(ResourceType.createResourceType(MetadataSchemaRecord.SCHEMA_TYPE.XML + DataResourceRecordUtil.SCHEMA_SUFFIX, ResourceType.TYPE_GENERAL.MODEL));
+    record.setResourceType(ResourceType.createResourceType(DataResourceRecordUtil.JSON_SCHEMA_TYPE.SCHEMA_TYPE.XML + DataResourceRecordUtil.SCHEMA_SUFFIX, ResourceType.TYPE_GENERAL.MODEL));
     record.getFormats().add(MediaType.APPLICATION_XML.toString());
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry("test", PERMISSION.READ));
