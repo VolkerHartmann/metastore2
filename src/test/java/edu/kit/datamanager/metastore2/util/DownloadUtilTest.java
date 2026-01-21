@@ -62,9 +62,17 @@ public class DownloadUtilTest {
    * Test of downloadResource method, of class GemmaMapping.
    */
   @Test
+  public void testConstructor(){
+    System.out.println("testConstructor");
+    assertNotNull(new DownloadUtil());
+  }
+
+    /**
+     * Test of downloadResource method, of class GemmaMapping.
+     */
+    @Test
   public void testDownloadResource() throws URISyntaxException {
     System.out.println("downloadResource");
-    assertNotNull(new DownloadUtil());
     URI resourceURL = new URI("https://www.example.org");
     Optional<Path> result = DownloadUtil.downloadResource(resourceURL);
     assertTrue("No file available!", result.isPresent());
@@ -97,7 +105,7 @@ public class DownloadUtilTest {
 
     try {
       URI resourceURL = new URI("https://invalidhttpaddress.de");
-      Optional<Path> result = DownloadUtil.downloadResource(resourceURL);
+      DownloadUtil.downloadResource(resourceURL);
       fail();
     } catch (CustomInternalServerError ie) {
       assertTrue(true);
@@ -109,7 +117,7 @@ public class DownloadUtilTest {
    * Test of downloadResource method, of class GemmaMapping.
    */
   @Test
-  public void testDownloadLocalResource() throws URISyntaxException, IOException {
+  public void testDownloadLocalResource() {
     System.out.println("testDownloadLocalResource");
     File srcFile = new File("src/test/resources/examples/simple.json");
     assertTrue("File doesn't exist: " + srcFile, srcFile.exists());
@@ -125,7 +133,7 @@ public class DownloadUtilTest {
    * Test of downloadResource method, of class GemmaMapping.
    */
   @Test
-  public void testDownloadLocalJsonFileWithoutSuffix() throws URISyntaxException, IOException {
+  public void testDownloadLocalJsonFileWithoutSuffix() throws IOException {
     System.out.println("testDownloadLocalResource");
     File srcFile = new File("src/test/resources/examples/simple.json");
     assertTrue("File doesn't exist: " + srcFile, srcFile.exists());
@@ -143,7 +151,7 @@ public class DownloadUtilTest {
    * Test of downloadResource method, of class GemmaMapping.
    */
   @Test
-  public void testDownloadLocalXMLFileWithoutSuffix() throws URISyntaxException, IOException {
+  public void testDownloadLocalXMLFileWithoutSuffix() throws IOException {
     System.out.println("testDownloadLocalResource");
     File srcFile = new File("src/test/resources/examples/simple.xml");
     assertTrue("File doesn't exist: " + srcFile, srcFile.exists());
@@ -161,7 +169,7 @@ public class DownloadUtilTest {
    * Test of downloadResource method, of class GemmaMapping.
    */
   @Test
-  public void testDownloadLocalResourceWithoutSuffix() throws URISyntaxException, IOException {
+  public void testDownloadLocalResourceWithoutSuffix() {
     System.out.println("testDownloadLocalResource");
     File srcFile = new File("src/test/resources/examples/anyContentWithoutSuffix");
     assertTrue("File doesn't exist: " + srcFile, srcFile.exists());
@@ -176,11 +184,11 @@ public class DownloadUtilTest {
    * Test of downloadResource method, of class GemmaMapping.
    */
   @Test
-  public void testDownloadInvalidLocalResource() throws URISyntaxException, IOException {
+  public void testDownloadInvalidLocalResource() {
     System.out.println("testDownloadInvalidLocalResource");
     try {
       URI resourceURL = new File("/invalid/path/to/local/file").toURI();
-      Optional<Path> result = DownloadUtil.downloadResource(resourceURL);
+      DownloadUtil.downloadResource(resourceURL);
       fail();
     } catch (CustomInternalServerError ie) {
       assertTrue(true);
@@ -192,7 +200,7 @@ public class DownloadUtilTest {
    * Test of downloadResource method, of class GemmaMapping.
    */
   @Test
-  public void testDownloadResourceNoParameter() throws URISyntaxException {
+  public void testDownloadResourceNoParameter() {
     System.out.println("downloadResource");
     Optional<Path> result = DownloadUtil.downloadResource(null);
     assertFalse(result.isPresent());
@@ -238,11 +246,9 @@ public class DownloadUtilTest {
     System.out.println("createTempFile");
     String[] prefix = {"/prefix", null, "/prefix"};
     String[] suffix = {null, "/suffix", "/suffix"};
-    HashSet<String> allPaths = new HashSet<>();
-    String path = null;
     for (int index = 0; index < prefix.length; index++) {
       try {
-        Path tmpPath = DownloadUtil.createTempFile(prefix[index], suffix[index]);
+        DownloadUtil.createTempFile(prefix[index], suffix[index]);
         fail();
       } catch (CustomInternalServerError cise) {
         assertTrue(true);
@@ -280,8 +286,7 @@ public class DownloadUtilTest {
     // skip extensions with a '.' at start. No idea why at the moment.
     // works fine in testRemoveFile()!?
     if (SystemUtils.IS_OS_WINDOWS) {
-      String[] winExtensions = {"nosuffix", "xml"};
-      extensions = winExtensions;
+      extensions = new String[] {"nosuffix", "xml"};
     }
     for (String extension : extensions) {
       Path createTempFile = DownloadUtil.createTempFile(null, extension);
@@ -337,7 +342,7 @@ public class DownloadUtilTest {
   }
 
   @Test
-  public void testFixFileExtensionWrongFile() throws IOException {
+  public void testFixFileExtensionWrongFile() {
     System.out.println("testFixFileExtensionUnknown");
     File srcFile = new File("/tmp");
     Path result = DownloadUtil.fixFileExtension(srcFile.toPath());
@@ -345,7 +350,6 @@ public class DownloadUtilTest {
     srcFile = new File("/invalid/path/for/file");
     result = DownloadUtil.fixFileExtension(srcFile.toPath());
     assertEquals(result, srcFile.toPath());
-    srcFile = null;
     result = DownloadUtil.fixFileExtension(null);
     assertNull(result);
   }
