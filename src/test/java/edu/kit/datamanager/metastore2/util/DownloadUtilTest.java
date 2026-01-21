@@ -305,8 +305,7 @@ public class DownloadUtilTest {
     // skip extensions with a '.' at start. No idea why at the moment.
     // works fine in testRemoveFile()!?
     if (SystemUtils.IS_OS_WINDOWS) {
-      String[] winExtensions = {"nosuffix", "xml"};
-      extensions = winExtensions;
+      extensions = new String[] {"nosuffix", "xml"};
     }
     for (String extension : extensions) {
       Path createTempFile = DownloadUtil.createTempFile(null, extension);
