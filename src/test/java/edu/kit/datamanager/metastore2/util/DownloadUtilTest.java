@@ -87,7 +87,6 @@ public class DownloadUtilTest {
   @Test
   public void testDownloadResourceWithPath() throws URISyntaxException {
     System.out.println("downloadResource");
-    assertNotNull(new DownloadUtil());
     URI resourceURL = new URI("https://httpbin.org/json");
     Optional<Path> result = DownloadUtil.downloadResource(resourceURL);
     assertTrue("No file available!", result.isPresent());
@@ -210,7 +209,7 @@ public class DownloadUtilTest {
    * Test of createTempFile method, of class DownloadUtil.
    */
   @Test
-  public void testCreateTempFile() {
+  public void testCreateTempFile() throws NullPointerException {
     System.out.println("createTempFile");
     String[] prefix = {null, null, null, "", "", "", "prefix", "prefix", "prefix"};
     String[] suffix = {null, "", "suffix", null, "", "suffix", null, "", "suffix"};
