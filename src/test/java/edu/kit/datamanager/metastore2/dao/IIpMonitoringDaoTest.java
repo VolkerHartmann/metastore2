@@ -5,9 +5,11 @@
  */
 package edu.kit.datamanager.metastore2.dao;
 
-import edu.kit.datamanager.metastore2.domain.IpMonitoring;
-import edu.kit.datamanager.metastore2.service.MonitoringService;
-import edu.kit.datamanager.metastore2.util.MonitoringUtil;
+import edu.kit.datamanager.repo.configuration.MonitoringConfiguration;
+import edu.kit.datamanager.repo.util.MonitoringUtil;
+import edu.kit.datamanager.repo.dao.IIpMonitoringDao;
+import edu.kit.datamanager.repo.domain.IpMonitoring;
+import edu.kit.datamanager.repo.service.impl.MonitoringService;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,7 @@ import java.time.temporal.ChronoUnit;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"server.port=41420"})
 @TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_ip_monitoring_dao;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE"})
+@TestPropertySource(properties = {"repo.monitoring.enabled=true"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class IIpMonitoringDaoTest {
 
@@ -55,6 +58,8 @@ public class IIpMonitoringDaoTest {
   private MonitoringService monitoringService;
   @Autowired
   private IIpMonitoringDao monitoringDao;
+  @Autowired
+  private MonitoringConfiguration monitoringConfiguration;
 
   public IIpMonitoringDaoTest() {
   }
@@ -93,6 +98,7 @@ public class IIpMonitoringDaoTest {
     Assume.assumeFalse(os.contains("win"));
 
     System.out.println("testCleanUp");
+    monitoringConfiguration.setEnabled(true);
     prepareDataBase(20);
     monitoringService.cleanUpMetrics();
     Assert.assertEquals(ips.length, monitoringDao.count());

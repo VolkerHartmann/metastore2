@@ -15,10 +15,7 @@
  */
 package edu.kit.datamanager.metastore2.configuration;
 
-import edu.kit.datamanager.metastore2.service.PreHandleInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -29,8 +26,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration
 public class StaticResourcesConfiguration implements WebMvcConfigurer{
-  @Autowired
-  private PreHandleInterceptor preHandleInterceptor;
 
   private static final String[] CLASSPATH_RESOURCE_LOCATIONS = {
     "classpath:/static/"};
@@ -38,10 +33,5 @@ public class StaticResourcesConfiguration implements WebMvcConfigurer{
   @Override
   public void addResourceHandlers(ResourceHandlerRegistry registry){
     registry.addResourceHandler("/static/**").addResourceLocations(CLASSPATH_RESOURCE_LOCATIONS);
-  }
-
-  @Override
-  public void addInterceptors(InterceptorRegistry registry) {
-    registry.addInterceptor(preHandleInterceptor);
   }
 }

@@ -5,8 +5,10 @@
  */
 package edu.kit.datamanager.metastore2.test;
 
+import edu.kit.datamanager.metastore2.configuration.MetaStoreMonitoringConfiguration;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.runner.MonitoringScheduler;
+import edu.kit.datamanager.repo.configuration.MonitoringConfiguration;
 import org.hamcrest.Matchers;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -63,11 +65,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_prometheus;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE"})
 @TestPropertySource(properties = {"spring.jpa.database-platform=org.hibernate.dialect.H2Dialect"})
 @TestPropertySource(properties = {"spring.jpa.defer-datasource-initialization=true"})
-@TestPropertySource(properties = {"metastore.monitoring.enabled=true"})
+@TestPropertySource(properties = {"repo.monitoring.enabled=true"})
+@TestPropertySource(properties = {"repo.monitoring.serviceName=metastore"})
+@TestPropertySource(properties = {"repo.monitoring.noOfDaysToKeep=13"})
 @TestPropertySource(properties = {"management.endpoint.prometheus.enabled=true"})
 @TestPropertySource(properties = {"management.endpoints.web.exposure.include=info,health,prometheus"})
 @TestPropertySource(properties = {"metastore.monitoring.cron4schedule=* * * * * *"})
-@TestPropertySource(properties = {"metastore.monitoring.cron4cleanUp=*/2 * * * * *"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureObservability
 public class ActuatorPrometheusTest {
@@ -82,6 +85,10 @@ public class ActuatorPrometheusTest {
   private MetastoreConfiguration metadataConfig;
   @Autowired
   private MonitoringScheduler monitoringScheduler;
+  @Autowired
+  private MonitoringConfiguration monitoringConfiguration;
+  @Autowired
+  private MetaStoreMonitoringConfiguration metaStoreMonitoringConfiguration;
 
   public static synchronized boolean isInitialized() {
     boolean returnValue = alreadyInitialized;
@@ -94,6 +101,10 @@ public class ActuatorPrometheusTest {
   public void setUp() throws Exception {
     System.out.println("------ActuatorPrometheusTest--------------------------");
     System.out.println("------" + this.metadataConfig);
+    System.out.println("------------------------------------------------------");
+    System.out.println("------" + this.monitoringConfiguration);
+    System.out.println("------------------------------------------------------");
+    System.out.println("------" + this.metaStoreMonitoringConfiguration);
     System.out.println("------------------------------------------------------");
 
     try {
