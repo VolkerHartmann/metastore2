@@ -97,7 +97,7 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
       metadataSchemaRecord.setSchemaDocumentUri(DataResourceRecordUtil.getSchemaDocumentUri(id, metadataSchemaRecord.getSchemaVersion()));
       metadataList.add(metadataSchemaRecord);
     });
-
+    model.addAttribute("type", recordList.get(0).getFormats().iterator().next());
     model.addAttribute("records", metadataList);
 
     return "schema-landing-page.html";
@@ -125,10 +125,12 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
         recordList.add(DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, size));
       }
     }
+    LOG.trace("Found {} records.", recordList.size());
     List<MetadataRecord> resultList = new ArrayList<>();
     for (DataResource item : recordList) {
       DataResourceRecordUtil.fixSchemaUrl(item);
       MetadataRecord metadataRecord = DataResourceRecordUtil.migrateToMetadataRecordV2(metadataConfig, item);
+      DataResourceRecordUtil.fixMetadataDocumentUri(metadataRecord);
       
       resultList.add(metadataRecord);
     }

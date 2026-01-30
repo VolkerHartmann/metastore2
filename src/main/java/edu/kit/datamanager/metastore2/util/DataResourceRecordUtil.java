@@ -1303,12 +1303,23 @@ public class DataResourceRecordUtil {
       } else {
         String type;
         if (formatDetected.contains("json")) {
-          type = JSON + SCHEMA_SUFFIX;
+          type = JSON_SCHEMA_TYPE;
         } else {
-          type = XML + SCHEMA_SUFFIX;
+          type = XML_SCHEMA_TYPE;
         }
         schemaRecord.setResourceType(ResourceType.createResourceType(type, ResourceType.TYPE_GENERAL.MODEL));
         LOG.debug("Automatically detected mimetype of schema: '{}' -> '{}'.", formatDetected, type);
+      }
+    }
+    // Also fix format if necessary and possible
+    String type = schemaRecord.getResourceType().getValue();
+    if (schemaRecord.getFormats().isEmpty()) {
+      if (type.toLowerCase().contains("json")) {
+        schemaRecord.getFormats().add(MediaType.APPLICATION_JSON_VALUE);
+      } else {
+        if (type.toLowerCase().contains("xml")) {
+          schemaRecord.getFormats().add(MediaType.APPLICATION_XML_VALUE);
+        }
       }
     }
     String schemaType = schemaRecord.getResourceType().getValue().replace(SCHEMA_SUFFIX, "").replace(METADATA_SUFFIX, "");
@@ -1767,6 +1778,16 @@ public class DataResourceRecordUtil {
         // After successful validation set type for metadata document resource.
         MetadataSchemaRecord.SCHEMA_TYPE type = findByAlternateId.getType();
         dataResource.setResourceType(ResourceType.createResourceType(type + METADATA_SUFFIX, ResourceType.TYPE_GENERAL.MODEL));
+        // Also fix format if necessary
+        if (dataResource.getFormats().isEmpty()) {
+          if (type == MetadataSchemaRecord.SCHEMA_TYPE.JSON) {
+            dataResource.getFormats().add(MediaType.APPLICATION_JSON_VALUE);
+          } else {
+            if (type == MetadataSchemaRecord.SCHEMA_TYPE.XML) {
+              dataResource.getFormats().add(MediaType.APPLICATION_XML_VALUE);
+            }
+          }
+        }
         //
       } catch (Exception ex) {
         String message = "Error validating document!";
