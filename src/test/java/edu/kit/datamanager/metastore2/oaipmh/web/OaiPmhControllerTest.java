@@ -6,18 +6,25 @@
 package edu.kit.datamanager.metastore2.oaipmh.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
 import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
 import edu.kit.datamanager.metastore2.dao.IMetadataFormatDao;
 import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
+import edu.kit.datamanager.metastore2.domain.DataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
+import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.repo.domain.DataResource;
+import edu.kit.datamanager.repo.domain.RelatedIdentifier;
+import edu.kit.datamanager.repo.domain.ResourceType;
+import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -27,10 +34,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
@@ -40,7 +44,6 @@ import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import javax.xml.XMLConstants;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -942,15 +945,15 @@ public class OaiPmhControllerTest {
   }
 
   private void ingestSchemaRecord(String schemaId, MetadataSchemaRecord.SCHEMA_TYPE type, String schemaDocument) throws Exception {
-    MetadataSchemaRecord record = new MetadataSchemaRecord();
-    record.setSchemaId(schemaId);
-    record.setType(type);
+    DataResource record = new DataResource();
+    record.setId(schemaId);
+    record.getTitles().add(Title.factoryTitle("Schema " + schemaId));
     switch (type) {
       case JSON:
-        record.setMimeType(MediaType.APPLICATION_JSON.toString());
+        record.setResourceType(ResourceType.createResourceType(DataResourceRecordUtil.JSON_SCHEMA_TYPE, ResourceType.TYPE_GENERAL.MODEL));
         break;
       case XML:
-        record.setMimeType(MediaType.APPLICATION_XML.toString());
+        record.setResourceType(ResourceType.createResourceType(DataResourceRecordUtil.XML_SCHEMA_TYPE, ResourceType.TYPE_GENERAL.MODEL));
         break;
       default:
         System.out.println("Something is going totally wrong! Unknown type: " + type);
@@ -958,29 +961,34 @@ public class OaiPmhControllerTest {
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry("test", PERMISSION.READ));
     aclEntries.add(new AclEntry("SELF", PERMISSION.ADMINISTRATE));
-    record.setAcl(aclEntries);
+    record.setAcls(aclEntries);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", schemaDocument.getBytes());
 
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/schemas/").
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/").
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andReturn();
   }
 
   public void ingestMetadataRecord(String schemaId, String metadataDocument) throws Exception {
-    MetadataRecord record = new MetadataRecord();
+    DataResource record = new DataResource();
 //    record.setId("my_id");
-    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(schemaId));
+    record.getTitles().add(Title.factoryTitle("Metadata for schema " + schemaId));
+    RelatedIdentifier schemaRef = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, schemaId, null, null);
+    schemaRef.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
+    record.getRelatedIdentifiers().add(schemaRef);
     UUID randomUUID = UUID.randomUUID();
-    record.setRelatedResource(ResourceIdentifier.factoryUrlResourceIdentifier("http://example.org/" + randomUUID));
+    RelatedIdentifier resourceRef = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "http://example.org/" + randomUUID, null, null);
+    resourceRef.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
+    record.getRelatedIdentifiers().add(resourceRef);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile metadataFile = new MockMultipartFile("document", "metadata.xml", "application/xml", metadataDocument.getBytes());
 
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/metadata/").
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/metadata/").
             file(recordFile).
             file(metadataFile)).andDo(print()).andExpect(status().isCreated()).andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).andReturn();
   }

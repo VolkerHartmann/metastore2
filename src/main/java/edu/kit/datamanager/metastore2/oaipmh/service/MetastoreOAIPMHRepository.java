@@ -22,6 +22,9 @@ import edu.kit.datamanager.metastore2.dao.IMetadataFormatDao;
 import edu.kit.datamanager.metastore2.domain.DataRecord;
 import edu.kit.datamanager.metastore2.domain.oaipmh.MetadataFormat;
 import edu.kit.datamanager.metastore2.oaipmh.util.OAIPMHBuilder;
+import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
+import edu.kit.datamanager.repo.domain.ContentInformation;
+import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.util.DataResourceUtils;
 import edu.kit.datamanager.util.xml.DataCiteMapper;
 import edu.kit.datamanager.util.xml.DublinCoreMapper;
@@ -36,9 +39,8 @@ import org.openarchives.oai._2.*;
 import org.purl.dc.elements._1.ElementContainer;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.w3c.dom.Document;
@@ -103,8 +105,6 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
 
   private final OaiPmhConfiguration pluginConfiguration;
 
-  @Autowired
-  private IDataRecordDao dataRecordDao;
   @Autowired
   private IMetadataFormatDao metadataFormatDao;
   @Autowired
@@ -230,7 +230,7 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
   @Override
   public void listIdentifiers(OAIPMHBuilder builder) {
     LOGGER.trace("Performing listIdentifiers().");
-    List<DataRecord> results = getEntities(builder);
+    List<DataResource> results = getEntities(builder);
     if (results.isEmpty()) {
       if (!builder.isError()) {
         LOGGER.error("No results obtained. Returning OAI-PMH error NO_RECORDS_MATCH.");
@@ -247,7 +247,7 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
         changeDate = Date.from(result.getLastUpdate());
       }
 
-      builder.addRecord(result.getMetadataId(), changeDate, List.of("default"));
+      builder.addRecord(result.getId(), changeDate, List.of("default"));
     });
   }
 
@@ -255,7 +255,7 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
   public void getRecord(OAIPMHBuilder builder) {
     //only get record entries for prefix
     LOGGER.trace("Performing getRecord().");
-    DataRecord resource = getEntity(builder);
+    DataResource resource = getEntity(builder);
 
     if (resource != null) {
       LOGGER.trace("Adding single record to result.");
@@ -270,7 +270,7 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
   @Override
   public void listRecords(OAIPMHBuilder builder) {
     LOGGER.trace("Performing listRecords().");
-    List<DataRecord> results = getEntities(builder);
+    List<DataResource> results = getEntities(builder);
     if (results.isEmpty()) {
       if (!builder.isError()) {
         LOGGER.error("No results obtained. Returning OAI-PMH error NO_RECORDS_MATCH.");
@@ -293,23 +293,23 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    * Otherwise, null is returned and must be handled by the caller with an
    * according OAI-PMH error.
    *
-   * @param object The object to obtain the metadata document for.
+   * @param dataResource The object to obtain the metadata document for.
    * @param schemaId The id of the metadata schema.
    *
    * @return The metadata document or null.
    */
-  private Document getMetadataDocument(DataRecord object, String schemaId) {
-    LOGGER.trace("Obtaining metadata document for schema {} and resource identifier {}", schemaId, object.getId());
+  private Document getMetadataDocument(DataResource dataResource, String schemaId) {
+    LOGGER.trace("Obtaining metadata document for schema {} and resource identifier {}", schemaId, dataResource.getId());
     ByteArrayOutputStream bout = new ByteArrayOutputStream();
     boolean wasError = true;
     if (DC_SCHEMA.getMetadataPrefix().equals(schemaId)) {
       //create DC document on the fly
-      LOGGER.info("Creating Dublin Core document on the fly.", object.getId());
+      LOGGER.info("Creating Dublin Core document for id '{}' on the fly.", dataResource.getId());
       //create DC metadata
       try {
         UnaryOperator<String> dummy;
         dummy = t -> "dummy" + t;
-        edu.kit.datamanager.repo.domain.DataResource dr = DataResourceUtils.getResourceByIdentifierOrRedirect(metadataConfig, object.getMetadataId(), null, dummy);
+        edu.kit.datamanager.repo.domain.DataResource dr = DataResourceUtils.getResourceByIdentifierOrRedirect(metadataConfig, dataResource.getId(), null, dummy);
         ElementContainer container = DublinCoreMapper.dataResourceToDublinCoreContainer(DataResourceUtils.migrateToDataResource(dr));
         JAXBContext jaxbContext = JAXBContext.newInstance(ElementContainer.class);
         Marshaller marshaller = jaxbContext.createMarshaller();
@@ -320,11 +320,12 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
         LOGGER.error("Failed to build Dublin Core document.", ex);
       }
     } else if (DATACITE_SCHEMA.getMetadataPrefix().equals(schemaId)) {
-      LOGGER.info("Creating Datacite document on the fly.", object.getId());
+      //create DC document on the fly
+      LOGGER.info("Creating DataCite document for id '{}' on the fly.", dataResource.getId());
       try {
         UnaryOperator<String> dummy;
         dummy = t -> "dummy" + t;
-        edu.kit.datamanager.repo.domain.DataResource dr = DataResourceUtils.getResourceByIdentifierOrRedirect(metadataConfig, object.getMetadataId(), null, dummy);
+        edu.kit.datamanager.repo.domain.DataResource dr = DataResourceUtils.getResourceByIdentifierOrRedirect(metadataConfig, dataResource.getId(), null, dummy);
         // Todo check for internal related schema identifier switch to URL
         Resource resource = DataCiteMapper.dataResourceToDataciteResource(DataResourceUtils.migrateToDataResource(dr));
         JAXBContext jaxbContext = JAXBContext.newInstance(Resource.class);
@@ -335,10 +336,11 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
       } catch (JAXBException ex) {
         LOGGER.error("Failed to build Datacite document.", ex);
       }
-    } else if (object.getSchemaId().equals(schemaId)) {
-      LOGGER.info("Return stored document of resource '{}'.", object.getMetadataId());
+    } else if (DataResourceRecordUtil.getSchemaIdentifier(dataResource).getValue().startsWith(DataResourceRecordUtil.getSchemaDocumentUri(schemaId, null))) {
+      LOGGER.info("Return stored document of resource '{}'.", dataResource.getId());
       try {
-        URL url = new URI(object.getMetadataDocumentUri()).toURL();
+        ContentInformation ci = DataResourceRecordUtil.getContentInformationByIdAndVersion(metadataConfig, dataResource.getId(), null);
+        URL url = new URI(ci.getContentUri()).toURL();
         byte[] readFileToByteArray = FileUtils.readFileToByteArray(Paths.get(url.toURI()).toFile());
         try (InputStream inputStream = new ByteArrayInputStream(readFileToByteArray)) {
           IOUtils.copy(inputStream, bout);
@@ -348,7 +350,7 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
         LOGGER.error("Error while reading document", ex);
       }
     } else {
-      LOGGER.error("No valid schema '{}' found for resource '{}'", schemaId, object.getMetadataId());
+      LOGGER.error("No valid schema '{}' found for resource '{}'", schemaId, dataResource.getId());
     }
 
     Document doc = null;
@@ -373,21 +375,21 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    * If no metadata document can be obtained, an according OAI-PMH error is
    * added.
    *
-   * @param result The digital object to add a record for.
+   * @param dataResource The digital object to add a record for.
    * @param builder The OAIPMHBuilder.
    */
-  private void addRecordEntry(DataRecord result, OAIPMHBuilder builder) {
-    LOGGER.trace("Adding record for object identifier {} to response.", result.getId());
-    Document doc = getMetadataDocument(result, builder.getMetadataPrefix());
+  private void addRecordEntry(DataResource dataResource, OAIPMHBuilder builder) {
+    LOGGER.trace("Adding record for object identifier {} to response.", dataResource.getId());
+    Document doc = getMetadataDocument(dataResource, builder.getMetadataPrefix());
     if (doc != null) {
       LOGGER.trace("Adding record using obtained metadata document.");
       Date resourceDate = new Date(0L);
-      if (result.getLastUpdate() != null) {
-        resourceDate = Date.from(result.getLastUpdate());
+      if (dataResource.getLastUpdate() != null) {
+        resourceDate = Date.from(dataResource.getLastUpdate());
       }
-      builder.addRecord(result.getMetadataId(), resourceDate, List.of("default"), doc.getDocumentElement());
+      builder.addRecord(dataResource.getId(), resourceDate, List.of("default"), doc.getDocumentElement());
     } else {
-      LOGGER.error("No metadata document found for prefix {} and object identifier {}. Returning OAI-PMH error CANNOT_DISSEMINATE_FORMAT.", builder.getMetadataPrefix(), result.getId());
+      LOGGER.error("No metadata document found for prefix {} and object identifier {}. Returning OAI-PMH error CANNOT_DISSEMINATE_FORMAT.", builder.getMetadataPrefix(), dataResource.getId());
       builder.addError(OAIPMHerrorcodeType.CANNOT_DISSEMINATE_FORMAT, null);
     }
   }
@@ -400,16 +402,15 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    *
    * @return A entity which might be null.
    */
-  private DataRecord getEntity(OAIPMHBuilder builder) {
+  private DataResource getEntity(OAIPMHBuilder builder) {
     LOGGER.trace("Performing getEntity().");
-    DataRecord entity = null;
-
-    Optional<DataRecord> findEntity = dataRecordDao.findTopByMetadataIdOrderByVersionDesc(builder.getIdentifier());
-    if (findEntity.isPresent()) {
-      entity = findEntity.get();
+    DataResource entity = null;
+    try {
+      entity = DataResourceUtils.getResourceByIdentifierOrRedirect(metadataConfig, builder.getIdentifier(), null, t -> "dummy" + t);
+    } catch (Exception ex) {
+      LOGGER.error("Error while obtaining resource for identifier {}", builder.getIdentifier(), ex);
     }
     return entity;
-
   }
 
   /**
@@ -426,8 +427,8 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
    * @return A list of entities which might be empty.
    */
   @SuppressWarnings("StringSplitter")
-  private List<DataRecord> getEntities(OAIPMHBuilder builder) {
-    List<DataRecord> results;
+  private List<DataResource> getEntities(OAIPMHBuilder builder) {
+    List<DataResource> results;
 
     String prefix = builder.getMetadataPrefix();
     LOGGER.trace("Getting entities for metadata prefix {} from repository.", prefix);
@@ -464,28 +465,30 @@ public class MetastoreOAIPMHRepository extends AbstractOAIPMHRepository {
     int maxElementsPerList = pluginConfiguration.getMaxElementsPerList();
 
     int page = currentCursor / maxElementsPerList;
+    List<String> prefixes = Collections.singletonList(prefix);
     boolean predefinedPrefix = DC_SCHEMA.getMetadataPrefix().equals(prefix) || DATACITE_SCHEMA.getMetadataPrefix().equals(prefix);
     if (predefinedPrefix) {
-      List<String> findMetadataPrefix = metadataFormatDao.getAllIds();
+      prefixes = metadataFormatDao.getAllIds();
+    }
       if (LOGGER.isTraceEnabled()) {
-        for (String item : findMetadataPrefix) {
+        for (String item : prefixes) {
           LOGGER.trace("SchemaID: " + item);
         }
       }
-      LOGGER.trace("findBySchemaIdAndLastUpdateBetween({},{},{}, Page({},{}))", findMetadataPrefix, from, until, page, maxElementsPerList);
-      overallCount = dataRecordDao.countBySchemaIdInAndLastUpdateBetween(findMetadataPrefix, from, until);
-      results = dataRecordDao.findBySchemaIdInAndLastUpdateBetween(findMetadataPrefix, from, until, PageRequest.of(page, maxElementsPerList));
-      LOGGER.trace("Found '" + results.size() + "' elements of '" + dataRecordDao.count() + "' elements in total!");
-    } else {
-      LOGGER.trace("findBySchemaIdAndLastUpdateBetween({},{},{}, Page({},{}))", prefix, from, until, page, maxElementsPerList);
-      overallCount = dataRecordDao.countBySchemaIdAndLastUpdateBetween(prefix, from, until);
-      results = dataRecordDao.findBySchemaIdAndLastUpdateBetween(prefix, from, until, PageRequest.of(page, maxElementsPerList));
-      LOGGER.trace("Found '" + results.size() + "' elements of '" + dataRecordDao.count() + "' elements in total!");
-    }
+      LOGGER.trace("findBySchemaIdAndLastUpdateBetween({},{},{}, Page({},{}))", prefixes, from, until, page, maxElementsPerList);
+      Specification<DataResource> findBySchemaId = DataResourceRecordUtil.findByStateOnly(null, DataResource.State.VOLATILE, DataResource.State.FIXED);
+      findBySchemaId = DataResourceRecordUtil.findBySchemaId(findBySchemaId, prefixes);
+      findBySchemaId = DataResourceRecordUtil.findByUpdateDates(findBySchemaId, from, until);
+      Page<DataResource> dataResources = DataResourceRecordUtil.queryDataResources(findBySchemaId, PageRequest.of(page, maxElementsPerList, Sort.by(Sort.Direction.DESC, "lastUpdate")));
+      overallCount = dataResources.getTotalElements();
+      results = dataResources.getContent();
+
+      LOGGER.trace("Found '" + dataResources.getNumberOfElements() + "' elements of '" + overallCount + "' elements in total!");
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("List top 100 of all items:");
-      List<DataRecord> findAll = dataRecordDao.findAll(PageRequest.of(0, 100)).getContent();
-      for (DataRecord item : findAll) {
+      Specification<DataResource> findAllMetadataRecords = DataResourceRecordUtil.findByResourceType(null, DataResourceRecordUtil.METADATA_SUFFIX);
+      List<DataResource> findAll = DataResourceRecordUtil.queryDataResources(findAllMetadataRecords, PageRequest.of(0, 100)).getContent();
+      for (DataResource item : findAll) {
         LOGGER.trace("-> " + item);
       }
     }

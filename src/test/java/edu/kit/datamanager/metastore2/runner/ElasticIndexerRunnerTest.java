@@ -16,6 +16,7 @@
 package edu.kit.datamanager.metastore2.runner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
@@ -25,9 +26,13 @@ import edu.kit.datamanager.metastore2.dao.IUrl2PathDao;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
+import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
+import edu.kit.datamanager.repo.domain.DataResource;
+import edu.kit.datamanager.repo.domain.RelatedIdentifier;
+import edu.kit.datamanager.repo.domain.Title;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.util.AuthenticationHelper;
 import java.io.File;
@@ -42,6 +47,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import jakarta.persistence.Id;
 import org.javers.core.Javers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -277,20 +284,18 @@ public class ElasticIndexerRunnerTest {
   }
 
   private String ingestSchemaRecord(String schemaId) throws Exception {
-    MetadataSchemaRecord schemaRecord = new MetadataSchemaRecord();
-    schemaRecord.setSchemaId(schemaId);
-    schemaRecord.setSchemaVersion(1L);
-    schemaRecord.setType(MetadataSchemaRecord.SCHEMA_TYPE.JSON);
+    DataResource schemaRecord = DataResource.factoryNewDataResource(schemaId);
+    schemaRecord.getTitles().add(Title.factoryTitle("Title for " + schemaId));
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL, PERMISSION.READ));
-    schemaRecord.setAcl(aclEntries);
+    schemaRecord.setAcls(aclEntries);
 
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(schemaRecord).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.json", "application/json", JSON_SCHEMA.getBytes());
 
-    String schemaLocation = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/schemas/").
+    String schemaLocation = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/").
             file(recordFile).
             file(schemaFile)).
             andDo(print()).
@@ -317,19 +322,22 @@ public class ElasticIndexerRunnerTest {
    * @throws Exception
    */
   private void ingestMetadataRecord(String schemaId, boolean isUrl) throws Exception {
-    MetadataRecord record = new MetadataRecord();
+    DataResource record = new DataResource();
+    record.getTitles().add(Title.factoryTitle("Metadata for schema " + schemaId));
+    RelatedIdentifier relatedIdentifier = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, schemaId, null, null);
     if (isUrl) {
-      record.setSchema(ResourceIdentifier.factoryUrlResourceIdentifier(schemaId));
+      relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
     } else {
-      record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(schemaId));
+      relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
     }
-    record.setRelatedResource(ResourceIdentifier.factoryInternalResourceIdentifier("resource of " + schemaId));
+    record.getRelatedIdentifiers().add(relatedIdentifier);
+    record.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "any resource", null, null));
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("document", "metadata.json", "application/json", JSON_DOCUMENT.getBytes());
 
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v1/metadata/").
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/metadata/").
             file(recordFile).
             file(schemaFile)).
             andDo(print()).andExpect(status().isCreated()).

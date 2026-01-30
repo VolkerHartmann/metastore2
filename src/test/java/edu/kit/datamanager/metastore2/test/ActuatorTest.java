@@ -113,7 +113,7 @@ public class ActuatorTest {
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("------MetadataControllerTest--------------------------");
+    System.out.println("------------- Actuator Test --------------------------");
     System.out.println("------" + this.metadataConfig);
     System.out.println("------------------------------------------------------");
 

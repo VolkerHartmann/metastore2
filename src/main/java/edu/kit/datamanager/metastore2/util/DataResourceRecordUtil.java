@@ -391,6 +391,16 @@ public class DataResourceRecordUtil {
           String id,
           String eTag,
           UnaryOperator<String> supplier) {
+    // Check if resource has dependencies (e.g., metadata records depending on schema which are not deleted yet)
+    Specification<DataResource> metadataDocumentWithGivenSchema = findBySchemaId(null, List.of(id));
+    metadataDocumentWithGivenSchema = findByStateOnly(metadataDocumentWithGivenSchema, DataResource.State.FIXED, DataResource.State.VOLATILE, DataResource.State.REVOKED);
+    Pageable pageable = PageRequest.of(0, 1);
+    Page<DataResource> dataResources = queryDataResources(metadataDocumentWithGivenSchema, pageable);
+    if (dataResources.hasContent()) {
+      String message = "Cannot delete resource with id '" + id + "' due to at least one existing dependency! (" +  dataResources.get().findFirst().get().getId() + ")";
+      LOG.error(message);
+      throw new ResourceAlreadyExistException(message);
+    }
     DataResourceUtils.deleteResource(applicationProperties, id, eTag, supplier);
     try {
       DataResourceUtils.getResourceByIdentifierOrRedirect(applicationProperties, id, null, supplier);
@@ -712,10 +722,10 @@ public class DataResourceRecordUtil {
    */
   public static Specification<DataResource> findByStateOnly(Specification<DataResource> specification, DataResource.State... states) {
     specification = initializeSpecification(specification);
-    
+
     List<DataResource.State> stateList = Arrays.asList(states);
     specification = specification.and(StateSpecification.toSpecification(stateList));
-    
+
     return specification;
   }
 
@@ -1138,6 +1148,28 @@ public class DataResourceRecordUtil {
   }
 
   /**
+   * Get description of data resource with given type.
+   *
+   * @param dataResourceRecord Metadata record hold schema identifier.
+   * @param relationType Relation type of the identifier.
+   * @return ResourceIdentifier with a global accessible identifier.
+   */
+  public static Description getDescription(DataResource dataResourceRecord, Description.TYPE descriptionType) {
+    LOG.trace("Get description for '{}' of type '{}'.", dataResourceRecord.getId(), descriptionType);
+    Description description = null;
+
+    Set<Description> descriptions = dataResourceRecord.getDescriptions();
+
+    // Check if description already exists
+    for (Description item : descriptions) {
+      if (item.getType().equals(descriptionType)) {
+        description = item;
+      }
+    }
+    return description;
+  }
+
+  /**
    * Check if ID for schema is valid. Requirements: - shouldn't change if URL
    * encoded - should be lower case If it's not lower case the original ID will
    * we set as an alternate ID.
@@ -1553,10 +1585,22 @@ public class DataResourceRecordUtil {
       mergeState(oldDataResource, updatedDataResource);
       mergeResourceType(oldDataResource, updatedDataResource);
       mergeCreateDate(oldDataResource, updatedDataResource);
+      mergeFormats(oldDataResource, updatedDataResource);
     } else {
       updatedDataResource = DataResourceUtils.copyDataResource(oldDataResource);
     }
     return updatedDataResource;
+  }
+
+  private static void mergeFormats(DataResource oldDataResource, DataResource updatedDataResource) {
+    if (updatedDataResource != null) {
+      if ((updatedDataResource.getFormats() == null) || updatedDataResource.getFormats().isEmpty()) {
+        LOG.trace("Merging formats from former data resource: '{}'", oldDataResource.getFormats());
+        updatedDataResource.setFormats(oldDataResource.getFormats());
+      } else {
+        LOG.trace("Update formats!");
+      }
+    }
   }
 
   private static DataResource mergeCreators(DataResource oldDataResource, DataResource updatedDataResource) {

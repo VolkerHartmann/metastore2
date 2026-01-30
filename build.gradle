@@ -1,8 +1,8 @@
 plugins { 
     id 'org.springframework.boot' version '3.5.5'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'io.freefair.lombok' version '8.14.2'
-    id 'io.freefair.maven-publish-java' version '8.14.2'
+    id 'io.freefair.lombok' version '9.2.0'
+    id 'io.freefair.maven-publish-java' version '9.2.0'
     id 'org.owasp.dependencycheck' version '12.1.3'
     id 'org.asciidoctor.jvm.convert' version '4.0.4'
     id 'net.ltgt.errorprone' version '4.3.0'
@@ -20,7 +20,7 @@ ext {
     springDocVersion  = '2.8.10'
     javersVersion     = '7.8.4'
     keycloakVersion   = '19.0.0'
-    errorproneVersion = '2.41.0'
+    errorproneVersion = '2.46.0'
     // directory for generated code snippets during tests
     snippetsDir = file("build/generated-snippets")
 }
@@ -157,6 +157,13 @@ compileTestJava {
     // disable errorprone for tests
     options.errorprone.disableWarningsInGeneratedCode = true
     options.errorprone.enabled = false // change it to true to enable
+}
+
+tasks.withType(JavaCompile).configureEach {
+    def lv = javaCompiler.get().metadata.languageVersion.asInt()
+    if (lv >= 21) {
+        options.compilerArgs += ['-XDaddTypeAnnotationsToSymbol=true']
+    }
 }
 
 test {

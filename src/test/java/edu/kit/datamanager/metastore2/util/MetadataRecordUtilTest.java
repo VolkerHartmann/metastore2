@@ -121,7 +121,7 @@ public class MetadataRecordUtilTest {
 
   @Before
   public void setUp() {
-    System.out.println("------MetadataControllerTest--------------------------");
+    System.out.println("------MetadataRecordUtilTest--------------------------");
     System.out.println("------" + this.metadataConfig);
     System.out.println("------------------------------------------------------");
 

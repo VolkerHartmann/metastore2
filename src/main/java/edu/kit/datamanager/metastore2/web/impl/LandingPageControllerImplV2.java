@@ -47,7 +47,7 @@ import java.util.List;
 @Schema(description = "Landing page for all digital objects stored in this repo.")
 public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
 
-  private static final Logger LOG = LoggerFactory.getLogger(LandingPageControllerImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LandingPageControllerImplV2.class);
 
   private final MetastoreConfiguration metadataConfig;
 

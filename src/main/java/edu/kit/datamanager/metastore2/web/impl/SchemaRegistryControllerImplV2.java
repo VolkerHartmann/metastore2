@@ -173,12 +173,12 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
           HttpServletResponse hsr) {
     LOG.trace("Performing Landing page for schema document with ({}, {}).", id, version);
     String redirectUrl = applicationProperties.getSchemaLandingPage();
-    redirectUrl = redirectUrl.replace(MetadataControllerImpl.PLACEHOLDER_ID, id);
+    redirectUrl = redirectUrl.replace(MetadataControllerImplV2.PLACEHOLDER_ID, id);
     String versionString = "";
     if (version != null) {
       versionString = version.toString();
     }
-    redirectUrl = "redirect:" + redirectUrl.replace(MetadataControllerImpl.PLACEHOLDER_VERSION, versionString);
+    redirectUrl = "redirect:" + redirectUrl.replace(MetadataControllerImplV2.PLACEHOLDER_VERSION, versionString);
 
     LOG.trace("Redirect to '{}'", redirectUrl);
 
@@ -314,7 +314,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
     getById = t -> WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getRecordById(t, null, request, hsr)).toString();
     String eTag = ControllerUtils.getEtagFromHeader(request);
 
-    MetadataSchemaRecordUtil.deleteMetadataSchemaRecord(schemaConfig, schemaId, eTag, getById);
+    DataResourceRecordUtil.deleteDataResourceRecord(schemaConfig, schemaId, eTag, getById);
 
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }

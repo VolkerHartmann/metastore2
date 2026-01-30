@@ -1701,7 +1701,7 @@ public class SchemaRegistryControllerTestV2 {
     this.mockMvc.perform(get(redirectedUrl)
             .accept("text/html"))
             .andDo(print())
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isNotFound());
   }
 
   @Test

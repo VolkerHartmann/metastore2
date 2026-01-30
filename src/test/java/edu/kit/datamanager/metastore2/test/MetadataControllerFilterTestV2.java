@@ -580,7 +580,7 @@ public class MetadataControllerFilterTestV2 {
    * Prepare filesystem (remove old files)
    */
   private void prepareEnvironment() {
-    System.out.println("------JsonSchemaRegistryControllerTest----------------");
+    System.out.println("------MetadataControllerFilterTestV2----------------");
     System.out.println("------" + this.schemaConfig);
     System.out.println("------------------------------------------------------");
     contentInformationDao.deleteAll();

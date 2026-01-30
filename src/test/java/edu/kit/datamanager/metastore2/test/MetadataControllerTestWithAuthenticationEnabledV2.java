@@ -161,7 +161,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("------MetadataControllerTest--------------------------");
+    System.out.println("----- MetadataControllerTestV2 with authentication ---");
     System.out.println("------" + this.metadataConfig);
     System.out.println("------------------------------------------------------");
 
