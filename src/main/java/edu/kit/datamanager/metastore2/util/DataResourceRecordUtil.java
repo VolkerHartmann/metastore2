@@ -455,7 +455,14 @@ public class DataResourceRecordUtil {
     }
     return returnValue;
   }
-
+  /**
+   * Get a schema record by given id and version. If version is null, the latest version will be returned.
+   * @param metastoreProperties Configuration for accessing services
+   * @param recordId Id of the record to be obtained.
+   * @param version Version of the record to be obtained. If null, the latest version will be returned.
+   * @return DataResource with given id and version.
+   * @throws ResourceNotFoundException If no record with given id and version exists or if the record is not a schema record.
+   */
   public static DataResource getSchemaRecordByIdAndVersion(MetastoreConfiguration metastoreProperties,
                                                            String recordId, String version) throws ResourceNotFoundException {
     DataResource returnValue = getRecordByIdAndVersion(metastoreProperties, recordId, version);
@@ -465,6 +472,14 @@ public class DataResourceRecordUtil {
     return returnValue;
   }
 
+  /**
+   * Get a record by given id and version. If version is null, the latest version will be returned.
+   * @param metastoreProperties Configuration for accessing services
+   * @param recordId Id of the record to be obtained.
+   * @param version Version of the record to be obtained. If null, the latest version will be returned.
+   * @return DataResource with given id and version.
+   * @throws ResourceNotFoundException If no record with given id and version exists.
+   */
   public static DataResource getRecordByIdAndVersion(MetastoreConfiguration metastoreProperties,
                                                      String recordId, String version) throws ResourceNotFoundException {
     LOG.trace("Obtaining record with id {} and version {}.", recordId, version);
@@ -1967,10 +1982,13 @@ public class DataResourceRecordUtil {
 
   public static String getPreviousVersion(DataResource resource) {
     SemanticVersion currentVersion = SemanticVersion.parse(resource.getVersion());
-    // @ToDo Determine previous version correctly according to SemVer rules and existing versions.
-    String previousVersion = null;
-
-    return previousVersion;
+    String previousVersionString = getRecordByIdAndVersion(schemaConfig, resource.getId(), null).getVersion();
+    SemanticVersion previousVersion = SemanticVersion.parse(previousVersionString);
+    if (!previousVersion.isBefore(currentVersion)) {
+      LOG.debug("There seems to be no previous version! Current version '{}' is not greater than previous version '{}'. Returning current version.", currentVersion, previousVersion);
+      previousVersionString = resource.getVersion();
+    }
+    return previousVersionString;
   }
 
   public static DataResource check4VersionUpdate(DataResource resource, String oldVersion) {
