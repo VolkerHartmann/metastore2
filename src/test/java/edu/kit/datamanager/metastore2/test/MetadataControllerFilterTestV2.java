@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
@@ -148,8 +147,6 @@ public class MetadataControllerFilterTestV2 {
   private WebApplicationContext context;
   @Autowired
   private IDataResourceDao dataResourceDao;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
   @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
@@ -559,7 +556,7 @@ public class MetadataControllerFilterTestV2 {
 
     this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_METADATA_PATH).
             file(recordFile).
-            file(metadataFile)).andDo(print()).andExpect(status().isCreated()).andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).andReturn();
+            file(metadataFile)).andDo(print()).andExpect(status().isCreated()).andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).andReturn();
   }
 
   /**
@@ -585,7 +582,6 @@ public class MetadataControllerFilterTestV2 {
     System.out.println("------------------------------------------------------");
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
-    schemaRecordDao.deleteAll();
     allIdentifiersDao.deleteAll();
     try {
       try (Stream<Path> walk = Files.walk(Paths.get(URI.create("file://" + TEMP_DIR_4_SCHEMAS)))) {

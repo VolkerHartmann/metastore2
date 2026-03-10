@@ -19,8 +19,11 @@ import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import static edu.kit.datamanager.metastore2.util.DataResourceRecordUtil.fixSchemaUrl;
+import static edu.kit.datamanager.metastore2.util.DataResourceRecordUtil.getSchemaDocumentUri;
+
 import edu.kit.datamanager.metastore2.web.ILandingPageControllerV2;
 import edu.kit.datamanager.repo.domain.DataResource;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -72,7 +75,7 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
 
   @Override
   public String getLandingPageOfSchemaWithId(@RequestParam(value = "schemaId") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr,
           Model model) {
@@ -84,17 +87,21 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
     List<DataResource> recordList = new ArrayList<>();
     recordList.add(recordByIdAndVersion);
     if (version == null) {
-      long totalNoOfElements = Long.parseLong(recordByIdAndVersion.getVersion());
-      for (long size = totalNoOfElements - 1; size > 0; size--) {
-        recordList.add(DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, id, size));
-      }
+      DataResourceRecordUtil
+              .getResource2FileVersions(id)
+              .forEach(record -> {
+                recordList.add(DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, record.getResourceId(), record.getVersion()));
+              });
     }
 
     LOG.trace("Fix URL for all schema records");
     List<MetadataSchemaRecord> metadataList = new ArrayList<>();
     recordList.forEach(metadataRecord -> {
-      MetadataSchemaRecord metadataSchemaRecord = DataResourceRecordUtil.migrateToMetadataSchemaRecordV2(schemaConfig, metadataRecord);
-      metadataSchemaRecord.setSchemaDocumentUri(DataResourceRecordUtil.getSchemaDocumentUri(id, metadataSchemaRecord.getSchemaVersion()));
+      MetadataSchemaRecord metadataSchemaRecord = new MetadataSchemaRecord();
+      metadataSchemaRecord.setSchemaId(metadataRecord.getId());
+      metadataSchemaRecord.setSchemaVersion(metadataRecord.getVersion());
+      metadataSchemaRecord.setLastUpdate(metadataRecord.getLastUpdate());
+      metadataSchemaRecord.setSchemaDocumentUri(DataResourceRecordUtil.getSchemaDocumentUri(metadataRecord.getId(), metadataRecord.getVersion()));
       metadataList.add(metadataSchemaRecord);
     });
     model.addAttribute("type", recordList.get(0).getFormats().iterator().next());
@@ -105,7 +112,7 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
 
   @Override
   public String getLandingPageOfMetadataDocumentWithId(@PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr,
           Model model
@@ -120,18 +127,24 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
 
     recordList.add(recordByIdAndVersion);
     if (version == null) {
-      long totalNoOfElements = Long.parseLong(recordByIdAndVersion.getVersion());
-      for (long size = totalNoOfElements - 1; size > 0; size--) {
-        recordList.add(DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, size));
-      }
+      DataResourceRecordUtil
+              .getResource2FileVersions(id)
+              .forEach(record -> {
+                recordList.add(DataResourceRecordUtil.getSchemaRecordByIdAndVersion(metadataConfig, record.getResourceId(), record.getVersion()));
+              });
     }
     LOG.trace("Found {} records.", recordList.size());
     List<MetadataRecord> resultList = new ArrayList<>();
     for (DataResource item : recordList) {
       DataResourceRecordUtil.fixSchemaUrl(item);
-      MetadataRecord metadataRecord = DataResourceRecordUtil.migrateToMetadataRecordV2(metadataConfig, item);
-      DataResourceRecordUtil.fixMetadataDocumentUri(metadataRecord);
-      
+      MetadataRecord metadataRecord = new MetadataRecord();
+      metadataRecord.setId(item.getId());
+      metadataRecord.setRecordVersion(item.getVersion());
+      metadataRecord.setLastUpdate(item.getLastUpdate());
+      metadataRecord.setRelatedResource(ResourceIdentifier.factoryInternalResourceIdentifier(DataResourceRecordUtil.getRelatedIdentifier(item, DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE).getValue()));
+      metadataRecord.setMetadataDocumentUri(DataResourceRecordUtil.getMetadataDocumentUri(item.getId(), item.getVersion()).toString());
+      metadataRecord.setSchema(ResourceIdentifier.factoryUrlResourceIdentifier(DataResourceRecordUtil.getSchemaDocumentUri(item.getId(), item.getVersion())));
+
       resultList.add(metadataRecord);
     }
 

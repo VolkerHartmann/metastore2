@@ -23,7 +23,6 @@ import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.util.ActuatorUtil;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataSchemaRecordUtil;
 import edu.kit.datamanager.metastore2.web.ISchemaRegistryControllerV2;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.domain.ContentInformation;
@@ -135,7 +134,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   @Override
   public ResponseEntity<DataResource> getRecordById(
           @PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr) {
     LOG.trace("Performing getRecordById({}, {}).", schemaId, version);
@@ -150,7 +149,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   @Override
   public ResponseEntity<ContentInformation> getContentInformationById(
           @PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr) {
     LOG.trace("Performing getContentInformationById({}, {}).", schemaId, version);
@@ -168,7 +167,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
 
   @Override
   public ModelAndView getLandingPageById(@PathVariable(value = "schemaId") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr) {
     LOG.trace("Performing Landing page for schema document with ({}, {}).", id, version);
@@ -188,13 +187,13 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   @Override
   public ResponseEntity getSchemaDocumentById(
           @PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr) {
     LOG.trace("Performing getSchemaDocumentById({}, {}).", schemaId, version);
 
     DataResource schemaRecord = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, schemaId, version);
-    ContentInformation contentInfo = DataResourceRecordUtil.getContentInformationByIdAndVersion(schemaConfig, schemaRecord.getId(), Long.valueOf(schemaRecord.getVersion()));
+    ContentInformation contentInfo = DataResourceRecordUtil.getContentInformationByIdAndVersion(schemaConfig, schemaRecord.getId(), schemaRecord.getVersion());
     MediaType contentType = MediaType.valueOf(contentInfo.getMediaType());
     URI pathToFile = URI.create(contentInfo.getContentUri());
     Path schemaDocumentPath = Paths.get(pathToFile);
@@ -223,13 +222,9 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
     List<DataResource> recordList = new ArrayList<>();
     long totalNoOfElements = 5;
     try {
-      recordByIdAndVersion = DataResourceRecordUtil.getRecordById(schemaConfig, id);
-      totalNoOfElements = Long.parseLong(recordByIdAndVersion.getVersion());
-      for (long version = totalNoOfElements - pgbl.getOffset(), size = 0; version > 0 && size < pgbl.getPageSize(); version--, size++) {
-        recordList.add(DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, id, version));
-      }
+      recordList = DataResourceRecordUtil.getAllVersions(id, pgbl);
     } catch (ResourceNotFoundException rnfe) {
-      LOG.info("Schema ID '{}' is unkown. Return empty list...", id);
+      LOG.info("Dataresource with ID '{}' is unkown. Return empty list...", id);
     }
 
     String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), totalNoOfElements);
@@ -239,7 +234,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
 
   @Override
   public ResponseEntity validate(@PathVariable(value = "schemaId") String schemaId,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           MultipartFile document,
           WebRequest wr,
           HttpServletResponse hsr) {
@@ -339,6 +334,6 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
    * @return URI for accessing schema document.
    */
   public static final URI getSchemaDocumentUri(DataResource dataResourceRecord) {
-    return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(SchemaRegistryControllerImplV2.class).getSchemaDocumentById(dataResourceRecord.getId(), Long.parseLong(dataResourceRecord.getVersion()), null, null)).toUri();
+    return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(SchemaRegistryControllerImplV2.class).getSchemaDocumentById(dataResourceRecord.getId(), dataResourceRecord.getVersion(), null, null)).toUri();
   }
 }

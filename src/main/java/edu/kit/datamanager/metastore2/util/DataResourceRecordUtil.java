@@ -21,20 +21,20 @@ import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.exceptions.*;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.IMetadataFormatDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
-import edu.kit.datamanager.metastore2.dao.IUrl2PathDao;
-import edu.kit.datamanager.metastore2.domain.*;
-import edu.kit.datamanager.metastore2.domain.ResourceIdentifier.IdentifierType;
-import edu.kit.datamanager.metastore2.domain.oaipmh.MetadataFormat;
+import edu.kit.datamanager.metastore2.dao.IResource2FileVersionDao;
+import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
+import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.metastore2.domain.Resource2FileVersion;
+import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.metastore2.validation.IValidator;
 import edu.kit.datamanager.metastore2.web.impl.MetadataControllerImplV2;
 import edu.kit.datamanager.metastore2.web.impl.SchemaRegistryControllerImplV2;
 import edu.kit.datamanager.repo.configuration.RepoBaseConfiguration;
+import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
-import edu.kit.datamanager.repo.dao.spec.dataresource.ResourceTypeSpec;
+import edu.kit.datamanager.repo.dao.spec.dataresource.*;
 import edu.kit.datamanager.repo.domain.*;
+import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import edu.kit.datamanager.repo.service.IContentInformationService;
 import edu.kit.datamanager.repo.util.ContentDataUtils;
@@ -55,30 +55,24 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.UnaryOperator;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord.SCHEMA_TYPE.JSON;
 import static edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord.SCHEMA_TYPE.XML;
-import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
-import edu.kit.datamanager.repo.dao.spec.dataresource.LastUpdateSpecification;
-import edu.kit.datamanager.repo.dao.spec.dataresource.PermissionSpecification;
-import edu.kit.datamanager.repo.dao.spec.dataresource.RelatedIdentifierSpec;
-import edu.kit.datamanager.repo.dao.spec.dataresource.StateSpecification;
-import edu.kit.datamanager.repo.domain.Date;
-import java.nio.charset.Charset;
-import java.time.Instant;
 
 /**
  * Utility class for handling json documents
@@ -109,11 +103,9 @@ public class DataResourceRecordUtil {
 
   private static MetastoreConfiguration schemaConfig;
 
-  private static IDataRecordDao dataRecordDao;
   private static IDataResourceDao dataResourceDao;
-  private static ISchemaRecordDao schemaRecordDao;
-  private static IMetadataFormatDao metadataFormatDao;
-  private static IUrl2PathDao url2PathDao;
+  private static ISchemaUrl2PathDao schemaUrl2PathDao;
+  private static IResource2FileVersionDao resource2FileVersionDao;
   private static IAllIdentifiersDao allIdentifiersDao;
 
   public static final String SCHEMA_SUFFIX = "_Schema";
@@ -126,6 +118,8 @@ public class DataResourceRecordUtil {
 
   private static String baseUrl;
 
+  private static String guestToken = null;
+
   DataResourceRecordUtil() {
     //Utility class
   }
@@ -135,7 +129,6 @@ public class DataResourceRecordUtil {
    *
    * @param aclEntries AclEntries of resource.
    * @param currentAcl Check current ACL (true) or new one (false).
-   *
    * @return Allowed (true) or not.
    */
   public static boolean checkAccessRights(Set<AclEntry> aclEntries, boolean currentAcl) {
@@ -173,19 +166,19 @@ public class DataResourceRecordUtil {
    * Create/Ingest an instance of MetadataSchemaRecord.
    *
    * @param applicationProperties Settings of repository.
-   * @param recordDocument Record of the schema.
-   * @param document Schema document.
+   * @param recordDocument        Record of the schema.
+   * @param document              Schema document.
    * @return Record of registered schema document.
    */
   public static DataResource createDataResourceRecord4Schema(MetastoreConfiguration applicationProperties,
-          MultipartFile recordDocument,
-          MultipartFile document) {
-    DataResource metadataRecord;
+                                                             MultipartFile recordDocument,
+                                                             MultipartFile document) {
+    DataResource dataResourceRecord;
 
     // Do some checks first.
-    metadataRecord = checkParameters(recordDocument, document, true);
-    Objects.requireNonNull(metadataRecord);
-    if (metadataRecord.getId() == null) {
+    dataResourceRecord = checkParameters(recordDocument, document, true);
+    Objects.requireNonNull(dataResourceRecord);
+    if (dataResourceRecord.getId() == null) {
       String message = "Mandatory attribute 'id' not found in record. Returning HTTP BAD_REQUEST.";
       LOG.error(message);
       throw new BadArgumentException(message);
@@ -194,62 +187,48 @@ public class DataResourceRecordUtil {
     // and save as alternate identifier. (In case of
     // upper letters in both versions (with and without
     // upper letters)
-    DataResourceRecordUtil.check4validSchemaId(metadataRecord);
+    DataResourceRecordUtil.check4validSchemaId(dataResourceRecord);
     // End of parameter checks
     // validate schema document / determine type if not given
-    validateMetadataSchemaDocument(applicationProperties, metadataRecord, document);
+    validateMetadataSchemaDocument(applicationProperties, dataResourceRecord, document);
     // set internal parameters
-    if (metadataRecord.getResourceType() == null) {
+    if (dataResourceRecord.getResourceType() == null) {
       LOG.trace("No mimetype set! Try to determine...");
       if (document.getContentType() != null) {
         LOG.trace("Set mimetype determined from document: '{}'", document.getContentType());
-        metadataRecord.getFormats().add(document.getContentType());
+        dataResourceRecord.getFormats().add(document.getContentType());
       }
     }
-    metadataRecord.setVersion(Long.toString(1));
+    dataResourceRecord.setVersion(SemanticVersion.parse("1.0.0").toString());
     // create record.
-    DataResource dataResource = metadataRecord;
+    DataResource dataResource = dataResourceRecord;
     DataResource createResource = DataResourceUtils.createResource(applicationProperties, dataResource);
     // store document
     ContentInformation contentInformation = ContentDataUtils.addFile(applicationProperties, createResource, document, document.getOriginalFilename(), null, true, t -> "somethingStupid");
     // Create schema record
-    SchemaRecord schemaRecord = createSchemaRecord(dataResource, contentInformation);
-    MetadataSchemaRecordUtil.saveNewSchemaRecord(schemaRecord);
+    SchemaUrl2Path schemaRecord = createSchemaRecord(dataResource, contentInformation);
+    DataResourceRecordUtil.saveNewSchemaRecord(schemaRecord);
 
-    // Settings for OAI PMH
-    if (MetadataSchemaRecord.SCHEMA_TYPE.XML.equals(schemaRecord.getType())) {
-      try {
-        MetadataFormat metadataFormat = new MetadataFormat();
-        metadataFormat.setMetadataPrefix(schemaRecord.getSchemaIdWithoutVersion());
-        metadataFormat.setSchema(schemaRecord.getAlternateId());
-        String documentString = new String(document.getBytes(), Charset.defaultCharset());
-        LOG.trace(documentString);
-        String metadataNamespace = SchemaUtils.getTargetNamespaceFromSchema(document.getBytes());
-        metadataFormat.setMetadataNamespace(metadataNamespace);
-        metadataFormatDao.save(metadataFormat);
-      } catch (IOException ex) {
-        String message = LOG_ERROR_READ_METADATA_DOCUMENT;
-        LOG.error(message, ex);
-        throw new UnprocessableEntityException(message);
-      }
-    }
     // reload data resource
-    metadataRecord = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(applicationProperties, metadataRecord.getId(), Long.valueOf(metadataRecord.getVersion()));
+    dataResourceRecord = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(applicationProperties, dataResourceRecord.getId(), dataResourceRecord.getVersion());
 
-    return metadataRecord;
+    //save helper table to link file versions to resource
+    saveNewResource2FileVersion(dataResourceRecord, contentInformation);
+
+    return dataResourceRecord;
   }
 
   /**
    * Create/Ingest an instance of MetadataRecord.
    *
    * @param applicationProperties Settings of repository.
-   * @param recordDocument Record of the metadata.
-   * @param document Schema document.
+   * @param recordDocument        Record of the metadata.
+   * @param document              Schema document.
    * @return Record of registered schema document.
    */
   public static DataResource createDataResourceRecord4Metadata(MetastoreConfiguration applicationProperties,
-          MultipartFile recordDocument,
-          MultipartFile document) {
+                                                               MultipartFile recordDocument,
+                                                               MultipartFile document) {
     DataResource dataResource;
 
     // Do some checks first.
@@ -263,14 +242,17 @@ public class DataResourceRecordUtil {
     // Fix internal references, of necessary
     fixRelatedSchemaIfNeeded(dataResource);
     // validate schema document / determine or correct resource type
-    validateMetadataDocument(applicationProperties, dataResource, document);
+    validateMetadataDocument(applicationProperties, document, dataResource);
 
     dataResource.setVersion(getSchemaRecordFromDataResource(dataResource).getVersion().toString());
     // create record.
     DataResource createResource = DataResourceUtils.createResource(applicationProperties, dataResource);
     // store document
-    ContentDataUtils.addFile(applicationProperties, createResource, document, document.getOriginalFilename(), null, true, t -> "somethingStupid");
-    dataResource = DataResourceRecordUtil.getMetadataRecordByIdAndVersion(applicationProperties, dataResource.getId(), Long.valueOf(dataResource.getVersion()));
+    ContentInformation contentInformation = ContentDataUtils.addFile(applicationProperties, createResource, document, document.getOriginalFilename(), null, true, t -> "somethingStupid");
+    dataResource = DataResourceRecordUtil.getMetadataRecordByIdAndVersion(applicationProperties, dataResource.getId(), dataResource.getVersion());
+
+    //save helper table to link file versions to resource
+    saveNewResource2FileVersion(dataResource, contentInformation);
 
     return dataResource;
   }
@@ -280,19 +262,19 @@ public class DataResourceRecordUtil {
    * document.
    *
    * @param applicationProperties Configuration properties.
-   * @param resourceId Identifier of digital object.
-   * @param eTag ETag of the old digital object.
-   * @param recordDocument Metadata record.
-   * @param document Metadata document.
-   * @param supplier Function for updating record.
+   * @param resourceId            Identifier of digital object.
+   * @param eTag                  ETag of the old digital object.
+   * @param recordDocument        Metadata record.
+   * @param document              Metadata document.
+   * @param supplier              Function for updating record.
    * @return Enriched metadata record.
    */
   public static DataResource updateDataResource4MetadataDocument(MetastoreConfiguration applicationProperties,
-          String resourceId,
-          String eTag,
-          MultipartFile recordDocument,
-          MultipartFile document,
-          UnaryOperator<String> supplier) {
+                                                                 String resourceId,
+                                                                 String eTag,
+                                                                 MultipartFile recordDocument,
+                                                                 MultipartFile document,
+                                                                 UnaryOperator<String> supplier) {
     DataResource givenDataResource;
     givenDataResource = checkParameters(recordDocument, document, false);
 
@@ -300,11 +282,11 @@ public class DataResourceRecordUtil {
   }
 
   public static DataResource updateDataResource4MetadataDocument(MetastoreConfiguration applicationProperties,
-          String resourceId,
-          String eTag,
-          DataResource givenDataResource,
-          MultipartFile document,
-          UnaryOperator<String> supplier) {
+                                                                 String resourceId,
+                                                                 String eTag,
+                                                                 DataResource givenDataResource,
+                                                                 MultipartFile document,
+                                                                 UnaryOperator<String> supplier) {
     DataResource updatedDataResource;
 
     LOG.trace("Obtaining most recent datacite record with id {}.", resourceId);
@@ -321,12 +303,14 @@ public class DataResourceRecordUtil {
       info = getContentInformationOfResource(applicationProperties, updatedDataResource);
       // validate if document is still valid due to changed record settings.
       if (info != null) {
+        // version should not be changed, but check if document is still valid for updated record.
+        updatedDataResource.setVersion(oldDataResource.getVersion());
         Path metadataDocumentPath = testForRegularFile(info.getContentUri());
         // test if document is still valid for updated(?) schema.
         try {
           InputStream inputStream = Files.newInputStream(metadataDocumentPath);
-          SchemaRecord schemaRecord = DataResourceRecordUtil.getSchemaRecordFromDataResource(updatedDataResource);
-          MetadataSchemaRecordUtil.validateMetadataDocument(applicationProperties, inputStream, schemaRecord);
+          SchemaUrl2Path schemaRecord = DataResourceRecordUtil.getSchemaRecordFromDataResource(updatedDataResource);
+          SchemaRecordUtil.validateMetadataDocument(applicationProperties, inputStream, schemaRecord);
         } catch (IOException ex) {
           LOG.error("Error validating file!", ex);
         }
@@ -346,7 +330,7 @@ public class DataResourceRecordUtil {
    * @param newDataResource Data resource holding the new version.
    */
   public static void addProvenance(DataResource newDataResource) {
-    if (Long.parseLong(newDataResource.getVersion()) > 1L) {
+    if (SemanticVersion.parse(newDataResource.getVersion()).isAfter(SemanticVersion.parse("1.0.0"))) {
       replaceIsDerivedFrom(newDataResource);
     }
   }
@@ -358,9 +342,9 @@ public class DataResourceRecordUtil {
    */
   public static void replaceIsDerivedFrom(DataResource newDataResource) {
     boolean foundOldIdentifier = false;
-    long oldVersion = Long.parseLong(newDataResource.getVersion()) - 1L;
+    String oldVersion = DataResourceRecordUtil.getPreviousVersion(newDataResource);
     String urlToPredecessor = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(MetadataControllerImplV2.class).
-            getMetadataDocumentById(newDataResource.getId(), oldVersion, null, null)).
+                    getMetadataDocumentById(newDataResource.getId(), oldVersion, null, null)).
             toUri().
             toString();
     for (RelatedIdentifier item : newDataResource.getRelatedIdentifiers()) {
@@ -383,21 +367,21 @@ public class DataResourceRecordUtil {
    * Delete a digital object with given identifier.
    *
    * @param applicationProperties Configuration properties.
-   * @param id Identifier of digital object.
-   * @param eTag ETag of the old digital object.
-   * @param supplier Function for updating record.
+   * @param id                    Identifier of digital object.
+   * @param eTag                  ETag of the old digital object.
+   * @param supplier              Function for updating record.
    */
   public static void deleteDataResourceRecord(MetastoreConfiguration applicationProperties,
-          String id,
-          String eTag,
-          UnaryOperator<String> supplier) {
+                                              String id,
+                                              String eTag,
+                                              UnaryOperator<String> supplier) {
     // Check if resource has dependencies (e.g., metadata records depending on schema which are not deleted yet)
     Specification<DataResource> metadataDocumentWithGivenSchema = findBySchemaId(null, List.of(id));
     metadataDocumentWithGivenSchema = findByStateOnly(metadataDocumentWithGivenSchema, DataResource.State.FIXED, DataResource.State.VOLATILE, DataResource.State.REVOKED);
     Pageable pageable = PageRequest.of(0, 1);
     Page<DataResource> dataResources = queryDataResources(metadataDocumentWithGivenSchema, pageable);
     if (dataResources.hasContent()) {
-      String message = "Cannot delete resource with id '" + id + "' due to at least one existing dependency! (" +  dataResources.get().findFirst().get().getId() + ")";
+      String message = "Cannot delete resource with id '" + id + "' due to at least one existing dependency! (" + dataResources.get().findFirst().get().getId() + ")";
       LOG.error(message);
       throw new ResourceAlreadyExistException(message);
     }
@@ -405,102 +389,11 @@ public class DataResourceRecordUtil {
     try {
       DataResourceUtils.getResourceByIdentifierOrRedirect(applicationProperties, id, null, supplier);
     } catch (ResourceNotFoundException rnfe) {
-      Optional<DataRecord> dataRecord = dataRecordDao.findTopByMetadataIdOrderByVersionDesc(id);
-      while (dataRecord.isPresent()) {
-        dataRecordDao.delete(dataRecord.get());
-        dataRecord = dataRecordDao.findTopByMetadataIdOrderByVersionDesc(id);
-      }
     }
-  }
-
-  /**
-   * Migrate data resource to metadata record.
-   *
-   * @param applicationProperties Configuration settings of repository.
-   * @param dataResource Data resource to migrate.
-   * @return Metadata record of data resource.
-   */
-  public static MetadataRecord migrateToMetadataRecordV2(RepoBaseConfiguration applicationProperties,
-          DataResource dataResource) {
-    MetadataRecord metadataRecord = new MetadataRecord();
-    if (dataResource != null) {
-      metadataRecord.setId(dataResource.getId());
-      metadataRecord.setAcl(dataResource.getAcls());
-
-      metadataRecord.setCreatedAt(getCreationDate(dataResource));
-      metadataRecord.setLastUpdate(dataResource.getLastUpdate());
-
-      PrimaryIdentifier pid = dataResource.getIdentifier();
-      if ((pid != null) && pid.hasDoi()) {
-        metadataRecord.setPid(ResourceIdentifier.factoryResourceIdentifier(pid.getValue(), IdentifierType.valueOf(pid.getIdentifierType())));
-      }
-      metadataRecord.setRecordVersion(getVersion(dataResource));
-
-      setSchemaAndVersion(metadataRecord, dataResource);
-      setRelatedResource(metadataRecord, dataResource);
-
-      if (metadataRecord.getSchema() == null) {
-        String message = "Missing schema identifier for metadata document. Not a valid metadata document ID. Returning HTTP BAD_REQUEST.";
-        LOG.error(message);
-        throw new BadArgumentException(message);
-      }
-      LOG.trace("Get document URI from ContentInformation.");
-      ContentInformation info;
-      info = getContentInformationOfResource(applicationProperties, dataResource);
-      if (info != null) {
-        metadataRecord.setDocumentHash(info.getHash());
-        metadataRecord.setMetadataDocumentUri(info.getContentUri());
-      }
-      // Only one license allowed. So don't worry about size of set.
-      if (!dataResource.getRights().isEmpty()) {
-        metadataRecord.setLicenseUri(dataResource.getRights().iterator().next().getSchemeUri());
-      }
-    }
-
-    return metadataRecord;
-  }
-
-  /**
-   * Migrate data resource to metadata record.
-   *
-   * @param applicationProperties Configuration settings of repository.
-   * @param dataResource Data resource to migrate.
-   * @return Metadata record of data resource.
-   */
-  public static MetadataSchemaRecord migrateToMetadataSchemaRecordV2(RepoBaseConfiguration applicationProperties,
-          DataResource dataResource) {
-    MetadataSchemaRecord metadataSchemaRecord = new MetadataSchemaRecord();
-    if (dataResource != null) {
-      metadataSchemaRecord.setSchemaId(dataResource.getId());
-      metadataSchemaRecord.setAcl(dataResource.getAcls());
-
-      metadataSchemaRecord.setCreatedAt(getCreationDate(dataResource));
-      metadataSchemaRecord.setLastUpdate(dataResource.getLastUpdate());
-
-      PrimaryIdentifier pid = dataResource.getIdentifier();
-      if ((pid != null) && pid.hasDoi()) {
-        metadataSchemaRecord.setPid(ResourceIdentifier.factoryResourceIdentifier(pid.getValue(), IdentifierType.valueOf(pid.getIdentifierType())));
-      }
-      metadataSchemaRecord.setSchemaVersion(getVersion(dataResource));
-
-      LOG.trace("Get document URI from ContentInformation.");
-      ContentInformation info;
-      info = getContentInformationOfResource(applicationProperties, dataResource);
-      if (info != null) {
-        metadataSchemaRecord.setSchemaHash(info.getHash());
-        metadataSchemaRecord.setSchemaDocumentUri(info.getContentUri());
-      }
-      // Only one license allowed. So don't worry about size of set.
-      if (!dataResource.getRights().isEmpty()) {
-        metadataSchemaRecord.setLicenseUri(dataResource.getRights().iterator().next().getSchemeUri());
-      }
-    }
-
-    return metadataSchemaRecord;
   }
 
   private static ContentInformation getContentInformationOfResource(RepoBaseConfiguration applicationProperties,
-          DataResource dataResource) {
+                                                                    DataResource dataResource) {
     ContentInformation returnValue = null;
     long nano1 = System.nanoTime() / 1000000;
     IContentInformationService contentInformationService = applicationProperties.getContentInformationService();
@@ -529,71 +422,33 @@ public class DataResourceRecordUtil {
    * Validate metadata document with given schema.
    *
    * @param metastoreProperties Configuration for accessing services
-   * @param schemaRecord metadata of the schema document.
-   * @param document document
+   * @param schemaRecord        metadata of the schema document.
+   * @param document            document
    */
   private static void validateMetadataDocument(MetastoreConfiguration metastoreProperties,
-          MultipartFile document,
-          SchemaRecord schemaRecord) {
+                                               MultipartFile document,
+                                               SchemaUrl2Path schemaRecord) {
     LOG.trace("validateMetadataDocument (schemaRecord) {},{}, {}", metastoreProperties, schemaRecord, document);
     if (document == null || document.isEmpty()) {
       String message = "Missing metadata document in body. Returning HTTP BAD_REQUEST.";
       LOG.error(message);
       throw new BadArgumentException(message);
     }
-    URI pathToSchemaFile = URI.create(schemaRecord.getSchemaDocumentUri());
     try {
-      switch (pathToSchemaFile.getScheme()) {
-        case "file":
-          // check file
-          Path schemaDocumentPath = testForRegularFile(schemaRecord.getSchemaDocumentUri());
-
-          byte[] schemaDocument = FileUtils.readFileToByteArray(schemaDocumentPath.toFile());
-          IValidator applicableValidator;
-          String mediaType = null;
-          switch (schemaRecord.getType()) {
-            case JSON:
-              mediaType = MediaType.APPLICATION_JSON_VALUE;
-              break;
-            case XML:
-              mediaType = MediaType.APPLICATION_XML_VALUE;
-              break;
-            default:
-              LOG.error("Unkown schema type: '" + schemaRecord.getType() + "'");
-          }
-          applicableValidator = getValidatorForRecord(metastoreProperties, mediaType, schemaDocument);
-          if (applicableValidator == null) {
-            String message = "No validator found for schema type " + mediaType;
-            LOG.error(message);
-            throw new UnprocessableEntityException(message);
-          } else {
-            LOG.trace("Validator found.");
-            LOG.trace("Performing validation of metadata document using schema {}, version {} and validator {}.", schemaRecord.getSchemaId(), schemaRecord.getVersion(), applicableValidator);
-            if (!applicableValidator.validateMetadataDocument(schemaDocumentPath.toFile(), document.getInputStream())) {
-              LOG.warn("Metadata document validation failed. -> " + applicableValidator.getErrorMessage());
-              throw new UnprocessableEntityException(applicableValidator.getErrorMessage());
-            }
-          }
-          LOG.trace("Metadata document validation succeeded.");
-          break;
-        case "http":
-        case "https":
-        default:
-          throw new CustomInternalServerError("Protocol of schema ('" + pathToSchemaFile.getScheme() + "') is not supported yet!");
-      }
+      SchemaRecordUtil.validateMetadataDocument(metastoreProperties, document.getInputStream(), schemaRecord);
     } catch (IOException ex) {
-      java.util.logging.Logger.getLogger(DataResourceRecordUtil.class.getName()).log(Level.SEVERE, null, ex);
-      throw new CustomInternalServerError("Schema '" + pathToSchemaFile + "' is not accessible!");
+      LOG.error("Error while validating metadata document!", ex);
+      throw new CustomInternalServerError("Error while validating against schema '" + schemaRecord.getUrl() + "'!");
     }
   }
 
   public static DataResource getRecordById(MetastoreConfiguration metastoreProperties,
-          String recordId) throws ResourceNotFoundException {
+                                           String recordId) throws ResourceNotFoundException {
     return getRecordByIdAndVersion(metastoreProperties, recordId, null);
   }
 
   public static DataResource getMetadataRecordByIdAndVersion(MetastoreConfiguration metastoreProperties,
-          String recordId, Long version) throws ResourceNotFoundException {
+                                                             String recordId, String version) throws ResourceNotFoundException {
     DataResource returnValue = getRecordByIdAndVersion(metastoreProperties, recordId, version);
     if (!returnValue.getResourceType().getValue().endsWith(METADATA_SUFFIX)) {
       throw new ResourceNotFoundException("Metadata document with ID '" + recordId + "' doesn't exist!");
@@ -602,7 +457,7 @@ public class DataResourceRecordUtil {
   }
 
   public static DataResource getSchemaRecordByIdAndVersion(MetastoreConfiguration metastoreProperties,
-          String recordId, Long version) throws ResourceNotFoundException {
+                                                           String recordId, String version) throws ResourceNotFoundException {
     DataResource returnValue = getRecordByIdAndVersion(metastoreProperties, recordId, version);
     if (!returnValue.getResourceType().getValue().endsWith(SCHEMA_SUFFIX)) {
       throw new ResourceNotFoundException("Schema document with ID '" + recordId + "' doesn't exist!");
@@ -611,7 +466,7 @@ public class DataResourceRecordUtil {
   }
 
   public static DataResource getRecordByIdAndVersion(MetastoreConfiguration metastoreProperties,
-          String recordId, Long version) throws ResourceNotFoundException {
+                                                     String recordId, String version) throws ResourceNotFoundException {
     LOG.trace("Obtaining record with id {} and version {}.", recordId, version);
     //if security enabled, check permission -> if not matching, return HTTP UNAUTHORIZED or FORBIDDEN
     long nano = System.nanoTime() / 1000000;
@@ -630,12 +485,12 @@ public class DataResourceRecordUtil {
     }
     nano2 = System.nanoTime() / 1000000;
     Stream<DataResource> stream = dataResource.get();
-    if (version != null) {
-      stream = stream.filter(resource -> Long.parseLong(resource.getVersion()) == version);
+    if (version != null && !version.isEmpty()) {
+      stream = stream.filter(resource -> resource.getVersion().equals(version));
     }
     Optional<DataResource> findFirst = stream.findFirst();
     if (findFirst.isEmpty()) {
-      String message = String.format("Version '%d' of ID '%s' doesn't exist!", version, recordId);
+      String message = String.format("Version '%s' of ID '%s' doesn't exist!", version, recordId);
       LOG.error(message);
       throw new ResourceNotFoundException(message);
     }
@@ -645,13 +500,29 @@ public class DataResourceRecordUtil {
   }
 
   public static ContentInformation getContentInformationByIdAndVersion(MetastoreConfiguration metastoreProperties,
-          String recordId, Long version) throws ResourceNotFoundException {
+                                                                       String recordId, String version) throws ResourceNotFoundException {
     LOG.trace("Obtaining content information record with id {} and version {}.", recordId, version);
-    return metastoreProperties.getContentInformationService().getContentInformation(recordId, null, version);
+    ContentInformation returnValue = null;
+    Optional<Resource2FileVersion> find;
+    if (version == null) {
+      find = resource2FileVersionDao.findFirstByResourceIdOrderByVersionDesc(recordId);
+    } else {
+      find = resource2FileVersionDao.findByResourceIdAndVersion(recordId, version);
+    }
+
+    if (find.isEmpty()) {
+      String message = String.format("No content information found for resource id '%s' and version '%s'!", recordId, version);
+      for (Resource2FileVersion item : resource2FileVersionDao.findAll()) {
+        LOG.trace(item.toString());
+      }
+      LOG.error(message);
+      throw new ResourceNotFoundException(message);
+    }
+    return metastoreProperties.getContentInformationService().getContentInformation(recordId, null, find.get().getFileVersion().longValue());
   }
 
   public static Path getMetadataDocumentByIdAndVersion(MetastoreConfiguration metastoreProperties,
-          String recordId, Long version) throws ResourceNotFoundException {
+                                                       String recordId, String version) throws ResourceNotFoundException {
     LOG.trace("Obtaining content information record with id {} and version {}.", recordId, version);
     ContentInformation contentRecord = getContentInformationByIdAndVersion(metastoreProperties, recordId, version);
 
@@ -693,7 +564,7 @@ public class DataResourceRecordUtil {
    * administration rights all resources will be found.
    *
    * @param specification Specification for DataResource.
-   * @param states Specifiy allowed states.
+   * @param states        Specifiy allowed states.
    * @return Refined specification for DataResource.
    */
   public static Specification<DataResource> findByStateWithAuthorization(Specification<DataResource> specification, DataResource.State... states) {
@@ -717,7 +588,7 @@ public class DataResourceRecordUtil {
    * rights.
    *
    * @param specification Specification for DataResource.
-   * @param states Specifiy allowed states.
+   * @param states        Specifiy allowed states.
    * @return Refined specification for DataResource.
    */
   public static Specification<DataResource> findByStateOnly(Specification<DataResource> specification, DataResource.State... states) {
@@ -733,7 +604,7 @@ public class DataResourceRecordUtil {
    * Create specification for all listed schemaIds.
    *
    * @param specification Specification for search.
-   * @param schemaIds Provided schemaIDs...
+   * @param schemaIds     Provided schemaIDs...
    * @return Specification with schemaIds added.
    */
   public static Specification<DataResource> findBySchemaId(Specification<DataResource> specification, List<String> schemaIds) {
@@ -742,9 +613,9 @@ public class DataResourceRecordUtil {
       List<String> allSchemaIds = new ArrayList<>();
       for (String schemaId : schemaIds) {
         allSchemaIds.add(schemaId);
-        List<SchemaRecord> allVersions = schemaRecordDao.findBySchemaIdStartsWithOrderByVersionDesc(schemaId + SCHEMA_VERSION_SEPARATOR);
-        for (SchemaRecord schemaRecord : allVersions) {
-          allSchemaIds.add(schemaRecord.getAlternateId());
+        List<SchemaUrl2Path> allVersions = schemaUrl2PathDao.findBySchemaIdOrderByVersionDesc(schemaId);
+        for (SchemaUrl2Path schemaRecord : allVersions) {
+          allSchemaIds.add(schemaRecord.getUrl());
         }
       }
       if (!allSchemaIds.isEmpty()) {
@@ -758,7 +629,7 @@ public class DataResourceRecordUtil {
    * Add specification to find data resource of schema documents by mimetype.
    *
    * @param specification Specification for DataResource.
-   * @param mimeTypes Provided mimetypes.
+   * @param mimeTypes     Provided mimetypes.
    * @return Refined specification for DataResource.
    */
   public static final Specification<DataResource> findByMimetypes(Specification<DataResource> specification, List<String> mimeTypes) {
@@ -784,16 +655,15 @@ public class DataResourceRecordUtil {
     resourceType = switch (searchFor) {
       // 1 -> search for JSON only
       case JSON ->
-        ResourceType.createResourceType(DataResourceRecordUtil.JSON_SCHEMA_TYPE, ResourceType.TYPE_GENERAL.MODEL);
+              ResourceType.createResourceType(DataResourceRecordUtil.JSON_SCHEMA_TYPE, ResourceType.TYPE_GENERAL.MODEL);
       // 2 -> search for XML only
       case XML ->
-        ResourceType.createResourceType(DataResourceRecordUtil.XML_SCHEMA_TYPE, ResourceType.TYPE_GENERAL.MODEL);
+              ResourceType.createResourceType(DataResourceRecordUtil.XML_SCHEMA_TYPE, ResourceType.TYPE_GENERAL.MODEL);
       // 3 -> Search for both mimetypes (xml & json)
       case JSON | XML ->
-        ResourceType.createResourceType(DataResourceRecordUtil.SCHEMA_SUFFIX, ResourceType.TYPE_GENERAL.MODEL);
+              ResourceType.createResourceType(DataResourceRecordUtil.SCHEMA_SUFFIX, ResourceType.TYPE_GENERAL.MODEL);
       // 0 -> Unknown mimetype
-      default ->
-        ResourceType.createResourceType("unknown");
+      default -> ResourceType.createResourceType("unknown");
     };
 
     return specification.and(ResourceTypeSpec.toSpecification(resourceType));
@@ -804,7 +674,7 @@ public class DataResourceRecordUtil {
    * (IS_METADATA_FOR).
    *
    * @param specification Specification for search.
-   * @param relatedIds Provided schemaIDs...
+   * @param relatedIds    Provided schemaIDs...
    * @return Specification with related data resources added.
    */
   public static Specification<DataResource> findByRelatedId(Specification<DataResource> specification, List<String> relatedIds) {
@@ -820,8 +690,8 @@ public class DataResourceRecordUtil {
    * (IS_METADATA_FOR).
    *
    * @param specification Specification for search.
-   * @param updateFrom Start date of date range.
-   * @param updateUntil End date of date range.
+   * @param updateFrom    Start date of date range.
+   * @param updateUntil   End date of date range.
    * @return Specification with date range added.
    */
   public static Specification<DataResource> findByUpdateDates(Specification<DataResource> specification, Instant updateFrom, Instant updateUntil) {
@@ -838,7 +708,7 @@ public class DataResourceRecordUtil {
    * <li> Metadata documents </li> </ul>
    *
    * @param specification Specification for search.
-   * @param resourceType Specification with resource type added.
+   * @param resourceType  Specification with resource type added.
    * @return
    */
   public static Specification<DataResource> findByResourceType(Specification<DataResource> specification, String resourceType) {
@@ -859,7 +729,7 @@ public class DataResourceRecordUtil {
   /**
    * Check validity of acl list and then merge new acl list in the existing one.
    *
-   * @param managed Existing metadata record.
+   * @param managed  Existing metadata record.
    * @param provided New metadata record.
    * @return Merged list
    */
@@ -890,8 +760,8 @@ public class DataResourceRecordUtil {
    * Set new value for existing one.
    *
    * @param description For logging purposes only
-   * @param managed Existing value.
-   * @param provided New value.
+   * @param managed     Existing value.
+   * @param provided    New value.
    * @return Merged record
    */
   public static <T> T mergeEntry(String description, T managed, T provided) {
@@ -901,9 +771,9 @@ public class DataResourceRecordUtil {
   /**
    * Set new value for existing one.
    *
-   * @param description For logging purposes only
-   * @param managed Existing value.
-   * @param provided New value.
+   * @param description       For logging purposes only
+   * @param managed           Existing value.
+   * @param provided          New value.
    * @param overwriteWithNull Allows also deletion of a value.
    * @return Merged record
    */
@@ -954,15 +824,6 @@ public class DataResourceRecordUtil {
   /**
    * Set DAO for data record.
    *
-   * @param aDataRecordDao the dataRecordDao to set
-   */
-  public static void setDataRecordDao(IDataRecordDao aDataRecordDao) {
-    dataRecordDao = aDataRecordDao;
-  }
-
-  /**
-   * Set DAO for data record.
-   *
    * @param aDataResourceDao the dataResourceDao to set
    */
   public static void setDataResourceDao(IDataResourceDao aDataResourceDao) {
@@ -970,30 +831,12 @@ public class DataResourceRecordUtil {
   }
 
   /**
-   * Set the DAO for MetadataFormat.
-   *
-   * @param aMetadataFormatDao the metadataFormatDao to set
-   */
-  public static void setMetadataFormatDao(IMetadataFormatDao aMetadataFormatDao) {
-    metadataFormatDao = aMetadataFormatDao;
-  }
-
-  /**
-   * Set the DAO for SchemaRecord.
-   *
-   * @param aSchemaRecordDao the schemaRecordDao to set
-   */
-  public static void setSchemaRecordDao(ISchemaRecordDao aSchemaRecordDao) {
-    schemaRecordDao = aSchemaRecordDao;
-  }
-
-  /**
    * Set the DAO holding url and paths.
    *
-   * @param aUrl2PathDao the url2PathDao to set
+   * @param aSchemaUrl2PathDao the schemaUrl2PathDao to set
    */
-  public static void setUrl2PathDao(IUrl2PathDao aUrl2PathDao) {
-    url2PathDao = aUrl2PathDao;
+  public static void setSchemaUrl2PathDao(ISchemaUrl2PathDao aSchemaUrl2PathDao) {
+    schemaUrl2PathDao = aSchemaUrl2PathDao;
   }
 
   /**
@@ -1003,12 +846,13 @@ public class DataResourceRecordUtil {
     DataResourceRecordUtil.allIdentifiersDao = allIdentifiersDao;
   }
 
-  public static final void fixMetadataDocumentUri(MetadataRecord metadataRecord) {
-    String metadataDocumentUri = metadataRecord.getMetadataDocumentUri();
-    metadataRecord
-            .setMetadataDocumentUri(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(MetadataControllerImplV2.class
-            ).getMetadataDocumentById(metadataRecord.getId(), metadataRecord.getRecordVersion(), null, null)).toUri().toString());
-    LOG.trace("Fix metadata document Uri '{}' -> '{}'", metadataDocumentUri, metadataRecord.getMetadataDocumentUri());
+  /**
+   * Set the DAO holding identifiers and their file versions.
+   *
+   * @param aResource2FileVersionDao the identifier2FileVersionDao to set
+   */
+  public static void setResource2FileVersionDao(IResource2FileVersionDao aResource2FileVersionDao) {
+    DataResourceRecordUtil.resource2FileVersionDao = aResource2FileVersionDao;
   }
 
   public static final void fixSchemaUrl(DataResource dataresource) {
@@ -1020,29 +864,61 @@ public class DataResourceRecordUtil {
     if (schemaIdentifier != null && schemaIdentifier.getIdentifierType().equals(Identifier.IDENTIFIER_TYPE.INTERNAL)) {
       String value = schemaIdentifier.getValue();
       StringTokenizer tokenizer = new StringTokenizer(schemaIdentifier.getValue(), SCHEMA_VERSION_SEPARATOR);
-      Long version = null;
+      String version = null;
       String schemaId = null;
-      SchemaRecord schemaRecord = null;
+      SchemaUrl2Path schemaRecord = null;
       switch (tokenizer.countTokens()) {
         case 2:
           schemaId = tokenizer.nextToken();
-          version = Long.parseLong(tokenizer.nextToken());
-          schemaRecord = schemaRecordDao.findBySchemaId(schemaId + SCHEMA_VERSION_SEPARATOR + version);
+          version = tokenizer.nextToken();
+          schemaRecord = schemaUrl2PathDao.findBySchemaIdAndVersion(schemaId, version).orElse(null);
           break;
         case 1:
           schemaId = tokenizer.nextToken();
-          schemaRecord = schemaRecordDao.findFirstBySchemaIdStartsWithOrderByVersionDesc(schemaId + SCHEMA_VERSION_SEPARATOR);
+          schemaRecord = schemaUrl2PathDao.findFirstBySchemaIdOrderByVersionDesc(schemaId).orElse(null);
           break;
         default:
           throw new CustomInternalServerError("Invalid schemaId!");
       }
+      if (schemaRecord == null) {
+        for (SchemaUrl2Path item : schemaUrl2PathDao.findAll()) {
+          LOG.trace("Existing schema record: {}", item);
+        }
+        LOG.trace("Number of schema records: {}", schemaUrl2PathDao.count());
+        throw new CustomInternalServerError("No schema record found for schemaId '" + value + "'!");
+      }
 
-      schemaIdentifier.setValue(schemaRecord.getAlternateId());
+      schemaIdentifier.setValue(schemaRecord.getUrl());
       schemaIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
       LOG.trace("Fix scheme Url '{}' -> '{}'", value, schemaIdentifier.getValue());
     }
   }
 
+  /**
+   * Get all versions for a given data resource ID.
+   *
+   * @param dataResourceId Data resource ID.
+   * @return List of all versions (may be empty).
+   */
+  public static List<DataResource> getAllVersions(String dataResourceId, Pageable pgbl) {
+    List<DataResource> allVersions = schemaConfig.getDataResourceService().findAllVersions(dataResourceId, pgbl).getContent();
+    String lastVersion = "0.0.0";
+    List<DataResource> filteredList = new ArrayList<>();
+    for (DataResource dataResource : allVersions) {
+      if (!lastVersion.equals(dataResource.getVersion())) {
+        lastVersion = dataResource.getVersion();
+        filteredList.add(dataResource);
+      }
+    }
+    return filteredList;
+  }
+
+  /**
+   * Check and update license information of data resource.
+   *
+   * @param dataResource Data resource to be checked.
+   * @param licenseUri   New license URI.
+   */
   public static void checkLicense(DataResource dataResource, String licenseUri) {
     if (licenseUri != null) {
       Set<Scheme> rights = dataResource.getRights();
@@ -1093,7 +969,7 @@ public class DataResourceRecordUtil {
    * Validate related identifiers. There has to be exactly one schema
    * (hasMetadata) and at *least* one related data resource.
    *
-   * @param noOfRelatedData No of related data resources.
+   * @param noOfRelatedData    No of related data resources.
    * @param noOfRelatedSchemas No of related schemas.
    */
   private static void checkNoOfRelatedIdentifiers(int noOfRelatedData, int noOfRelatedSchemas) {
@@ -1129,7 +1005,7 @@ public class DataResourceRecordUtil {
    * Transform schema identifier to global available identifier (if neccessary).
    *
    * @param dataResourceRecord Metadata record hold schema identifier.
-   * @param relationType Relation type of the identifier.
+   * @param relationType       Relation type of the identifier.
    * @return ResourceIdentifier with a global accessible identifier.
    */
   public static RelatedIdentifier getRelatedIdentifier(DataResource dataResourceRecord, RelatedIdentifier.RELATION_TYPES relationType) {
@@ -1150,8 +1026,8 @@ public class DataResourceRecordUtil {
   /**
    * Get description of data resource with given type.
    *
-   * @param dataResourceRecord Metadata record hold schema identifier.
-   * @param relationType Relation type of the identifier.
+   * @param dataResourceRecord Data resource record holding related identifier(s).
+   * @param descriptionType    Description type of the identifier.
    * @return ResourceIdentifier with a global accessible identifier.
    */
   public static Description getDescription(DataResource dataResourceRecord, Description.TYPE descriptionType) {
@@ -1204,7 +1080,7 @@ public class DataResourceRecordUtil {
 
   }
 
-  private static void validateMetadataSchemaDocument(MetastoreConfiguration metastoreProperties, DataResource schemaRecord, MultipartFile document) {
+  private static void validateMetadataSchemaDocument(MetastoreConfiguration metastoreProperties, DataResource dataResourceRecord, MultipartFile document) {
     LOG.debug("Validate metadata schema document...");
     if (document == null || document.isEmpty()) {
       String message = "Missing metadata schema document in body. Returning HTTP BAD_REQUEST.";
@@ -1212,7 +1088,7 @@ public class DataResourceRecordUtil {
       throw new BadArgumentException(message);
     }
     try {
-      validateMetadataSchemaDocument(metastoreProperties, schemaRecord, document.getBytes());
+      validateMetadataSchemaDocument(metastoreProperties, dataResourceRecord, document.getBytes());
     } catch (IOException ex) {
       String message = LOG_ERROR_READ_METADATA_DOCUMENT;
       LOG.error(message, ex);
@@ -1259,77 +1135,73 @@ public class DataResourceRecordUtil {
     LOG.trace("Schema document is valid!");
   }
 
-  private static IValidator getValidatorForRecord(MetastoreConfiguration metastoreProperties, String mimeType, byte[] schemaDocument) {
-    IValidator applicableValidator = null;
+  /**
+   * Fix resource type and format of data resource if not provided. This is necessary for validation and indexing.
+   *
+   * @param dataResource        Data resource to be checked.
+   * @param mimeType Detected mimetype of the schema document.
+   */
+  private static void fixResourceTypeAndFormat(DataResource dataResource, String mimeType) {
+    if (mimeType != null) {
+      dataResource.getFormats().add(mimeType);
+    }
+    if ((dataResource.getResourceType() == null)
+            || (dataResource.getResourceType().getValue() == null)) {
 
-    //obtain/guess record type
-    if (mimeType == null) {
-      String formatDetected = SchemaUtils.guessMimetype(schemaDocument);
-      if (formatDetected == null) {
+      if (mimeType == null) {
         String message = "Unable to detect schema type automatically. Please provide a valid type";
         LOG.error(message);
         throw new UnprocessableEntityException(message);
       } else {
         String type;
-        if (formatDetected.contains("json")) {
-          type = JSON + SCHEMA_SUFFIX;
-        } else {
-          type = XML + SCHEMA_SUFFIX;
-        }
-        mimeType = formatDetected;
-        LOG.debug("Automatically detected mimetype of schema: '{}' -> '{}'.", formatDetected, type);
-      }
-    }
-    for (IValidator validator : metastoreProperties.getValidators()) {
-      if (validator.supportsMimetype(mimeType)) {
-        applicableValidator = validator.getInstance();
-        LOG.trace("Found validator for mime type: '{}'", mimeType);
-        return applicableValidator;
-      }
-    }
-    return applicableValidator;
-  }
-
-  private static IValidator getValidatorForRecord(MetastoreConfiguration metastoreProperties, DataResource schemaRecord, byte[] schemaDocument) {
-    IValidator applicableValidator = null;
-    //obtain/guess record type
-    if ((schemaRecord.getResourceType() == null)
-            || (schemaRecord.getResourceType().getValue() == null)) {
-      String formatDetected = SchemaUtils.guessMimetype(schemaDocument);
-      if (formatDetected == null) {
-        String message = "Unable to detect schema type automatically. Please provide a valid type";
-        LOG.error(message);
-        throw new UnprocessableEntityException(message);
-      } else {
-        String type;
-        if (formatDetected.contains("json")) {
+        if (mimeType.contains("json")) {
           type = JSON_SCHEMA_TYPE;
         } else {
           type = XML_SCHEMA_TYPE;
         }
-        schemaRecord.setResourceType(ResourceType.createResourceType(type, ResourceType.TYPE_GENERAL.MODEL));
-        LOG.debug("Automatically detected mimetype of schema: '{}' -> '{}'.", formatDetected, type);
+        dataResource.setResourceType(ResourceType.createResourceType(type, ResourceType.TYPE_GENERAL.MODEL));
+        LOG.debug("Automatically detected mimetype of schema: '{}' -> '{}'.", mimeType, type);
       }
     }
     // Also fix format if necessary and possible
-    String type = schemaRecord.getResourceType().getValue();
-    if (schemaRecord.getFormats().isEmpty()) {
-      if (type.toLowerCase().contains("json")) {
-        schemaRecord.getFormats().add(MediaType.APPLICATION_JSON_VALUE);
+    String type = dataResource.getResourceType().getValue();
+    if (dataResource.getFormats().isEmpty()) {
+      if (type.toLowerCase().contains("json") ) {
+        dataResource.getFormats().add(MediaType.APPLICATION_JSON_VALUE);
       } else {
         if (type.toLowerCase().contains("xml")) {
-          schemaRecord.getFormats().add(MediaType.APPLICATION_XML_VALUE);
+          dataResource.getFormats().add(MediaType.APPLICATION_XML_VALUE);
         }
       }
-    }
-    String schemaType = schemaRecord.getResourceType().getValue().replace(SCHEMA_SUFFIX, "").replace(METADATA_SUFFIX, "");
-    for (IValidator validator : metastoreProperties.getValidators()) {
-      if (validator.supportsSchemaType(MetadataSchemaRecord.SCHEMA_TYPE.valueOf(schemaType))) {
-        applicableValidator = validator.getInstance();
-        LOG.trace("Found validator for schema: '{}'", schemaType);
-        return applicableValidator;
+    } else {
+      LOG.trace("Provided format(s) for schema document: '{}'", dataResource.getFormats());
+      if (mimeType.toLowerCase().contains("json") && !dataResource.getResourceType().getValue().toLowerCase().contains("json") ||
+              mimeType.toLowerCase().contains("xml") && !dataResource.getResourceType().getValue().toLowerCase().contains("xml")) {
+        // resource type doesn't match provided format(s) -> throw BadArgumentException
+        String message = "Provided resource type '" + dataResource.getResourceType().getValue() + "' doesn't match provided format(s) '" + dataResource.getFormats() + "'. Returning HTTP BAD_REQUEST.";
+        LOG.error(message);
+        throw new BadArgumentException(message);
       }
     }
+  }
+
+  private static IValidator getValidatorForRecord(MetastoreConfiguration metastoreProperties, DataResource dataResourceRecord, byte[] schemaDocument) {
+    IValidator applicableValidator = null;
+    String mimeType = null;
+    Set<String> formatsSet = dataResourceRecord.getFormats();
+    List<String> formats = new ArrayList<String>();
+    formats.addAll(formatsSet);
+    formats.add(null);
+
+    for (String format : formats) {
+      LOG.trace("Provided format for schema document: '{}'", format);
+      applicableValidator = SchemaRecordUtil.getValidatorForRecord(metastoreProperties, format, schemaDocument);
+      if (applicableValidator != null) {
+        mimeType = format != null ? format : SchemaUtils.guessMimetype(schemaDocument);
+        break;
+      }
+    }
+    fixResourceTypeAndFormat(dataResourceRecord, mimeType);
     return applicableValidator;
   }
 
@@ -1379,16 +1251,16 @@ public class DataResourceRecordUtil {
    * exception is thrown.
    *
    * @param metastoreProperties Configuration properties.
-   * @param document Document to validate.
-   * @param schemaId SchemaId of schema.
-   * @param version Version of the document.
+   * @param document            Document to validate.
+   * @param schemaId            SchemaId of schema.
+   * @param version             Version of the document.
    */
   public static void validateMetadataDocument(MetastoreConfiguration metastoreProperties,
-          MultipartFile document,
-          String schemaId,
-          Long version) {
+                                              MultipartFile document,
+                                              String schemaId,
+                                              String version) {
     LOG.trace("validateMetadataDocument (schemaId) {},SchemaID {}, Version {}, {}", metastoreProperties, schemaId, version, document);
-    SchemaRecord schemaRecord;
+    SchemaUrl2Path schemaRecord;
     DataResource dataResource = DataResourceRecordUtil.getRecordById(metastoreProperties, schemaId);
     if (dataResource == null) {
       String message = "Unknown schemaID '" + schemaId + "'!";
@@ -1397,20 +1269,23 @@ public class DataResourceRecordUtil {
     }
     schemaId = dataResource.getId();
     if (version != null) {
-      schemaRecord = schemaRecordDao.findBySchemaId(schemaId + SCHEMA_VERSION_SEPARATOR + version);
+      if (SemanticVersion.tryParse(version).isEmpty()) {
+        throw new BadArgumentException("Invalid SemVer format (MAJOR.MINOR.PATCH only, without any extras). Provided Version: '" + version + "'");
+      }
+      schemaRecord = schemaUrl2PathDao.findBySchemaIdAndVersion(schemaId, version).orElse(null);
+      if (schemaRecord == null) {
+        String message = "Unknown schemaID '" + schemaId + "' and version '" + version + "'!";
+        LOG.error(message);
+        throw new ResourceNotFoundException(message);
+      }
     } else {
-      schemaRecord = schemaRecordDao.findBySchemaIdStartsWithOrderByVersionDesc(schemaId + SCHEMA_VERSION_SEPARATOR).get(0);
-    }
-    if (schemaRecord == null) {
-      String message = "Unknown version '" + version + "' for schemaID '" + schemaId + "'!";
-      LOG.error(message);
-      throw new ResourceNotFoundException(message);
+      schemaRecord = schemaUrl2PathDao.findFirstBySchemaIdOrderByVersionDesc(schemaId).orElse(null);
     }
     validateMetadataDocument(metastoreProperties, document, schemaRecord);
   }
 
-  private static SchemaRecord getSchemaRecordFromDataResource(DataResource dataResource) {
-    SchemaRecord schemaRecord = null;
+  private static SchemaUrl2Path getSchemaRecordFromDataResource(DataResource dataResource) {
+    SchemaUrl2Path schemaRecord = null;
     RelatedIdentifier schemaIdentifier = getSchemaIdentifier(dataResource);
     if ((schemaIdentifier != null) && (schemaIdentifier.getValue() != null)) {
       String schemaId = schemaIdentifier.getValue();
@@ -1418,16 +1293,10 @@ public class DataResourceRecordUtil {
       LOG.trace("getSchemaRecordFromDataResource: '{}'", schemaId);
       switch (schemaIdentifier.getIdentifierType()) {
         case URL:
-          schemaRecord = schemaRecordDao.findByAlternateId(schemaIdentifier.getValue());
+          schemaRecord = schemaUrl2PathDao.findByUrl(schemaIdentifier.getValue()).orElse(null);
           break;
         case INTERNAL:
-          String[] split;
-          split = schemaId.split(SCHEMA_VERSION_SEPARATOR, -1);
-          if (split.length == 1) {
-            schemaRecord = schemaRecordDao.findFirstBySchemaIdStartsWithOrderByVersionDesc(schemaId + SCHEMA_VERSION_SEPARATOR);
-          } else {
-            schemaRecord = schemaRecordDao.findBySchemaId(schemaId);
-          }
+          schemaRecord = schemaUrl2PathDao.findFirstBySchemaIdOrderByVersionDesc(schemaId).orElse(null);
           break;
         default:
           String message = "Unsupported identifier type: '" + schemaIdentifier.getIdentifierType() + "'!";
@@ -1442,19 +1311,19 @@ public class DataResourceRecordUtil {
    * Update schema document.
    *
    * @param applicationProperties Settings of repository.
-   * @param resourceId ID of the schema document.
-   * @param eTag E-Tag of the current schema document.
-   * @param recordDocument Record of the schema.
-   * @param schemaDocument Schema document.
-   * @param supplier Method for creating access URL.
+   * @param resourceId            ID of the schema document.
+   * @param eTag                  E-Tag of the current schema document.
+   * @param recordDocument        Record of the schema.
+   * @param schemaDocument        Schema document.
+   * @param supplier              Method for creating access URL.
    * @return Record of updated schema document.
    */
   public static DataResource updateDataResource4SchemaDocument(MetastoreConfiguration applicationProperties,
-          String resourceId,
-          String eTag,
-          MultipartFile recordDocument,
-          MultipartFile schemaDocument,
-          UnaryOperator<String> supplier) {
+                                                               String resourceId,
+                                                               String eTag,
+                                                               MultipartFile recordDocument,
+                                                               MultipartFile schemaDocument,
+                                                               UnaryOperator<String> supplier) {
     DataResource metadataRecord;
     metadataRecord = checkParameters(recordDocument, schemaDocument, false);
 
@@ -1463,8 +1332,12 @@ public class DataResourceRecordUtil {
     LOG.trace("Checking provided ETag.");
     ControllerUtils.checkEtag(eTag, dataResource);
     if (metadataRecord != null) {
-      metadataRecord.setVersion(dataResource.getVersion());
       metadataRecord.setId(dataResource.getId());
+      // It's not possible to change the resource type of a record. So we have to set it to the old one.
+      metadataRecord.setResourceType(dataResource.getResourceType());
+      // Also formats have to be set to the old one, otherwise they would be lost if not provided in the new record.
+      metadataRecord.setFormats(dataResource.getFormats());
+
       dataResource = metadataRecord;
     } else {
       dataResource = DataResourceUtils.copyDataResource(dataResource);
@@ -1476,19 +1349,19 @@ public class DataResourceRecordUtil {
    * Update schema document.
    *
    * @param applicationProperties Settings of repository.
-   * @param resourceId ID of the schema document.
-   * @param eTag E-Tag of the current schema document.
-   * @param givenDataResource Record of the schema.
-   * @param schemaDocument Schema document.
-   * @param supplier Method for creating access URL.
+   * @param resourceId            ID of the schema document.
+   * @param eTag                  E-Tag of the current schema document.
+   * @param givenDataResource     Record of the schema.
+   * @param schemaDocument        Schema document.
+   * @param supplier              Method for creating access URL.
    * @return Record of updated schema document.
    */
   public static DataResource updateDataResource4SchemaDocument(MetastoreConfiguration applicationProperties,
-          String resourceId,
-          String eTag,
-          DataResource givenDataResource,
-          MultipartFile schemaDocument,
-          UnaryOperator<String> supplier) {
+                                                               String resourceId,
+                                                               String eTag,
+                                                               DataResource givenDataResource,
+                                                               MultipartFile schemaDocument,
+                                                               UnaryOperator<String> supplier) {
     DataResource updatedDataResource;
     LOG.trace("Obtaining most recent datacite record with id {}.", resourceId);
     DataResource oldDataResource = applicationProperties.getDataResourceService().findById(resourceId);
@@ -1499,6 +1372,8 @@ public class DataResourceRecordUtil {
     if (schemaDocument != null) {
       updateSchemaDocument(applicationProperties, updatedDataResource, schemaDocument, supplier);
     } else {
+      // Version shouldn't be updated if only metadata is updated, so set version to old one.
+      updatedDataResource.setVersion(oldDataResource.getVersion());
       updateOnlyMetadata4SchemaDocument(applicationProperties, updatedDataResource);
     }
     updatedDataResource = DataResourceUtils.updateResource(applicationProperties, updatedDataResource.getId(), updatedDataResource, eTag, supplier);
@@ -1506,64 +1381,65 @@ public class DataResourceRecordUtil {
     return updatedDataResource;
   }
 
-  private static void updateMetadataDocument(MetastoreConfiguration applicationProperties,
-          DataResource updatedDataResource,
-          MultipartFile document,
-          UnaryOperator<String> supplier) {
-    SchemaRecord schemaRecord = getSchemaRecordFromDataResource(updatedDataResource);
-    validateMetadataDocument(applicationProperties, document, schemaRecord);
-
+  /**
+   * Update metadata document.
+   *
+   * @param applicationProperties Settings of repository.
+   * @param updatedDataResource   DataResource of the metadata/schema document.
+   * @param document              Metadata document.
+   * @param supplier              Method for creating access URL.
+   * @return If there are changes: true, otherwise false.
+   */
+  private static boolean updateDocument(MetastoreConfiguration applicationProperties,
+                                        DataResource updatedDataResource,
+                                        MultipartFile document,
+                                        UnaryOperator<String> supplier) {
     ContentInformation info;
     String fileName;
     info = getContentInformationOfResource(applicationProperties, updatedDataResource);
     fileName = (info != null) ? info.getRelativePath() : document.getOriginalFilename();
     boolean noChanges = checkDocumentForChanges(info, document);
 
-    if (!noChanges) {
+    if (noChanges) {
+      LOG.trace("No changes in document -> No update necessary. Reset version to old one.");
+      updatedDataResource.setVersion(info.getFileVersion());
+    } else {
       // Everything seems to be fine update document and increment version
-      LOG.trace("Updating schema document (and increment version)...");
-      String version = updatedDataResource.getVersion();
-      if (version == null) {
-        version = "0";
-      }
-      updatedDataResource.setVersion(Long.toString(Long.parseLong(version) + 1L));
+      LOG.trace("Updating schema/metadata document (and increment version)...");
+      updatedDataResource = check4VersionUpdate(updatedDataResource, info.getFileVersion());
       addProvenance(updatedDataResource);
-      ContentDataUtils.addFile(applicationProperties, updatedDataResource, document, fileName, null, true, supplier);
+      ContentInformation updatedContentInformation = ContentDataUtils.addFile(applicationProperties, updatedDataResource, document, fileName, null, true, supplier);
+      DataResourceRecordUtil.saveNewResource2FileVersion(updatedDataResource, updatedContentInformation);
+      // In case of a schema document we also have to add a schema record
+      if (updatedDataResource.getResourceType().getValue().contains(DataResourceRecordUtil.SCHEMA_SUFFIX)) {
+        SchemaUrl2Path schemaRecord = createSchemaRecord(updatedDataResource, info);
+        DataResourceRecordUtil.saveNewSchemaRecord(schemaRecord);
+      }
     }
+    return noChanges;
+  }
+
+  private static void updateMetadataDocument(MetastoreConfiguration applicationProperties,
+                                             DataResource updatedDataResource,
+                                             MultipartFile document,
+                                             UnaryOperator<String> supplier) {
+    SchemaUrl2Path schemaRecord = schemaUrl2PathDao.findByUrl(DataResourceRecordUtil.getRelatedIdentifier(updatedDataResource, DataResourceRecordUtil.RELATED_SCHEMA_TYPE).getValue()).orElse(null);
+    validateMetadataDocument(applicationProperties, document, schemaRecord);
+    // Everything seems to be fine update document and increment version if necessary
+    updateDocument(applicationProperties, updatedDataResource, document, supplier);
   }
 
   private static void updateSchemaDocument(MetastoreConfiguration applicationProperties,
-          DataResource updatedDataResource,
-          MultipartFile schemaDocument,
-          UnaryOperator<String> supplier) {
-    ContentInformation info;
-    info = getContentInformationOfResource(applicationProperties, updatedDataResource);
-    // Get schema record for this schema
+                                           DataResource updatedDataResource,
+                                           MultipartFile schemaDocument,
+                                           UnaryOperator<String> supplier) {
     validateMetadataSchemaDocument(applicationProperties, updatedDataResource, schemaDocument);
-
-    boolean noChanges;
-    String fileName;
-
-    fileName = (info != null) ? info.getRelativePath() : schemaDocument.getOriginalFilename();
-    noChanges = checkDocumentForChanges(info, schemaDocument);
-
-    if (!noChanges) {
-      // Everything seems to be fine update document and increment version
-      LOG.trace("Updating schema document (and increment version)...");
-      String version = updatedDataResource.getVersion();
-      if (version != null) {
-        updatedDataResource.setVersion(Long.toString(Long.parseLong(version) + 1L));
-      }
-      addProvenance(updatedDataResource);
-      ContentInformation contentInformation = ContentDataUtils.addFile(applicationProperties, updatedDataResource, schemaDocument, fileName, null, true, supplier);
-      SchemaRecord schemaRecord = createSchemaRecord(updatedDataResource, contentInformation);
-      MetadataSchemaRecordUtil.saveNewSchemaRecord(schemaRecord);
-    }
-
+    // Everything seems to be fine update document and increment version if necessary
+    updateDocument(applicationProperties, updatedDataResource, schemaDocument, supplier);
   }
 
   private static void updateOnlyMetadata4SchemaDocument(MetastoreConfiguration applicationProperties,
-          DataResource updatedDataResource) {
+                                                        DataResource updatedDataResource) {
     ContentInformation info;
     info = getContentInformationOfResource(applicationProperties, updatedDataResource);
     // validate if document is still valid due to changed record settings.
@@ -1585,7 +1461,8 @@ public class DataResourceRecordUtil {
 
     if (givenDataResource != null) {
       LOG.trace("new DataResource: '{}'", givenDataResource);
-      givenDataResource.setVersion(oldDataResource.getVersion());
+      // version handling willl be done separately, so do nothing right now.
+      //givenDataResource.setVersion(oldDataResource.getVersion());
       givenDataResource.setId(oldDataResource.getId());
       updatedDataResource = givenDataResource;
       mergeCreators(oldDataResource, updatedDataResource);
@@ -1736,12 +1613,12 @@ public class DataResourceRecordUtil {
    */
   private static DataResource fixRelatedSchemaIfNeeded(DataResource dataResource) {
     RelatedIdentifier relatedIdentifier = getSchemaIdentifier(dataResource);
-    SchemaRecord schemaRecord = getSchemaRecordFromDataResource(dataResource);
+    SchemaUrl2Path schemaRecord = getSchemaRecordFromDataResource(dataResource);
     if (schemaRecord != null) {
       if (relatedIdentifier != null && relatedIdentifier.getIdentifierType() == Identifier.IDENTIFIER_TYPE.INTERNAL) {
         relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
         // schemaRecord should never be null for internal schema!
-        relatedIdentifier.setValue(schemaRecord.getAlternateId());
+        relatedIdentifier.setValue(schemaRecord.getUrl());
       }
     } else {
       String identifier = relatedIdentifier != null ? relatedIdentifier.getValue() : "is not defined and therefor";
@@ -1755,85 +1632,66 @@ public class DataResourceRecordUtil {
    * given or check type.
    *
    * @param metastoreProperties Configuration for accessing services
-   * @param dataResource Data resource record of the document.
-   * @param document Document of data resource.
+   * @param dataResource        Data resource record of the document.
+   * @param document            Document of data resource.
    */
   private static void validateMetadataDocument(MetastoreConfiguration metastoreProperties,
-          DataResource dataResource,
-          MultipartFile document) {
+                                               MultipartFile document,
+                                               DataResource dataResource) {
     LOG.trace("validateMetadataDocument (dataresource) {},{}, {}", metastoreProperties, dataResource, document);
-    if (document == null || document.isEmpty()) {
-      String message = "Missing metadata document in body. Returning HTTP BAD_REQUEST.";
-      LOG.error(message);
-      throw new BadArgumentException(message);
-    }
     boolean validationSuccess = false;
-    StringBuilder errorMessage = new StringBuilder();
-    SchemaRecord findByAlternateId;
-    findByAlternateId = getSchemaRecordFromDataResource(dataResource);
-    if (findByAlternateId != null) {
-      try {
-        validateMetadataDocument(metastoreProperties, document, findByAlternateId);
-        validationSuccess = true;
-        // After successful validation set type for metadata document resource.
-        MetadataSchemaRecord.SCHEMA_TYPE type = findByAlternateId.getType();
-        dataResource.setResourceType(ResourceType.createResourceType(type + METADATA_SUFFIX, ResourceType.TYPE_GENERAL.MODEL));
-        // Also fix format if necessary
-        if (dataResource.getFormats().isEmpty()) {
-          if (type == MetadataSchemaRecord.SCHEMA_TYPE.JSON) {
-            dataResource.getFormats().add(MediaType.APPLICATION_JSON_VALUE);
-          } else {
-            if (type == MetadataSchemaRecord.SCHEMA_TYPE.XML) {
-              dataResource.getFormats().add(MediaType.APPLICATION_XML_VALUE);
-            }
-          }
-        }
-        //
-      } catch (Exception ex) {
-        String message = "Error validating document!";
-        LOG.error(message, ex);
-        errorMessage.append(ex.getMessage()).append("\n");
+    String errorMessage = null;
+    SchemaUrl2Path schemaUrl2Path;
+    schemaUrl2Path = getSchemaRecordFromDataResource(dataResource);
+    try {
+      validateMetadataDocument(metastoreProperties, document, schemaUrl2Path);
+      validationSuccess = true;
+      // After successful validation set type for metadata document resource.
+      String type = schemaUrl2Path.getMimetype();
+      dataResource.setResourceType(ResourceType.createResourceType(type + METADATA_SUFFIX, ResourceType.TYPE_GENERAL.MODEL));
+      // Also fix format if necessary
+      if (dataResource.getFormats().isEmpty()) {
+        dataResource.getFormats().add(type);
       }
-    } else {
-      errorMessage.append("No matching schema found for '");
-      RelatedIdentifier schemaIdentifier = getSchemaIdentifier(dataResource);
-      errorMessage = schemaIdentifier != null ? errorMessage.append(schemaIdentifier.getValue()) : errorMessage.append("missing schema identifier");
-      errorMessage.append("'!");
+      //
+    } catch (Exception ex) {
+      String message = "Error validating document!";
+      LOG.error(message, ex);
+      errorMessage = ex.getMessage();
     }
     if (!validationSuccess) {
-      LOG.error(errorMessage.toString());
-      throw new UnprocessableEntityException(errorMessage.toString());
+      LOG.error(errorMessage);
+      throw new UnprocessableEntityException(errorMessage);
     }
   }
 
   /**
    * Create schema record from DataResource and ContentInformation.
    *
-   * @param dataResource Data resource
+   * @param dataResource       Data resource
    * @param contentInformation Content information
    * @return schema record
    */
-  public static final SchemaRecord createSchemaRecord(DataResource dataResource, ContentInformation contentInformation) {
-    SchemaRecord schemaRecord = new SchemaRecord();
+  public static final SchemaUrl2Path createSchemaRecord(DataResource dataResource, ContentInformation contentInformation) {
+    SchemaUrl2Path schemaRecord = new SchemaUrl2Path();
     schemaRecord.setSchemaId(dataResource.getId());
     String type = dataResource.getResourceType().getValue();
     if (type.equals(JSON + SCHEMA_SUFFIX)) {
-      schemaRecord.setType(JSON);
+      schemaRecord.setMimetype(MediaType.APPLICATION_JSON_VALUE);
     } else {
       if (type.equals(XML + SCHEMA_SUFFIX)) {
-        schemaRecord.setType(XML);
+        schemaRecord.setMimetype(MediaType.APPLICATION_XML_VALUE);
 
       } else {
-        throw new BadArgumentException("Please provide a valid resource type for data resource '" + schemaRecord.getSchemaIdWithoutVersion() + "'!\n"
+        throw new BadArgumentException("Please provide a valid resource type for data resource '" + schemaRecord.getSchemaId() + "'!\n"
                 + "One of ['" + JSON + SCHEMA_SUFFIX + "', '" + XML + SCHEMA_SUFFIX + "']");
       }
     }
-    Long currentVersion = Long.valueOf(dataResource.getVersion());
+    String currentVersion = dataResource.getVersion();
     String schemaUrl = getSchemaDocumentUri(dataResource.getId(), currentVersion);
     schemaRecord.setVersion(currentVersion);
-    schemaRecord.setSchemaDocumentUri(contentInformation.getContentUri());
-    schemaRecord.setDocumentHash(contentInformation.getHash());
-    schemaRecord.setAlternateId(schemaUrl);
+    schemaRecord.setPath(contentInformation.getContentUri());
+    schemaRecord.setUrl(schemaUrl);
 
     return schemaRecord;
   }
@@ -1857,99 +1715,25 @@ public class DataResourceRecordUtil {
   }
 
   /**
-   * Set creation date for data resource if and only if creation date doesn't
-   * exist.
-   *
-   * @param dataResource data resource.
-   * @param creationDate creation date
-   */
-  public static final void setCreationDate(DataResource dataResource, Instant creationDate) {
-    if (creationDate != null) {
-      boolean createDateExists = false;
-      Set<Date> dates = dataResource.getDates();
-      for (edu.kit.datamanager.repo.domain.Date d : dates) {
-        if (edu.kit.datamanager.repo.domain.Date.DATE_TYPE.CREATED.equals(d.getType())) {
-          LOG.trace("Creation date entry found.");
-          createDateExists = true;
-          break;
-        }
-      }
-      if (!createDateExists) {
-        dataResource.getDates().add(Date.factoryDate(creationDate, Date.DATE_TYPE.CREATED));
-      }
-    }
-  }
-
-  /**
-   * Get version of data resource.
-   *
-   * @param dataResource data resource.
-   * @return version or 1 if no version is available.
-   */
-  public static final Long getVersion(DataResource dataResource) {
-    Long recordVersion = 1L;
-    if (dataResource.getVersion() != null) {
-      recordVersion = Long.valueOf(dataResource.getVersion());
-    }
-    return recordVersion;
-  }
-
-  public static final void setSchemaAndVersion(MetadataRecord metadataRecord, DataResource dataResource) {
-    RelatedIdentifier relatedId = getSchemaIdentifier(dataResource);
-    if (relatedId != null) {
-      ResourceIdentifier resourceIdentifier = ResourceIdentifier.factoryResourceIdentifier(relatedId.getValue(), IdentifierType.valueOf(relatedId.getIdentifierType().name()));
-      metadataRecord.setSchema(resourceIdentifier);
-      if (resourceIdentifier.getIdentifierType().equals(IdentifierType.URL)) {
-        //Try to fetch version from URL (only works with URLs including the version as query parameter.
-        Matcher matcher = Pattern.compile(".*[&?]version=(\\d*).*").matcher(resourceIdentifier.getIdentifier());
-        while (matcher.find()) {
-          metadataRecord.setSchemaVersion(Long.valueOf(matcher.group(1)));
-        }
-      } else {
-        // set to current version of schema
-        SchemaRecord currentSchema = schemaRecordDao.findFirstBySchemaIdStartsWithOrderByVersionDesc(resourceIdentifier.getIdentifier());
-        if (currentSchema != null) {
-          metadataRecord.setSchemaVersion(currentSchema.getVersion());
-        } else {
-          metadataRecord.setSchemaVersion(1L);
-        }
-      }
-      LOG.trace("Set schema to '{}'", resourceIdentifier);
-    }
-  }
-
-  public static final void setRelatedResource(MetadataRecord metadataRecord, DataResource dataResource) {
-    RelatedIdentifier relatedId = getRelatedIdentifier(dataResource, DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE);
-    if (relatedId != null) {
-      ResourceIdentifier resourceIdentifier = ResourceIdentifier.factoryInternalResourceIdentifier(relatedId.getValue());
-      if (relatedId.getIdentifierType() != null) {
-        resourceIdentifier = ResourceIdentifier.factoryResourceIdentifier(relatedId.getValue(), IdentifierType.valueOf(relatedId.getIdentifierType().name()));
-      }
-      LOG.trace("Set relation to '{}'", resourceIdentifier);
-      metadataRecord.setRelatedResource(resourceIdentifier);
-    }
-  }
-
-  /**
    * Get String (URL) for accessing schema document via schemaId and version.
    *
    * @param schemaId schemaId.
-   * @param version version.
+   * @param version  version.
    * @return String for accessing schema document.
    */
-  public static final String getSchemaDocumentUri(String schemaId, Long version) {
+  public static final String getSchemaDocumentUri(String schemaId, String version) {
     return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(SchemaRegistryControllerImplV2.class).getSchemaDocumentById(schemaId, version, null, null)).toUri().toString();
   }
 
   /**
    * Get String (URL) for accessing metadata document via id and version.
    *
-   * @param id id.
+   * @param id      id.
    * @param version version.
    * @return URI for accessing schema document.
    */
   public static final URI getMetadataDocumentUri(String id, String version) {
-    URI toUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(MetadataControllerImplV2.class).getMetadataDocumentById(id, Long.valueOf(version), null, null)).toUri();
+    URI toUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(MetadataControllerImplV2.class).getMetadataDocumentById(id, version, null, null)).toUri();
     if (toUri.getScheme() == null) {
       toUri = URI.create(baseUrl + toUri.toString());
     }
@@ -1975,8 +1759,10 @@ public class DataResourceRecordUtil {
     }
     return records;
   }
+
   /**
    * Count the number of linked metadata documents per schema.
+   *
    * @return A map with the number of linked metadata documents per schema.
    */
   public static Map<String, Long> collectDocumentsPerSchema() {
@@ -2003,6 +1789,10 @@ public class DataResourceRecordUtil {
     return documentsPerSchema;
   }
 
+  public static List<Resource2FileVersion> getResource2FileVersions(String dataResourceId) {
+    return resource2FileVersionDao.findByResourceIdOrderByVersionDesc(dataResourceId);
+  }
+
   /**
    * Remove all entries from database and all related files from disc. (For
    * dataresources with state 'GONE' only.)
@@ -2015,12 +1805,12 @@ public class DataResourceRecordUtil {
       String dataResourceId = dataResourceToRemove.getId();
 
       List<String> uniqueIdentifiers = getUniqueIdentifiers(dataResourceToRemove);
-      long currentVersion = Long.parseLong(dataResourceToRemove.getVersion());
+      List<Resource2FileVersion> resource2FileVersions = getResource2FileVersions(dataResourceId);
       ContentInformation contentInformationByIdAndVersion = null;
-      for (long version = 1; version <= currentVersion; version++) {
-        contentInformationByIdAndVersion = getContentInformationByIdAndVersion(schemaConfig, dataResourceId, version);
+      for (Resource2FileVersion resource2FileVersion : resource2FileVersions) {
+        contentInformationByIdAndVersion = getContentInformationByIdAndVersion(schemaConfig, dataResourceId, resource2FileVersion.getVersion());
         String contentUri = contentInformationByIdAndVersion.getContentUri();
-        LOG.trace("Try to remove version '{}' of '{}' -> file: '{}'...", version, dataResourceId, contentUri);
+        LOG.trace("Try to remove version '{}' of '{}' -> file: '{}'...", resource2FileVersion.getVersion(), dataResourceId, contentUri);
         try {
           Path metadataDocumentPath = testForRegularFile(contentUri);
           Files.delete(metadataDocumentPath);
@@ -2040,28 +1830,26 @@ public class DataResourceRecordUtil {
         LOG.trace("AllIdentifiers remove: '{}'", identifier);
         allIdentifiersDao.delete(identifier);
       }
+      List<Resource2FileVersion> entities = getResource2FileVersions(dataResourceToRemove.getId());
+      for (Resource2FileVersion entity : entities) {
+        LOG.trace("Delete resource2FileVersion entry: '{}'", entity);
+        resource2FileVersionDao.delete(entity);
+      }
     }
   }
 
   private static void cleanUpHelperTables(String dataResourceId, String contentUri) {
     // if data resource is a schema there are some helper tables...
-    List<SchemaRecord> allSchemaIds = schemaRecordDao.findBySchemaIdStartsWithOrderByVersionDesc(dataResourceId);
-    for (SchemaRecord schemaRecord : allSchemaIds) {
+    List<SchemaUrl2Path> allSchemaIds = schemaUrl2PathDao.findBySchemaIdOrderByVersionDesc(dataResourceId);
+    for (SchemaUrl2Path schemaRecord : allSchemaIds) {
       LOG.trace("Delete schemaRecord: '{}'", schemaRecord);
-      schemaRecordDao.delete(schemaRecord);
+      schemaUrl2PathDao.delete(schemaRecord);
     }
-    List<Url2Path> findByPath = url2PathDao.findByPath(contentUri);
-    for (Url2Path entity : findByPath) {
-      url2PathDao.delete(entity);
+    List<SchemaUrl2Path> findByPath = schemaUrl2PathDao.findByPath(contentUri);
+    for (SchemaUrl2Path entity : findByPath) {
+      schemaUrl2PathDao.delete(entity);
       LOG.trace("Delete url2Path: '{}'", entity);
     }
-    for (MetadataFormat entity : metadataFormatDao.findAll()) {
-      if (entity.getMetadataPrefix().equalsIgnoreCase(dataResourceId)) {
-        metadataFormatDao.delete(entity);
-        LOG.trace("Delete metadataFormat: '{}'", entity);
-      }
-    }
-
   }
 
   /**
@@ -2069,7 +1857,6 @@ public class DataResourceRecordUtil {
    * alternate identifiers.
    *
    * @param resource The resource.
-   *
    * @return A list of identifiers.
    */
   private static List<String> getUniqueIdentifiers(DataResource resource) {
@@ -2090,7 +1877,7 @@ public class DataResourceRecordUtil {
    * @param fileUri URI of file.
    * @return Path to File
    * @throws CustomInternalServerError File is not a regular file or not
-   * available or not readable.
+   *                                   available or not readable.
    */
   public static Path testForRegularFile(String fileUri) throws CustomInternalServerError {
     Path documentPath = Paths.get(URI.create(fileUri));
@@ -2144,6 +1931,96 @@ public class DataResourceRecordUtil {
       authorizationIdentities.add(authority.getAuthority());
     }
     return authorizationIdentities;
+  }
+
+  public static void saveNewSchemaRecord(SchemaUrl2Path schemaRecord) {
+    if (schemaUrl2PathDao != null) {
+      try {
+        schemaRecord.setUrl(DataResourceRecordUtil.getSchemaDocumentUri(schemaRecord.getSchemaId(), schemaRecord.getVersion()));
+        schemaUrl2PathDao.save(schemaRecord);
+      } catch (Exception npe) {
+        LOG.error("Can't save schema record: " + schemaRecord, npe);
+      }
+      LOG.trace("Schema record saved: {}", schemaRecord);
+    }
+  }
+
+  private static void saveNewResource2FileVersion(DataResource resource, ContentInformation contentInformation) {
+    if (resource2FileVersionDao != null) {
+      try {
+        Resource2FileVersion resource2FileVersion = new Resource2FileVersion();
+        resource2FileVersion.setResourceId(resource.getId());
+        resource2FileVersion.setVersion(resource.getVersion());
+        resource2FileVersion.setFileVersion(contentInformation.getVersion());
+        resource2FileVersionDao.findAll().forEach((record) -> LOG.trace("Existing resource2fileversion record: '{}'", record));
+        for (Resource2FileVersion record : resource2FileVersionDao.findAll()) {
+          LOG.trace("Existing resource2fileversion record: '{}'", record);
+        }
+        LOG.trace("New resource2fileversion record: '{}'", resource2FileVersion);
+        resource2FileVersionDao.save(resource2FileVersion);
+      } catch (Exception npe) {
+        LOG.error("Can't save resource2fileversion record for resource: " + resource.getId() + " and file version: " + resource.getVersion(), npe);
+      }
+      LOG.trace("Resource2FileVersion record saved for resource id: {} and file version: {}", resource.getId(), resource.getVersion());
+    }
+  }
+
+  public static String getPreviousVersion(DataResource resource) {
+    SemanticVersion currentVersion = SemanticVersion.parse(resource.getVersion());
+    // @ToDo Determine previous version correctly according to SemVer rules and existing versions.
+    String previousVersion = null;
+
+    return previousVersion;
+  }
+
+  public static DataResource check4VersionUpdate(DataResource resource, String oldVersion) {
+    if (resource.getVersion() == null) {
+      resource.setVersion(oldVersion);
+    }
+    SemanticVersion currentVersion = SemanticVersion.parse(oldVersion);
+    String providedVersion = resource.getVersion();
+    Optional<SemanticVersion> newVersion = SemanticVersion.tryParse(resource.getVersion());
+    LOG.trace("Check version update: current version '{}', provided version '{}'", currentVersion, newVersion);
+    if (newVersion.isEmpty() || newVersion.get().isAtMost(currentVersion)) {
+      resource.setVersion(oldVersion);
+      String message = "Version has to be incremented! Current version: '{}' provided version: '{}'.";
+      LOG.trace(message, currentVersion, providedVersion);
+      resource = DataResourceRecordUtil.incrementVersion(resource, SemanticVersion.INCREMENT_LEVEL.MAJOR);
+    }
+    return resource;
+  }
+
+  /**
+   * Increment version of data resource by default level.
+   * If no version is available, version '1.0.0' will be set.
+   *
+   * @param resource data resource which should be updated.
+   * @return Updated data resource with incremented version.
+   */
+  public static DataResource incrementVersion(DataResource resource) {
+    return incrementVersion(resource, SemanticVersion.INCREMENT_LEVEL.MAJOR);
+  }
+
+  /**
+   * Increment version of data resource according to given increment level.
+   *
+   * @param resource       data resource which should be updated.
+   * @param incrementLevel level which should be incremented.
+   * @return Updated data resource with incremented version.
+   */
+  public static DataResource incrementVersion(DataResource resource, SemanticVersion.INCREMENT_LEVEL incrementLevel) {
+    String version = resource.getVersion();
+    if (version == null) {
+      version = "1.0.0";
+    }
+    SemanticVersion currentVersion = SemanticVersion.parse(version);
+    resource.setVersion(currentVersion.increment(incrementLevel).toString());
+
+    return resource;
+  }
+
+  public static void setToken(String token) {
+    DataResourceRecordUtil.guestToken = token;
   }
 
   /**

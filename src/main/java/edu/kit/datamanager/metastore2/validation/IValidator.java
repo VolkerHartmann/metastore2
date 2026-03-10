@@ -36,18 +36,6 @@ public interface IValidator {
   }
 
   /**
-   * Supports the given schema type.
-   *
-   * @see MetadataSchemaRecord#type
-   * @param type Type of the schema.
-   * 
-   * @return supports schema type or not.
-   * @deprecated Should be replaced by 'supportsMimeType'.
-   */
-  @Deprecated
-  boolean supportsSchemaType(MetadataSchemaRecord.SCHEMA_TYPE type);
-
-  /**
    * Supports the given MIME type.
    *
    * @see https://www.iana.org/assignments/media-types/media-types.xhtml

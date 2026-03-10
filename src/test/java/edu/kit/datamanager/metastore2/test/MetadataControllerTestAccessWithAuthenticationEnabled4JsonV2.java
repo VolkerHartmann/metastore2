@@ -11,9 +11,7 @@ import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
-import edu.kit.datamanager.metastore2.dao.IUrl2PathDao;
+import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -150,15 +148,11 @@ public class MetadataControllerTestAccessWithAuthenticationEnabled4JsonV2 {
   @Autowired
   private IDataResourceDao dataResourceDao;
   @Autowired
-  private IDataRecordDao dataRecordDao;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
-  @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
   private IAllIdentifiersDao allIdentifiersDao;
   @Autowired
-  private IUrl2PathDao url2PathDao;
+  private ISchemaUrl2PathDao schemaUrl2PathDao;
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
@@ -209,10 +203,8 @@ public class MetadataControllerTestAccessWithAuthenticationEnabled4JsonV2 {
 
       contentInformationDao.deleteAll();
       dataResourceDao.deleteAll();
-      schemaRecordDao.deleteAll();
-      dataRecordDao.deleteAll();
       allIdentifiersDao.deleteAll();
-      url2PathDao.deleteAll();
+      schemaUrl2PathDao.deleteAll();
 
       try {
         // Create schema only once.

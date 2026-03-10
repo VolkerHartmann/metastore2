@@ -7,9 +7,6 @@ package edu.kit.datamanager.metastore2.test;
 
 import edu.kit.datamanager.configuration.SearchConfiguration;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -93,13 +90,7 @@ public class ActuatorTest {
   @Autowired
   private WebApplicationContext context;
   @Autowired
-  private ILinkedMetadataRecordDao metadataRecordDao;
-  @Autowired
   private IDataResourceDao dataResourceDao;
-  @Autowired
-  private IDataRecordDao dataRecordDao;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
   @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
@@ -119,9 +110,6 @@ public class ActuatorTest {
 
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
-    metadataRecordDao.deleteAll();
-    schemaRecordDao.deleteAll();
-    dataRecordDao.deleteAll();
     allIdentifiersDao.deleteAll();
 
     try {

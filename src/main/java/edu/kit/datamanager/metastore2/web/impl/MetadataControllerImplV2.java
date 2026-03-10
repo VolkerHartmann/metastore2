@@ -24,13 +24,12 @@ import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.exceptions.UnprocessableEntityException;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
+import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
 import edu.kit.datamanager.metastore2.domain.ElasticWrapper;
-import edu.kit.datamanager.metastore2.domain.SchemaRecord;
+import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.metastore2.util.ActuatorUtil;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import edu.kit.datamanager.metastore2.util.MetadataRecordUtil;
+import edu.kit.datamanager.metastore2.util.SemanticVersion;
 import edu.kit.datamanager.metastore2.web.IMetadataControllerV2;
 import edu.kit.datamanager.repo.domain.ContentInformation;
 import edu.kit.datamanager.repo.domain.DataResource;
@@ -70,6 +69,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -109,8 +109,6 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
 
   private final MetastoreConfiguration metadataConfig;
 
-  private final ISchemaRecordDao schemaRecordDao;
-
   @Autowired
   private MeterRegistry meterRegistry;
 
@@ -123,6 +121,8 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   private Optional<IMessagingService> messagingService;
 
   private final String guestToken;
+  @Autowired
+  private ISchemaUrl2PathDao iSchemaUrl2PathDao;
 
   /**
    * Constructor for metadata documents controller.
@@ -133,12 +133,9 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
    * @param schemaRecordDao DAO for schema records.
    */
   public MetadataControllerImplV2(ApplicationProperties applicationProperties,
-          MetastoreConfiguration metadataConfig,
-          ILinkedMetadataRecordDao metadataRecordDao,
-          ISchemaRecordDao schemaRecordDao) {
+          MetastoreConfiguration metadataConfig) {
     this.applicationProperties = applicationProperties;
     this.metadataConfig = metadataConfig;
-    this.schemaRecordDao = schemaRecordDao;
     LOG.info("------------------------------------------------------");
     LOG.info("------{}", this.metadataConfig);
     LOG.info("------------------------------------------------------");
@@ -148,7 +145,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
             addSimpleClaim("loginFailures", 0).
             addSimpleClaim("active", true).
             addSimpleClaim("locked", false).getCompactToken(applicationProperties.getJwtSecret());
-    MetadataRecordUtil.setToken(guestToken);
+    DataResourceRecordUtil.setToken(guestToken);
   }
 
   @Override
@@ -187,7 +184,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
         // nothing to do
         break;
       case URL:
-        SchemaRecord schemaRecord = schemaRecordDao.findByAlternateId(schemaIdentifier.getValue());
+        SchemaUrl2Path schemaRecord = iSchemaUrl2PathDao.findByUrl(schemaIdentifier.getValue()).orElse(null);
         if (schemaRecord == null) {
           String message = "External URLs are not supported yet!\n"
                   + "But '" + schemaIdentifier.getValue() + "' seems not to be an internal one!\n"
@@ -211,7 +208,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
     DataResourceRecordUtil.fixSchemaUrl(result);
 
     URI locationUri;
-    locationUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getRecordById(result.getId(), Long.valueOf(result.getVersion()), null, null)).toUri();
+    locationUri = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getRecordById(result.getId(), result.getVersion(), null, null)).toUri();
 
     LOG.trace("Sending CREATE event.");
     messagingService.orElse(new LogfileMessagingService()).
@@ -225,7 +222,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity<DataResource> getRecordById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
@@ -249,7 +246,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity<ContentInformation> getContentInformationById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
@@ -272,7 +269,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity<ElasticWrapper> getAclById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
@@ -291,7 +288,7 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ResponseEntity getMetadataDocumentById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr
   ) {
@@ -308,17 +305,20 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
   @Override
   public ModelAndView getLandingpageById(
           @PathVariable(value = "id") String id,
-          @RequestParam(value = "version", required = false) Long version,
+          @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr) {
     LOG.trace("Performing Landing page for metadata document with ({}, {}).", id, version);
     String redirectUrl = applicationProperties.getMetadataLandingPage();
     redirectUrl = redirectUrl.replace(PLACEHOLDER_ID, id);
-    String versionString = "";
     if (version != null) {
-      versionString = version.toString();
+      if (SemanticVersion.tryParse(version).isEmpty()) {
+        throw new BadArgumentException("Invalid version number!");
+      }
+    } else {
+      version = "";
     }
-    redirectUrl = "redirect:" + redirectUrl.replace(PLACEHOLDER_VERSION, versionString);
+    redirectUrl = "redirect:" + redirectUrl.replace(PLACEHOLDER_VERSION, version);
 
     LOG.trace("Redirect to '{}'", redirectUrl);
 
@@ -334,16 +334,15 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
 
     //if security is enabled, include principal in query
     LOG.debug("Performing query for records.");
-    DataResource recordByIdAndVersion = DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, null);
-    List<DataResource> recordList = new ArrayList<>();
-    long totalNoOfElements = Long.parseLong(recordByIdAndVersion.getVersion());
-    for (long version = totalNoOfElements - pgbl.getOffset(), size = 0; version > 0 && size < pgbl.getPageSize(); version--, size++) {
-      recordList.add(DataResourceRecordUtil.getMetadataRecordByIdAndVersion(metadataConfig, id, version));
+    List<DataResource> allVersions = DataResourceRecordUtil.getAllVersions(id, pgbl);
+    for (DataResource item : allVersions) {
+      DataResourceRecordUtil.fixSchemaUrl(item);
     }
+    long totalNoOfElements = allVersions.size();
 
     String contentRange = ControllerUtils.getContentRangeHeader(pgbl.getPageNumber(), pgbl.getPageSize(), totalNoOfElements);
 
-    return ResponseEntity.status(HttpStatus.OK).header("Content-Range", contentRange).body(recordList);
+    return ResponseEntity.status(HttpStatus.OK).header("Content-Range", contentRange).body(allVersions);
   }
 
   @Override

@@ -11,10 +11,7 @@ import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
-import edu.kit.datamanager.metastore2.dao.IUrl2PathDao;
+import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -125,19 +122,13 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
   @Autowired
   Javers javers = null;
   @Autowired
-  private ILinkedMetadataRecordDao metadataRecordDao;
-  @Autowired
   private IDataResourceDao dataResourceDao;
-  @Autowired
-  private IDataRecordDao dataRecordDao;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
   @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
   private IAllIdentifiersDao allIdentifiersDao;
   @Autowired
-  private IUrl2PathDao url2PathDao;
+  private ISchemaUrl2PathDao schemaSchemaUrl2PathDao;
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
@@ -188,11 +179,8 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
 
       contentInformationDao.deleteAll();
       dataResourceDao.deleteAll();
-      metadataRecordDao.deleteAll();
-      schemaRecordDao.deleteAll();
-      dataRecordDao.deleteAll();
       allIdentifiersDao.deleteAll();
-      url2PathDao.deleteAll();
+      schemaSchemaUrl2PathDao.deleteAll();
 
       try {
         // Create schema only once.

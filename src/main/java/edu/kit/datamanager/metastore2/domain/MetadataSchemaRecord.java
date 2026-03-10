@@ -63,9 +63,8 @@ public class MetadataSchemaRecord implements EtagSupport, Serializable {
   @JoinColumn(name = "identifier_id", referencedColumnName = "id")
   @NotBlank(message = "A globally unique identifier pointing to this record, e.g. DOI, Handle, PURL.")
   private ResourceIdentifier pid;
-  @NotBlank(message = "The schema version. The version is set by the schema registry and cannot be provided manually. Typically, a new schema version is only for metadata changes via PUT. In a few cases, \"\n"
-          + "          + \"e.g. schema synchronization, a new version can be also created by overwriting an existing schema received from a remote, authoritative source.")
-  private Long schemaVersion;
+  @NotBlank(message = "The schema version. The version has to follow semantic versioning without extras.")
+  private String schemaVersion;
 
   @NotBlank(message = "A (human readable) label for the schema, e.g. a label used in user interfaces.")
   private String label;

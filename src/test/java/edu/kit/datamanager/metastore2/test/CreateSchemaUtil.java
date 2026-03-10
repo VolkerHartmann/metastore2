@@ -9,9 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
-import edu.kit.datamanager.metastore2.domain.MetadataRecord;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
-import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.RelatedIdentifier;
@@ -224,6 +221,8 @@ public class CreateSchemaUtil {
 
   private final static String otherUserPrincipal = "test_user";
 
+  private static String locationUri4Schema;
+
   public static String ingestKitSchemaRecord(MockMvc mockMvc, String schemaId, String jwtSecret) throws Exception {
     return ingestXmlSchemaRecord(mockMvc, schemaId, KIT_SCHEMA, jwtSecret);
 
@@ -378,7 +377,7 @@ public class CreateSchemaUtil {
       metadataFile = new MockMultipartFile("document", "metadata.xml", "application/xml", metadataDocument.getBytes());
     }
     result = mockMvc.perform(get("/api/v2/metadata/" + metadataId).
-                    header("Accept", MetadataRecord.METADATA_RECORD_MEDIA_TYPE)).
+                    header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).
             andDo(print()).
             andReturn();
     if (result.getResponse().getStatus() != HttpStatus.OK.value()) {
@@ -421,8 +420,7 @@ public class CreateSchemaUtil {
   }
 
   public static String ingestKitSchemaRecordV2(MockMvc mockMvc, String schemaId, String jwtSecret) throws Exception {
-    return ingestXmlSchemaRecordV2(mockMvc, schemaId, KIT_SCHEMA, jwtSecret);
-
+    return CreateSchemaUtil.ingestXmlSchemaRecordV2(mockMvc, schemaId, KIT_SCHEMA, jwtSecret);
   }
 
   /**
@@ -464,7 +462,7 @@ public class CreateSchemaUtil {
    * @param schemaId
    * @param schemaContent
    * @param jwtSecret
-   * @param noUpdate      Only ingest or do update also
+   * @param update      Only ingest or do update also
    * @return
    * @throws Exception
    */
@@ -481,7 +479,8 @@ public class CreateSchemaUtil {
    * @param schemaId
    * @param schemaContent
    * @param jwtSecret
-   * @param noUpdate      Only ingest or do update also
+   * @param update      Only ingest or do update also
+   * @param expectedStatus
    * @return
    * @throws Exception
    */
@@ -505,8 +504,9 @@ public class CreateSchemaUtil {
      * @param mediaType
      * @param schemaId
      * @param schemaContent
-     * @param jwtSecret
-     * @param noUpdate      Only ingest or do update also
+     * @param update
+     * @param userToken
+     * @param expectedStatus
      * @return
      * @throws Exception
      */
@@ -540,6 +540,7 @@ public class CreateSchemaUtil {
               andDo(print()).andExpect(expectedStatus).andReturn();
       if (result.getResponse().getStatus() == HttpStatus.CREATED.value()) {
         locationUri = result.getResponse().getHeader("Location");
+        locationUri4Schema = locationUri.substring(0, locationUri.lastIndexOf('/') + 1) + "%s?version=%s";
       }
     } else {
       if (update) {
@@ -587,10 +588,11 @@ public class CreateSchemaUtil {
     MvcResult result = null;
     String versionAsString = null;
     if (version != null) {
-      versionAsString = version.toString();
+      versionAsString = version.toString() + ".0.0";
     }
 
     DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(metadataId, schemaId, versionAsString);
+    fixRelatedIdentifier4Schema(record, schemaId, versionAsString);
     if (versionAsString != null) {
       record.setVersion(versionAsString);
     }
@@ -627,17 +629,7 @@ public class CreateSchemaUtil {
         String etag = result.getResponse().getHeader("ETag");
         String body = result.getResponse().getContentAsString();
         record = mapper.readValue(body, DataResource.class);
-        relatedIdentifier = DataResourceRecordUtil.getRelatedIdentifier(record, DataResourceRecordUtil.RELATED_SCHEMA_TYPE);
-        if ((schemaId != null) && schemaId.startsWith("http")) {
-          relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
-        } else {
-          relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
-          if (versionAsString != null) {
-            relatedIdentifier.setValue(schemaId + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + versionAsString);
-          } else {
-            relatedIdentifier.setValue(schemaId);
-          }
-        }
+        fixRelatedIdentifier4Schema(record, schemaId, versionAsString);
         if (versionAsString != null) {
           record.setVersion(versionAsString);
         }
@@ -658,6 +650,21 @@ public class CreateSchemaUtil {
 
     }
     return result;
+  }
+
+  public static void fixRelatedIdentifier4Schema(DataResource record, String schemaId, String versionAsString) {
+    RelatedIdentifier relatedIdentifier = DataResourceRecordUtil.getRelatedIdentifier(record, DataResourceRecordUtil.RELATED_SCHEMA_TYPE);
+    if ((schemaId != null) && schemaId.startsWith("http")) {
+      relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
+    } else {
+      relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
+      if (versionAsString != null) {
+        relatedIdentifier.setValue(String.format(locationUri4Schema, schemaId, versionAsString));
+        relatedIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
+      } else {
+        relatedIdentifier.setValue(schemaId);
+      }
+    }
   }
 
   private static RequestPostProcessor putMultipart() { // it's nice to extract into a helper

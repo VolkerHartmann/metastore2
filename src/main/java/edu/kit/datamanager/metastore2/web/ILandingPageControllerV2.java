@@ -47,7 +47,7 @@ public interface ILandingPageControllerV2 {
   @RequestMapping(value = {"/schema-landing-page"}, method = {RequestMethod.GET}, produces = {"text/html"})
   String getLandingPageOfSchemaWithId(
           @Parameter(description = "The record identifier or schema identifier.", required = true) @RequestParam(value = "schemaId") String id,
-          @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) Long version,
+          @Parameter(description = "The version of the record.", required = false) @RequestParam(value = "version", required = false) String version,
           WebRequest wr,
           HttpServletResponse hsr,
           Model model);
@@ -62,7 +62,7 @@ public interface ILandingPageControllerV2 {
   @RequestMapping(value = {"/metadata-landing-page"}, method = {RequestMethod.GET}, produces = {"text/html"})
   String getLandingPageOfMetadataDocumentWithId(
           @Parameter(description = "The identifier of the metadata document.", required = true) @RequestParam(value = "id") String id,
-          @Parameter(description = "The version of the digital object. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+          @Parameter(description = "The version of the digital object. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") String version,
           WebRequest wr,
           HttpServletResponse hsr,
           Model model);

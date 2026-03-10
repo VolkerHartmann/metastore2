@@ -374,7 +374,7 @@ public class SchemaRegistryControllerDocumentation4JsonTestV2 {
     this.mockMvc.perform(get(endpointSchema + "/" + EXAMPLE_SCHEMA_ID).
             contextPath(contextPath).
             accept(MediaType.APPLICATION_JSON).
-            param("version", "1").
+            param("version", "1.0.0").
             contextPath(contextPath)).
             andDo(document("v2-get-json-schema-v1")).
             andExpect(status().isOk()).
@@ -387,7 +387,7 @@ public class SchemaRegistryControllerDocumentation4JsonTestV2 {
     //**************************************************************************
     this.mockMvc.perform(MockMvcRequestBuilders.multipart(endpointSchema + "/" + EXAMPLE_SCHEMA_ID + "/validate").
             file(metadataFile_v3)
-            .queryParam("version", "1").
+            .queryParam("version", "1.0.0").
             contextPath(contextPath)).
             andDo(document("v2-validate-json-document-v1")).
             andExpect(status().isUnprocessableEntity()).
@@ -449,7 +449,7 @@ public class SchemaRegistryControllerDocumentation4JsonTestV2 {
             contextPath(contextPath)).
             andDo(document("v2-ingest-json-metadata-document")).
             andExpect(status().isCreated()).
-            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).
+            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn().getResponse().getHeader("Location");
     // Get URL
     String newLocation = location.split("[?]")[0];

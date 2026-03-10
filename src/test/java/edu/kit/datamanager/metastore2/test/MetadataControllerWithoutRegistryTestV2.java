@@ -7,11 +7,7 @@ package edu.kit.datamanager.metastore2.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
-import edu.kit.datamanager.metastore2.util.MetadataRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -100,13 +96,7 @@ public class MetadataControllerWithoutRegistryTestV2 {
   @Autowired
   Javers javers = null;
   @Autowired
-  private ILinkedMetadataRecordDao metadataRecordDao;
-  @Autowired
   private IDataResourceDao dataResourceDao;
-  @Autowired
-  private IDataRecordDao dataRecordDao;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
   @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
@@ -126,9 +116,6 @@ public class MetadataControllerWithoutRegistryTestV2 {
 
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
-    metadataRecordDao.deleteAll();
-    schemaRecordDao.deleteAll();
-    dataRecordDao.deleteAll();
     allIdentifiersDao.deleteAll();
 
     try {
@@ -187,11 +174,11 @@ public class MetadataControllerWithoutRegistryTestV2 {
              .andExpect(redirectedUrl("http://www.example.org/metadata?id=anything&version="))
            .andReturn();
     this.mockMvc.perform(get("/api/v2/metadata/anything")
-            .queryParam("version", "3")
+            .queryParam("version", "3.0.0")
             .accept("text/html"))
             .andDo(print())
             .andExpect(status().is3xxRedirection())
-             .andExpect(redirectedUrl("http://www.example.org/metadata?id=anything&version=3"))
+             .andExpect(redirectedUrl("http://www.example.org/metadata?id=anything&version=3.0.0"))
            .andReturn();
   }
 

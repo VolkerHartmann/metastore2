@@ -73,7 +73,7 @@ public class MetadataRecord implements EtagSupport, Serializable {
   @NotNull(message = "The version of the schema. If no version is provided the current schema is used.")
   private Long schemaVersion;
   @NotNull(message = "The record version. The version is set by the metadata registry and cannot be provided manually.")
-  private Long recordVersion;
+  private String recordVersion;
 
   @NotNull(message = "A list of access control entries for resticting access.")
   @OneToMany(cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
@@ -87,62 +87,9 @@ public class MetadataRecord implements EtagSupport, Serializable {
   @JsonIgnore
   private String eTag;
 
-  /**
-   * Set new access control list.
-   *
-   * @param newAclList new list with acls.
-   */
-  public void setAcl(Set<AclEntry> newAclList) {
-    if (acl != newAclList) {
-      acl.clear();
-      if (newAclList != null) {
-        acl.addAll(newAclList);
-      }
-    }
-  }
-
-  /**
-   * Set creation date (truncated to milliseconds).
-   *
-   * @param instant creation date
-   */
-  public void setCreatedAt(Instant instant) {
-    if (instant != null) {
-      createdAt = instant.truncatedTo(ChronoUnit.MILLIS);
-    } else {
-      createdAt = null;
-    }
-  }
-
-  /**
-   * Set update date (truncated to milliseconds).
-   *
-   * @param instant update date
-   */
-  public void setLastUpdate(Instant instant) {
-    if (instant != null) {
-      lastUpdate = instant.truncatedTo(ChronoUnit.MILLIS);
-    } else {
-      lastUpdate = null;
-    }
-  }
-
   @Override
   @JsonIgnore
   public String getEtag() {
     return eTag;
-  }
-
-  /**
-   * Get (internal) schema identifier.
-   *
-   * @return schema identifier.
-   */
-  @JsonIgnore
-  public String getSchemaId() {
-    if (schema.getIdentifierType() == ResourceIdentifier.IdentifierType.INTERNAL) {
-      return schema.getIdentifier();
-    }
-    throw new BadArgumentException("URL as schema identifier is not supported yet! (Coming soon)");
   }
 }

@@ -17,6 +17,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.http.MediaType;
+
 import static org.junit.Assert.*;
 
 /**
@@ -70,10 +72,10 @@ public class JsonValidatorTest {
   @Test
   public void testSupportsSchemaTypeNull() {
     System.out.println("testSupportsSchemaTypeNull");
-    MetadataSchemaRecord.SCHEMA_TYPE type = null;
+    String type = null;
     JsonValidator instance = new JsonValidator();
     boolean expResult = false;
-    boolean result = instance.supportsSchemaType(type);
+    boolean result = instance.supportsMimetype(type);
     assertEquals(expResult, result);
   }
 
@@ -83,10 +85,10 @@ public class JsonValidatorTest {
   @Test
   public void testSupportsSchemaType() {
     System.out.println("supportsSchemaType");
-    MetadataSchemaRecord.SCHEMA_TYPE type = MetadataSchemaRecord.SCHEMA_TYPE.JSON;
+    String type = MediaType.APPLICATION_JSON_VALUE;
     JsonValidator instance = new JsonValidator();
     boolean expResult = true;
-    boolean result = instance.supportsSchemaType(type);
+    boolean result = instance.supportsMimetype(type);
     assertEquals(expResult, result);
   }
 

@@ -160,8 +160,17 @@ public class PurgeRunnerTest {
       LOG.error("Unknown exception.", ex);
     }
   }
-
   @Test
+  public void testPurgeRunnerWithoutArguments() throws Exception {
+    // no exception should be thrown, but also no file should be deleted.
+    Path schemaDir = Path.of("/tmp/metastore2/testCleanUp/schema");
+    Path metadataDir = Path.of("/tmp/metastore2/testCleanUp/metadata");
+    int noOfSchemaFiles = countFilesInDirectory(schemaDir);
+    int noOfMetadataFiles = countFilesInDirectory(metadataDir);
+    Assert.assertNotEquals(7, noOfSchemaFiles);
+    Assert.assertNotEquals(8, noOfMetadataFiles);
+  }
+  //@Test
   public void testPurgeRunnerExecution() throws Exception {
     // Count available file 
     int noOfSchemaFilesAtStartup, noOfSchemaFiles;

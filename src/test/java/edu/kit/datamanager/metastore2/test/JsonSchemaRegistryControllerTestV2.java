@@ -8,10 +8,12 @@ package edu.kit.datamanager.metastore2.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
+import edu.kit.datamanager.metastore2.dao.IResource2FileVersionDao;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
-import edu.kit.datamanager.metastore2.domain.SchemaRecord;
+import edu.kit.datamanager.metastore2.domain.Resource2FileVersion;
+import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
+import edu.kit.datamanager.metastore2.util.SemanticVersion;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -23,7 +25,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springdoc.core.customizers.DataRestRouterOperationCustomizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -191,11 +192,11 @@ public class JsonSchemaRegistryControllerTestV2 {
   @Autowired
   private IDataResourceDao dataResourceDao;
   @Autowired
-  private ISchemaRecordDao schemaRecordDao;
-  @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
   private IAllIdentifiersDao allIdentifiersDao;
+  @Autowired
+  private IResource2FileVersionDao resource2FileVersionDao;
   @Autowired
   private MetastoreConfiguration schemaConfig;
   @Rule
@@ -208,8 +209,8 @@ public class JsonSchemaRegistryControllerTestV2 {
     System.out.println("------------------------------------------------------");
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
-    schemaRecordDao.deleteAll();
     allIdentifiersDao.deleteAll();
+    resource2FileVersionDao.deleteAll();
     try {
       try (Stream<Path> walk = Files.walk(Paths.get(URI.create("file://" + TEMP_DIR_4_SCHEMAS)))) {
         walk.sorted(Comparator.reverseOrder())
@@ -291,7 +292,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
     MvcResult result = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/").
             file(recordFile).
-            file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=1")).andReturn();
+            file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version=1.0.0")).andReturn();
     String locationUri = result.getResponse().getHeader("Location");
     result.getResponse().getContentAsString();
 
@@ -503,7 +504,7 @@ public class JsonSchemaRegistryControllerTestV2 {
             file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andReturn();
 
     DataResource result = mapper.readValue(res.getResponse().getContentAsString(), DataResource.class);
-    Assert.assertEquals(result.getVersion(), Long.toString(1));
+    Assert.assertEquals(result.getVersion(), "1.0.0");
 
     res = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/").
             file(recordFile).
@@ -525,7 +526,7 @@ public class JsonSchemaRegistryControllerTestV2 {
   public void testGetSchemaRecordByIdWithVersion() throws Exception {
     ingestSchemaRecord();
 
-    MvcResult res = this.mockMvc.perform(get("/api/v2/schemas/json").param("version", "1").header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    MvcResult res = this.mockMvc.perform(get("/api/v2/schemas/json").param("version", "1.0.0").header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
     ObjectMapper map = new ObjectMapper();
     DataResource result = map.readValue(res.getResponse().getContentAsString(), DataResource.class);
     Assert.assertNotNull(result);
@@ -601,11 +602,11 @@ public class JsonSchemaRegistryControllerTestV2 {
   @Test
   public void testGetSchemaDocumentWithMissingSchemaFile() throws Exception {
     ingestSchemaRecord();
-    String contentUri = contentInformationDao.findAll(PageRequest.of(0, 2)).getContent().get(0).getContentUri();
-
-    //delete schema file
-    URI uri = new URI(contentUri);
-    Files.delete(Paths.get(uri));
+    for (ContentInformation ci : contentInformationDao.findAll()) {
+      System.out.println("ContentInformation: " + ci.getContentUri());
+      URI uri = new URI(ci.getContentUri());
+      Files.deleteIfExists(Paths.get(uri.getPath()));
+    }
 
     this.mockMvc.perform(get("/api/v2/schemas/json")).andDo(print()).andExpect(status().isInternalServerError()).andReturn();
   }
@@ -619,13 +620,13 @@ public class JsonSchemaRegistryControllerTestV2 {
   @Test
   public void testValidateUnknownVersion() throws Exception {
     ingestSchemaRecord();
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/json/validate?version=666").file("document", JSON_DOCUMENT.getBytes())).andDo(print()).andExpect(status().isNotFound()).andReturn();
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/json/validate?version=666").file("document", JSON_DOCUMENT.getBytes())).andDo(print()).andExpect(status().isBadRequest()).andReturn();
   }
 
   @Test
   public void testValidateKnownVersion() throws Exception {
     ingestSchemaRecord();
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/json/validate?version=1").file("document", JSON_DOCUMENT.getBytes())).andDo(print()).andExpect(status().isNoContent()).andReturn();
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/json/validate?version=1.0.0").file("document", JSON_DOCUMENT.getBytes())).andDo(print()).andExpect(status().isNoContent()).andReturn();
   }
 
   @Test
@@ -704,7 +705,8 @@ public class JsonSchemaRegistryControllerTestV2 {
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
     Assert.assertEquals(record.getFormats().size(), record2.getFormats().size());
-    Assert.assertNotEquals(mimeTypeBefore, record2.getFormats().iterator().next()); //mime type was changed
+    Assert.assertEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type is not allowed to be changed
+    Assert.assertNotEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed (as it is linked to schema)
     Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
     // Version shouldn't be updated
     Assert.assertEquals(record.getId(), record2.getId());
@@ -743,12 +745,73 @@ public class JsonSchemaRegistryControllerTestV2 {
     body = result.getResponse().getContentAsString();
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
-    Assert.assertNotEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type was changed
-    Assert.assertEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed
+    Assert.assertEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type is not allowed to be changed
+    Assert.assertNotEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed (as it is linked to schema)
     Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
     // Version shouldn't be updated
     Assert.assertEquals(record.getId(), record2.getId());
     Assert.assertEquals(record.getVersion(), record2.getVersion());
+    if (record.getAcls() != null) {
+      Assert.assertTrue(record.getAcls().containsAll(record2.getAcls()));
+    }
+    Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
+  }
+
+  @Test
+  public void testUpdateRecordWithoutChangesExceptVersion() throws Exception {
+    // Version should not be updated when there are no changes in document.
+    String schemaId = "testUpdateRecordWithoutChangesExceptVersion".toLowerCase(Locale.getDefault());
+    ingestSchemaRecord(schemaId);
+    MvcResult result = this.mockMvc.perform(get("/api/v2/schemas/" + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    String etag = result.getResponse().getHeader("ETag");
+    String body = result.getResponse().getContentAsString();
+
+    ObjectMapper mapper = new ObjectMapper();
+    DataResource record = mapper.readValue(body, DataResource.class);
+    String oldVersion = record.getVersion();
+    record.setVersion(SemanticVersion.parse(record.getVersion()).incrementPatch().toString());
+    MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/" + schemaId).
+            file(recordFile).header("If-Match", etag).with(putMultipart())).andDo(print()).andExpect(status().isOk()).andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version="+ oldVersion)).andReturn();
+    body = result.getResponse().getContentAsString();
+
+    DataResource record2 = mapper.readValue(body, DataResource.class);
+    Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
+    // Version shouldn't be updated
+    Assert.assertEquals(record.getId(), record2.getId());
+    Assert.assertEquals(oldVersion, record2.getVersion());
+    if (record.getAcls() != null) {
+      Assert.assertTrue(record.getAcls().containsAll(record2.getAcls()));
+    }
+    Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
+  }
+
+  @Test
+  public void testUpdateRecordWithChangesButVersionShouldntChange() throws Exception {
+    // Version should not be updated when there are no changes in document.
+    String schemaId = "testUpdateRecordWithChangesButVersionShouldntChange".toLowerCase(Locale.getDefault());
+    ingestSchemaRecord(schemaId);
+    MvcResult result = this.mockMvc.perform(get("/api/v2/schemas/" + schemaId).header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
+    String etag = result.getResponse().getHeader("ETag");
+    String body = result.getResponse().getContentAsString();
+
+    ObjectMapper mapper = new ObjectMapper();
+    DataResource record = mapper.readValue(body, DataResource.class);
+    String oldVersion = record.getVersion();
+    record.setVersion(SemanticVersion.parse(record.getVersion()).incrementPatch().toString());
+    record.getDescriptions().add(Description.factoryDescription("new description" , Description.TYPE.OTHER));
+    MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
+
+    result = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/" + schemaId).
+            file(recordFile).header("If-Match", etag).with(putMultipart())).andDo(print()).andExpect(status().isOk()).andExpect(redirectedUrlPattern("http://*:*/**/" + record.getId() + "?version="+ oldVersion)).andReturn();
+    body = result.getResponse().getContentAsString();
+
+    DataResource record2 = mapper.readValue(body, DataResource.class);
+    Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
+    // Version shouldn't be updated
+    Assert.assertEquals(record.getId(), record2.getId());
+    Assert.assertEquals(oldVersion, record2.getVersion());
     if (record.getAcls() != null) {
       Assert.assertTrue(record.getAcls().containsAll(record2.getAcls()));
     }
@@ -802,6 +865,9 @@ public class JsonSchemaRegistryControllerTestV2 {
 
     ObjectMapper mapper = new ObjectMapper();
     DataResource record = mapper.readValue(body, DataResource.class);
+    // Increment version by one patch version to check that version from request is used
+    String versionBefore = record.getVersion();
+    record.setVersion(SemanticVersion.parse(versionBefore).incrementPatch().toString());
     String mimeTypeBefore = record.getFormats().iterator().next();
     record.getFormats().clear();
     record.getFormats().add(MediaType.APPLICATION_XML.toString());
@@ -813,10 +879,11 @@ public class JsonSchemaRegistryControllerTestV2 {
     body = result.getResponse().getContentAsString();
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
-    Assert.assertNotEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type was changed
-    Assert.assertEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was not changed (as it is linked to schema)
+    Assert.assertEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type is not allowed to be changed
+    Assert.assertNotEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed (as it is linked to schema)
     Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
-    testForNextVersion(record.getVersion(), record2.getVersion());
+    SemanticVersion.INCREMENT_LEVEL incrementLevel = MetadataControllerTestV2.testForNextVersion(versionBefore, record2.getVersion());
+    Assert.assertEquals("Increment level should be patch as only patch version was incremented in request", SemanticVersion.INCREMENT_LEVEL.PATCH, incrementLevel);
     Assert.assertEquals(record.getId(), record2.getId());
     if (record.getAcls() != null) {
       Assert.assertTrue(record.getAcls().containsAll(record2.getAcls()));
@@ -846,9 +913,9 @@ public class JsonSchemaRegistryControllerTestV2 {
     body = result.getResponse().getContentAsString();
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
-    Assert.assertEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed by update
+    Assert.assertEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed (as it is linked to schema)
     Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
-    testForNextVersion(record.getVersion(), record2.getVersion());
+    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
     Assert.assertEquals(record.getId(), record2.getId());
     if (record.getAcls() != null) {
       Assert.assertTrue(record.getAcls().containsAll(record2.getAcls()));
@@ -896,8 +963,8 @@ public class JsonSchemaRegistryControllerTestV2 {
     body = result.getResponse().getContentAsString();
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
-    Assert.assertNotEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type was changed
-    Assert.assertEquals(record1.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was not changed (as it is linked to schema)
+    Assert.assertEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type is not allowed to be changed
+    Assert.assertNotEquals(record1.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed (as it is linked to schema)
     Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record1), DataResourceRecordUtil.getCreationDate(record2));
     // Version shouldn't be updated
     Assert.assertEquals(record1.getId(), record2.getId());
@@ -1033,7 +1100,7 @@ public class JsonSchemaRegistryControllerTestV2 {
     dataResource.getFormats().add(MediaType.APPLICATION_JSON.toString());
     dataResource.setLastUpdate(now);
     dataResource.setState(DataResource.State.VOLATILE);
-    dataResource.setVersion("1");
+    dataResource.setVersion("1.0.0");
     Set<AclEntry> aclEntries = dataResource.getAcls();
     aclEntries.add(new AclEntry("test", PERMISSION.READ));
     aclEntries.add(new AclEntry("SELF", PERMISSION.ADMINISTRATE));
@@ -1043,12 +1110,12 @@ public class JsonSchemaRegistryControllerTestV2 {
     descriptions.add(Description.factoryDescription("technical info", Description.TYPE.TECHNICAL_INFO));
     descriptions.add(Description.factoryDescription("not used yet", Description.TYPE.METHODS));
     ContentInformation ci = ContentInformation.createContentInformation(
-            "json", "schema.json", (String[]) null);
+            schemaId, "schema.json", (String[]) null);
     ci.setVersion(1);
-    ci.setFileVersion("1");
+    ci.setFileVersion("1.0.0");
     ci.setVersioningService("simple");
     ci.setDepth(1);
-    ci.setContentUri("file:/tmp/json.json");
+    ci.setContentUri("file:/tmp/"+ schemaId + ".json");
     ci.setUploader("SELF");
     ci.setMediaType("text/plain");
     ci.setHash("sha1:400dfe162fd702a619c4d11ddfb3b7550cb9dec7");
@@ -1060,15 +1127,21 @@ public class JsonSchemaRegistryControllerTestV2 {
     contentInformationDao.save(ci);
     schemaConfig.getContentInformationAuditService().captureAuditInformation(ci, "SELF");
 
-    SchemaRecord schemaRecord = new SchemaRecord();
-    schemaRecord.setSchemaId(dataResource.getId() + "/1");
-    schemaRecord.setVersion(1L);
-    schemaRecord.setType(MetadataSchemaRecord.SCHEMA_TYPE.JSON);
-    schemaRecord.setSchemaDocumentUri(ci.getContentUri());
-    schemaRecord.setDocumentHash(ci.getHash());
-    schemaRecordDao.save(schemaRecord);
+    SchemaUrl2Path schemaUrl2Path = new SchemaUrl2Path();
+    schemaUrl2Path.setSchemaId(schemaId);
+    schemaUrl2Path.setUrl("http://localhost:0815/api/v2/schemas/" + schemaId + "?version=1.0.0");
+    schemaUrl2Path.setPath(ci.getContentUri());
+    schemaUrl2Path.setVersion("1.0.0");
+    schemaUrl2Path.setMimetype("application/json");
+    DataResourceRecordUtil.saveNewSchemaRecord(schemaUrl2Path);
 
-    File jsonFile = new File("/tmp/json.json");
+    Resource2FileVersion resource2FileVersion = new Resource2FileVersion();
+    resource2FileVersion.setResourceId(schemaId);
+    resource2FileVersion.setVersion("1.0.0");
+    resource2FileVersion.setFileVersion(1);
+    resource2FileVersionDao.save(resource2FileVersion);
+
+    File jsonFile = new File("/tmp/" + schemaId + ".json");
     if (!jsonFile.exists()) {
       try (FileOutputStream fout = new FileOutputStream(jsonFile)) {
         fout.write(JSON_SCHEMA.getBytes());
@@ -1089,15 +1162,5 @@ public class JsonSchemaRegistryControllerTestV2 {
       request.setMethod("PUT");
       return request;
     };
-  }
-
-  private void testForNextVersion(String first, String second) {
-    int index = first.lastIndexOf("=");
-    int firstVersion = Integer.parseInt(first.substring(index + 1));
-    int secondVersion = Integer.parseInt(second.substring(index + 1));
-    Assert.assertEquals(firstVersion + 1, secondVersion);
-    if (index > 0) {
-      Assert.assertEquals(first.substring(0, index), second.substring(0, index));
-    }
   }
 }

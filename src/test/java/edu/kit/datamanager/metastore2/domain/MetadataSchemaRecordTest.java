@@ -93,9 +93,9 @@ public class MetadataSchemaRecordTest {
   public void testSetAndGetSchemaVersion() {
     System.out.println("getSchemaVersion");
     MetadataSchemaRecord instance = new MetadataSchemaRecord();
-    Long expResult = 3L;
+    String expResult = Long.toString(3);
     instance.setSchemaVersion(expResult);
-    Long result = instance.getSchemaVersion();
+    String result = instance.getSchemaVersion();
     assertEquals(expResult, result);
   }
 
@@ -176,6 +176,8 @@ public class MetadataSchemaRecordTest {
     Instant result = instance.getCreatedAt();
     assertTrue(result.compareTo(expResult) <= 0);
     assertEquals(expResult.truncatedTo(ChronoUnit.MILLIS), result);
+    instance.setCreatedAt(null);
+    assertNull(instance.getCreatedAt());
   }
 
   /**
@@ -189,7 +191,9 @@ public class MetadataSchemaRecordTest {
     instance.setLastUpdate(expResult);
     Instant result = instance.getLastUpdate();
     assertTrue(result.compareTo(expResult) <= 0);
-     assertEquals(expResult.truncatedTo(ChronoUnit.MILLIS), result);
+    assertEquals(expResult.truncatedTo(ChronoUnit.MILLIS), result);
+    instance.setLastUpdate(null);
+    assertNull(instance.getLastUpdate());
   }
   /**
    * Test of getSchemaDocumentUri method, of class MetadataSchemaRecord.
@@ -202,6 +206,8 @@ public class MetadataSchemaRecordTest {
     instance.setSchemaDocumentUri(expResult);
     String result = instance.getSchemaDocumentUri();
     assertEquals(expResult, result);
+    instance.setSchemaDocumentUri(null);
+    assertNull(instance.getSchemaDocumentUri());
   }
 
   /**

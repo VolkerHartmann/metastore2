@@ -81,7 +81,7 @@ public interface IMetadataControllerV2 extends InfoContributor {
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datacite.org+json"})
   ResponseEntity<DataResource> getRecordById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                             @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                             @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled. The version has to follow the SemVer format without pre-release or build metadata.", required = false) @RequestParam(value = "version") String version,
                                              WebRequest wr,
                                              HttpServletResponse hsr);
 
@@ -94,7 +94,7 @@ public interface IMetadataControllerV2 extends InfoContributor {
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datamanager.content-information+json"})
   ResponseEntity<ContentInformation> getContentInformationById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                                               @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                                               @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled. The version has to follow the SemVer format without pre-release or build metadata.", required = false) @RequestParam(value = "version") String version,
                                                                WebRequest wr,
                                                                HttpServletResponse hsr);
 
@@ -107,7 +107,7 @@ public interface IMetadataControllerV2 extends InfoContributor {
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"application/vnd.datamanager.acl+json"})
   ResponseEntity<ElasticWrapper> getAclById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                       @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                       @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled. The version has to follow the SemVer format without pre-release or build metadata.", required = false) @RequestParam(value = "version") String version,
                                        WebRequest wr,
                                        HttpServletResponse hsr);
 
@@ -120,7 +120,7 @@ public interface IMetadataControllerV2 extends InfoContributor {
 
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET}, produces = {"text/html"})
   ModelAndView getLandingpageById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                  @Parameter(description = "The version of the metadata document. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                  @Parameter(description = "The version of the metadata document. This parameter only has an effect if versioning  is enabled.  The version has to follow the SemVer format without pre-release or build metadata.", required = false) @RequestParam(value = "version") String version,
                                   WebRequest wr,
                                   HttpServletResponse hsr);
   @Operation(summary = "Get a metadata document by record identifier.", description = "Obtain a single metadata document identified by its resource identifier."
@@ -133,7 +133,7 @@ public interface IMetadataControllerV2 extends InfoContributor {
   @RequestMapping(value = {"/{id}"}, method = {RequestMethod.GET})
   @ResponseBody
   ResponseEntity getMetadataDocumentById(@Parameter(description = "The record identifier or related resource identifier.", required = true) @PathVariable(value = "id") String id,
-                                         @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled.", required = false) @RequestParam(value = "version") Long version,
+                                         @Parameter(description = "The version of the record. This parameter only has an effect if versioning  is enabled. The version has to follow the SemVer format without pre-release or build metadata.", required = false) @RequestParam(value = "version") String version,
                                          WebRequest wr,
                                          HttpServletResponse hsr);
 

@@ -39,11 +39,6 @@ public class XmlValidator implements IValidator {
   private String errorMessage;
 
   @Override
-  public boolean supportsSchemaType(MetadataSchemaRecord.SCHEMA_TYPE type) {
-    return MetadataSchemaRecord.SCHEMA_TYPE.XML.equals(type);
-  }
-
-  @Override
   public boolean supportsMimetype(String type) {
     return MediaType.APPLICATION_XML_VALUE.equals(type);
   }

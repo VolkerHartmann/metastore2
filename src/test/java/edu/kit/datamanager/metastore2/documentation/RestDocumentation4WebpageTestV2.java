@@ -20,9 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
-import edu.kit.datamanager.metastore2.domain.MetadataRecord;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
-import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.RelatedIdentifier;
@@ -47,7 +44,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
@@ -339,7 +335,7 @@ public class RestDocumentation4WebpageTestV2 {
 
     // 10. Getting specific version of a schema
     //**************************************************************************
-    this.mockMvc.perform(get("/api/v2/schemas/" + EXAMPLE_SCHEMA_ID).param("version", "1")).
+    this.mockMvc.perform(get("/api/v2/schemas/" + EXAMPLE_SCHEMA_ID).param("version", "1.0.0")).
             andDo(document("webpage/get-json-schema-v1")).
             andExpect(status().isOk()).
             andReturn().getResponse();
@@ -350,7 +346,7 @@ public class RestDocumentation4WebpageTestV2 {
     // 11 a) Validate with version=1 --> invalid
     //**************************************************************************
     this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/" + EXAMPLE_SCHEMA_ID + "/validate").
-            file(metadataFile_v2).queryParam("version", "1")).
+            file(metadataFile_v2).queryParam("version", "1.0.0")).
             andDo(document("webpage/validate-json-document-v1")).
             andExpect(status().isUnprocessableEntity()).
             andReturn().getResponse();
@@ -406,7 +402,7 @@ public class RestDocumentation4WebpageTestV2 {
             file(metadataFile)).
             andDo(document("webpage/ingest-json-metadata-document")).
             andExpect(status().isCreated()).
-            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).
+            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn().getResponse().getHeader("Location");
     // Get URL
     String newLocation = location.split("[?]")[0];
@@ -420,7 +416,7 @@ public class RestDocumentation4WebpageTestV2 {
 
     // 3. Accessing metadata record
     //**************************************************************************
-    this.mockMvc.perform(get(location).accept(MetadataRecord.METADATA_RECORD_MEDIA_TYPE)).
+    this.mockMvc.perform(get(location).accept(DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).
             andDo(document("webpage/get-json-metadata-record")).
             andExpect(status().isOk()).
             andReturn().getResponse();

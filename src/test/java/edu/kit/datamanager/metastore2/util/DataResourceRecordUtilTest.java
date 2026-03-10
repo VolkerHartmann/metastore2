@@ -19,9 +19,9 @@ import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
+import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
-import edu.kit.datamanager.metastore2.domain.SchemaRecord;
+import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -54,6 +54,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.JUnitRestDocumentation;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
@@ -104,7 +105,7 @@ public class DataResourceRecordUtilTest {
   @Autowired
   private IDataResourceDao dataResourceDao;
   @Autowired
-  private ISchemaRecordDao schemaRecordDao;
+  private ISchemaUrl2PathDao schemaUrl2PathDao;
   @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
@@ -134,7 +135,7 @@ public class DataResourceRecordUtilTest {
     System.out.println("------------------------------------------------------");
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
-    schemaRecordDao.deleteAll();
+    schemaUrl2PathDao.deleteAll();
     allIdentifiersDao.deleteAll();
     try {
       try (Stream<Path> walk = Files.walk(Paths.get(URI.create("file://" + TEMP_DIR_4_SCHEMAS)))) {
@@ -150,22 +151,20 @@ public class DataResourceRecordUtilTest {
             .apply(springSecurity())
             .apply(documentationConfiguration(this.restDocumentation))
             .build();
-    SchemaRecord schemaRecord = new SchemaRecord();
-    schemaRecord.setAlternateId("http://example.org/test1");
-    schemaRecord.setDocumentHash("anyHash");
-    schemaRecord.setSchemaId("test" + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + "1");
-    schemaRecord.setType(MetadataSchemaRecord.SCHEMA_TYPE.JSON);
-    schemaRecord.setSchemaDocumentUri("anySchemaDocumentUri");
-    schemaRecord.setVersion(1l);
-    schemaRecordDao.save(schemaRecord);
-    SchemaRecord schemaRecord2 = new SchemaRecord();
-    schemaRecord2.setAlternateId("http://example.org/test2");
-    schemaRecord2.setDocumentHash("anyHash");
-    schemaRecord2.setSchemaId("test" + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + "2");
-    schemaRecord2.setType(MetadataSchemaRecord.SCHEMA_TYPE.JSON);
-    schemaRecord2.setSchemaDocumentUri("anySchemaDocumentUri");
-    schemaRecord2.setVersion(2l);
-    schemaRecordDao.save(schemaRecord2);
+    SchemaUrl2Path schemaRecord = new SchemaUrl2Path();
+    schemaRecord.setSchemaId("test");
+    schemaRecord.setVersion("1.0.0");
+    schemaRecord.setMimetype(MediaType.APPLICATION_JSON_VALUE);
+    schemaRecord.setPath("anyPath");
+    schemaRecord.setUrl("anyUrl1");
+    schemaUrl2PathDao.save(schemaRecord);
+    SchemaUrl2Path schemaRecord2 = new SchemaUrl2Path();
+    schemaRecord2.setSchemaId("test");
+    schemaRecord2.setVersion("2.0.0");
+    schemaRecord2.setMimetype(MediaType.APPLICATION_JSON_VALUE);
+    schemaRecord2.setPath("anyPath");
+    schemaRecord2.setUrl("anyUrl2");
+    schemaUrl2PathDao.save(schemaRecord2);
   }
 
   @After
@@ -186,7 +185,7 @@ public class DataResourceRecordUtilTest {
     System.out.println("testAddProvenanceWithVersion1");
     DataResource factoryNewDataResource = DataResource.factoryNewDataResource();
     Set<RelatedIdentifier> relatedIdentifiers = factoryNewDataResource.getRelatedIdentifiers();
-    factoryNewDataResource.setVersion("1");
+    factoryNewDataResource.setVersion("1.0.0");
     DataResourceRecordUtil.addProvenance(factoryNewDataResource);
     assertEquals(relatedIdentifiers, factoryNewDataResource.getRelatedIdentifiers());
   }
@@ -200,17 +199,25 @@ public class DataResourceRecordUtilTest {
   }
 
   @Test
+  public void testMergeNullAcls() throws URISyntaxException {
+    System.out.println("testMergeNullAcls");
+    Set<AclEntry> mergeAcl = DataResourceRecordUtil.mergeAcl(null, null);
+    assertNotNull(mergeAcl);
+    assertTrue(mergeAcl.isEmpty());
+  }
+
+  @Test
   public void testFixSchemaUrl() throws URISyntaxException, IOException {
     System.out.println("testFixSchemaUrl");
     DataResourceRecordUtil.fixSchemaUrl((RelatedIdentifier) null);
-    RelatedIdentifier ri1 = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "test" + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + "1", null, null);
+    RelatedIdentifier ri1 = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "test" + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + "1.0.0", null, null);
     ri1.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
     RelatedIdentifier ri2 = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "test", null, null);
     ri2.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
     DataResourceRecordUtil.fixSchemaUrl(ri2);
-    assertTrue("Found second version", ri2.getValue().endsWith("test2"));
+    assertTrue("Found second version", ri2.getValue().endsWith("anyUrl2"));
     DataResourceRecordUtil.fixSchemaUrl(ri1);
-    assertTrue("Found first version", ri1.getValue().endsWith("test1"));
+    assertTrue("Found first version", ri1.getValue().endsWith("anyUrl1"));
   }
 
   @Test(expected = CustomInternalServerError.class)
@@ -318,5 +325,26 @@ public class DataResourceRecordUtilTest {
     ci.setContentUri("file:///tmp/somethingTotallyStrange");
     MultipartFile mpf = new MockMultipartFile("hallo.txt", "noContent".getBytes());
     boolean result = DataResourceRecordUtil.checkDocumentForChanges(ci, mpf);
+  }
+  @Test(expected = NullPointerException.class)
+  public void testIncrementVersionAllNull() {
+    DataResourceRecordUtil.incrementVersion(null);
+  }
+  @Test
+  public void testIncrementVersionWithoutVersion() {
+    DataResource dr = DataResource.factoryNewDataResource();
+    DataResourceRecordUtil.incrementVersion(dr);
+    assertEquals("2.0.0", dr.getVersion());
+    DataResourceRecordUtil.incrementVersion(dr, SemanticVersion.INCREMENT_LEVEL.MINOR);
+    assertEquals("2.1.0", dr.getVersion());
+    DataResourceRecordUtil.incrementVersion(dr, SemanticVersion.INCREMENT_LEVEL.PATCH);
+    assertEquals("2.1.1", dr.getVersion());
+  }
+  @Test(expected = NullPointerException.class)
+  public void testIncrementVersionWithLevelNull() {
+    DataResource dr = DataResource.factoryNewDataResource();
+    dr.setVersion("1.2.3");
+    DataResourceRecordUtil.incrementVersion(dr, null);
+    assertEquals("2.0.0", dr.getVersion());
   }
 }

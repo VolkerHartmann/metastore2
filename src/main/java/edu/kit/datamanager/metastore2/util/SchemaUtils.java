@@ -55,36 +55,6 @@ public class SchemaUtils {
    * Guess type of schema document.
    *
    * @param schema schema document.
-   * @return Schema type of document.
-   */
-  public static MetadataSchemaRecord.SCHEMA_TYPE guessType(byte[] schema) {
-    // Cut schema to a maximum of MAX_LENGTH_OF_HEADER characters.
-    if (schema != null) {
-      int length = schema.length > MAX_LENGTH_OF_HEADER ? MAX_LENGTH_OF_HEADER : schema.length;
-      String schemaAsString = new String(schema, 0, length, StandardCharsets.UTF_8);
-      LOG.trace("Guess type for '{}'", schemaAsString);
-
-      Matcher m = JSON_FIRST_BYTE.matcher(schemaAsString);
-      if (schemaAsString.contains("{")) {
-        if (m.matches()) {
-          return MetadataSchemaRecord.SCHEMA_TYPE.JSON;
-        }
-      } else {
-        if (schemaAsString.contains("<")) {
-          m = XML_FIRST_BYTE.matcher(schemaAsString);
-          if (m.matches()) {
-            return MetadataSchemaRecord.SCHEMA_TYPE.XML;
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Guess type of schema document.
-   *
-   * @param schema schema document.
    * @return Mimetype of document.
    */
   public static String guessMimetype(byte[] schema) {

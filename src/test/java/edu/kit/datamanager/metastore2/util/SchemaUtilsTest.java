@@ -12,6 +12,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.http.MediaType;
+
+import java.nio.charset.StandardCharsets;
+
 import static org.junit.Assert.*;
 
 /**
@@ -50,23 +54,45 @@ public class SchemaUtilsTest {
    * Test of guessType method, of class SchemaUtils.
    */
   @Test
+  public void testGuessTypeWithNullInput() {
+    System.out.println("guessType for NULL");
+    byte[] schema = null;
+    String result = SchemaUtils.guessMimetype(schema);
+    assertNull(result);
+  }
+
+  /**
+   * Test of guessType method, of class SchemaUtils.
+   */
+  @Test
+  public void testGuessTypeWithEmptyInput() {
+    System.out.println("guessType for empty input");
+    byte[] schema = "".getBytes();
+    String result = SchemaUtils.guessMimetype(schema);
+    assertNull(result);
+  }
+
+  /**
+   * Test of guessType method, of class SchemaUtils.
+   */
+  @Test
   public void testGuessTypeXMLLongSchema() {
     System.out.println("guessType for XML");
-    byte[] schema = null;
-    MetadataSchemaRecord.SCHEMA_TYPE expResult = MetadataSchemaRecord.SCHEMA_TYPE.XML;
-    MetadataSchemaRecord.SCHEMA_TYPE result = SchemaUtils.guessType(KIT_SCHEMA.getBytes());
+    byte[] schema = KIT_SCHEMA.getBytes(StandardCharsets.UTF_8);
+    String expResult = MediaType.APPLICATION_XML_VALUE;
+    String result = SchemaUtils.guessMimetype(schema);
     assertEquals(expResult, result);
-
   }
 
   @Test
   public void testGuessTypeXML() {
     System.out.println("guessType for XML");
     byte[] schema = null;
-    MetadataSchemaRecord.SCHEMA_TYPE expResult = MetadataSchemaRecord.SCHEMA_TYPE.XML;
+    String expResult = MediaType.APPLICATION_XML_VALUE;
     String[] patterns = {"<?xml version=\"1.0\" encoding=\"UTF-8\" ?> \n  <xs:schema ", "<xs:schema=", " <xs:schema=", " < xs:schema=", " <schema=", "< schema=", " < schema=", " < sch:schema = "};
     for (String beginning : patterns) {
-      MetadataSchemaRecord.SCHEMA_TYPE result = SchemaUtils.guessType(beginning.getBytes());
+      schema = beginning.getBytes(StandardCharsets.UTF_8);
+      String result = SchemaUtils.guessMimetype(schema);
       assertEquals(expResult, result);
     }
   }
@@ -74,9 +100,11 @@ public class SchemaUtilsTest {
   @Test
   public void testGuessTypeNullXML() {
     System.out.println("guessType is neither XML nor JSON");
+    byte[] schema = null;
     String[] patterns = {"<?xml version=\"1.0\">\n<myschema> \n<xs:schema ", "<?xml version=\"1.0\" encoding=\"UTF-8\" ?> \n <xsschema ", " <sch:ema=", "< d:schema=", " < longprefix:schema=", " < schem=a = "};
     for (String beginning : patterns) {
-      MetadataSchemaRecord.SCHEMA_TYPE result = SchemaUtils.guessType(beginning.getBytes());
+      schema = beginning.getBytes(StandardCharsets.UTF_8);
+      String result = SchemaUtils.guessMimetype(schema);
       assertNull(result);
     }
   }
@@ -88,10 +116,11 @@ public class SchemaUtilsTest {
   public void testGuessTypeJSON() {
     System.out.println("guessType for JSON");
     byte[] schema = null;
-    MetadataSchemaRecord.SCHEMA_TYPE expResult = MetadataSchemaRecord.SCHEMA_TYPE.JSON;
+    String expResult =MediaType.APPLICATION_JSON_VALUE;
     String[] patterns = {"{ \"$schema\" : \"https://...", "{\n \"$schema\": ", "{ \"$id\" : \"...", "{\n \"$id\" : \"...", "\n{ \"$schema\" : \"https://...", "{ \"$schema\" : \"https://..."};
     for (String beginning : patterns) {
-      MetadataSchemaRecord.SCHEMA_TYPE result = SchemaUtils.guessType(beginning.getBytes());
+      schema = beginning.getBytes(StandardCharsets.UTF_8);
+      String result = SchemaUtils.guessMimetype(schema);
       assertEquals(expResult, result);
     }
   }
@@ -99,11 +128,30 @@ public class SchemaUtilsTest {
   @Test
   public void testGuessTypeNullJSON() {
     System.out.println("guessType is neither XML nor JSON");
+    byte[] schema = null;
     String[] patterns = {"<?xml version=\"1.0\">\n{ \"$schema\" : \"https://...", "schema: { \"$schema\" : \"https://...", "{ \"schema\" : \"https://...", "{\n \"schema\": ", "{ \"id\" : \"...", "{\n \"id\" : \"...", "\n{[ \"$schema\" : \"https://...", "{{ \"$schema\" : \"https://..."};
     for (String beginning : patterns) {
-      MetadataSchemaRecord.SCHEMA_TYPE result = SchemaUtils.guessType(beginning.getBytes());
+      schema = beginning.getBytes(StandardCharsets.UTF_8);
+      String result = SchemaUtils.guessMimetype(schema);
       assertNull(result);
     }
+  }
+
+  @Test
+  public void testGetTargetNamespaceFromSchema() {
+    System.out.println("getTargetNamespaceFromSchema");
+    byte[] schema = KIT_SCHEMA.getBytes(StandardCharsets.UTF_8);
+    String expResult = "http://www.example.org/kit";
+    String result = SchemaUtils.getTargetNamespaceFromSchema(schema);
+    assertEquals(expResult, result);
+  }
+
+  @Test
+  public void testGetTargetNamespaceInvalidSource() {
+    System.out.println("getTargetNamespaceFromSchema with invalid source");
+    byte[] schema = "This is no XML schema".getBytes(StandardCharsets.UTF_8);
+    String result = SchemaUtils.getTargetNamespaceFromSchema(schema);
+    assertNull(result);
   }
 
 }

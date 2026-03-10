@@ -11,11 +11,7 @@ import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.dao.IDataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ILinkedMetadataRecordDao;
-import edu.kit.datamanager.metastore2.dao.ISchemaRecordDao;
-import edu.kit.datamanager.metastore2.dao.IUrl2PathDao;
-import edu.kit.datamanager.metastore2.domain.MetadataRecord;
+import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
@@ -113,9 +109,9 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   private static final String SCHEMA_ID = "my_dc";
   private static final String INVALID_SCHEMA = "invalid_dc";
   private static final String RELATED_RESOURCE_STRING = "anyResourceId";
-  private static final String RELATED_RESOURCE_STRING_2 = "anyResourceId";
-  private static final ResourceIdentifier RELATED_RESOURCE = ResourceIdentifier.factoryInternalResourceIdentifier(RELATED_RESOURCE_STRING);
-  private static final ResourceIdentifier RELATED_RESOURCE_2 = ResourceIdentifier.factoryInternalResourceIdentifier(RELATED_RESOURCE_STRING_2);
+  private static final String RELATED_RESOURCE_STRING_2 = "anyOtherResourceId";
+  private static final RelatedIdentifier RELATED_RESOURCE = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, RELATED_RESOURCE_STRING, null, null);
+  private static final RelatedIdentifier RELATED_RESOURCE_2 = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, RELATED_RESOURCE_STRING_2, null, null);
   private final static String KIT_SCHEMA = CreateSchemaUtil.KIT_SCHEMA;
 
   private final static String KIT_DOCUMENT = CreateSchemaUtil.KIT_DOCUMENT;
@@ -141,19 +137,13 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   @Autowired
   private WebApplicationContext context;
   @Autowired
-  private ILinkedMetadataRecordDao metadataRecordDao;
-  @Autowired
   private IDataResourceDao dataResourceDao;
-  @Autowired
-  private IDataRecordDao dataRecordDao;
-  @Autowired
-  private ISchemaRecordDao schemaRecordDao;
   @Autowired
   private IContentInformationDao contentInformationDao;
   @Autowired
   private IAllIdentifiersDao allIdentifiersDao;
   @Autowired
-  private IUrl2PathDao url2PathDao;
+  private ISchemaUrl2PathDao schemaSchemaUrl2PathDao;
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
@@ -205,11 +195,8 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     contentInformationDao.deleteAll();
     dataResourceDao.deleteAll();
-    metadataRecordDao.deleteAll();
-    schemaRecordDao.deleteAll();
-    dataRecordDao.deleteAll();
     allIdentifiersDao.deleteAll();
-    url2PathDao.deleteAll();
+    schemaSchemaUrl2PathDao.deleteAll();
 
     try {
       // Create schema only once.
@@ -272,7 +259,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
             andExpect(status().isCreated()).
-            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).
+            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn();
     ObjectMapper map = new ObjectMapper();
     DataResource result = map.readValue(mvcResult.getResponse().getContentAsString(), DataResource.class);
@@ -302,7 +289,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
             andExpect(status().isCreated()).
-            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).
+            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn();
   }
 
@@ -480,7 +467,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             andDo(print()).
             andExpect(status().isCreated()).
             andReturn();
-    DataResourceRecordUtil.getRelatedIdentifier(record, DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE).setValue(RELATED_RESOURCE_2.getIdentifier());
+    DataResourceRecordUtil.getRelatedIdentifier(record, DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE).setValue(RELATED_RESOURCE_2.getValue());
     recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
 
     this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_METADATA_PATH).
@@ -509,7 +496,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
             andExpect(status().isCreated()).
-            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).
+            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn();
     String locationUri = result.getResponse().getHeader("Location");
     String content = result.getResponse().getContentAsString();
@@ -598,9 +585,11 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
   // @Test 
   public void testCreateRecordFromExternal() throws Exception {
-    MetadataRecord record = new MetadataRecord();
-    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(SCHEMA_ID));
-    record.setRelatedResource(RELATED_RESOURCE);
+    DataResource record = new DataResource();
+    RelatedIdentifier schemaIdentifier = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, SCHEMA_ID, null, null);
+    schemaIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
+    record.getRelatedIdentifiers().add(schemaIdentifier);
+    record.getRelatedIdentifiers().add(RELATED_RESOURCE);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -622,9 +611,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
   //@Test @ToDo Set external remote address.
   public void testCreateRecordUpdateFromExternal() throws Exception {
-    MetadataRecord record = new MetadataRecord();
-    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier("my_dcExt"));
-    record.setRelatedResource(RELATED_RESOURCE);
+    DataResource record = new DataResource();
+    RelatedIdentifier mySchema = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, "my_dcExt", null, null);
+    mySchema.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
+    record.getRelatedIdentifiers().add(mySchema);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -828,7 +818,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             andReturn();
 
     DataResource result = mapper.readValue(res.getResponse().getContentAsString(), DataResource.class);
-    Assert.assertEquals(Long.valueOf(1L).toString(), result.getVersion());
+    Assert.assertEquals("1.0.0", result.getVersion());
 
     record = SchemaRegistryControllerTestV2.createDataResource4Document(id + "_2", schemaId);
     recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -861,7 +851,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             andReturn();
 
     DataResource result = mapper.readValue(res.getResponse().getContentAsString(), DataResource.class);
-    Assert.assertEquals(Long.valueOf(1L).toString(), result.getVersion());
+    Assert.assertEquals("1.0.0", result.getVersion());
 
     RelatedIdentifier schemaIdentifier = DataResourceRecordUtil.getSchemaIdentifier(record);
     Set<RelatedIdentifier> relatedIdentifiers = record.getRelatedIdentifiers();
@@ -887,7 +877,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             andReturn();
 
     result = mapper.readValue(res.getResponse().getContentAsString(), DataResource.class);
-    Assert.assertEquals(Long.valueOf(1L).toString(), result.getVersion());
+    Assert.assertEquals("1.0.0", result.getVersion());
   }
 
   @Test
@@ -897,7 +887,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
 
     Set<AclEntry> acl = new HashSet<>();
-    acl.add(new AclEntry("test1", PERMISSION.ADMINISTRATE));
+    acl.add(new AclEntry("test1.0.0", PERMISSION.ADMINISTRATE));
     acl.add(new AclEntry("test2", PERMISSION.WRITE));
     acl.add(new AclEntry("test3", PERMISSION.READ));
     acl.add(new AclEntry("test4", PERMISSION.NONE));
@@ -951,7 +941,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testGetRecordByIdWithVersion() throws Exception {
     String metadataRecordId = createDCMetadataRecord();
 
-    MvcResult res = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).param("version", "1").
+    MvcResult res = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).param("version", "1.0.0").
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken).
             header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).
             andDo(print()).
@@ -1009,7 +999,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testFindRecordsByResourceId() throws Exception {
     Instant twoHoursBefore = Instant.now().minusSeconds(7200);
     createDCMetadataRecord();
-    MvcResult res = this.mockMvc.perform(get(API_METADATA_PATH).param("resoureId", RELATED_RESOURCE.getIdentifier()).
+    MvcResult res = this.mockMvc.perform(get(API_METADATA_PATH).param("resoureId", RELATED_RESOURCE.getValue()).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
             andExpect(status().isOk()).
@@ -1019,7 +1009,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     Assert.assertEquals(1, result.length);
     res = this.mockMvc.perform(get(API_METADATA_PATH).
-            param("resourceId", RELATED_RESOURCE.getIdentifier()).
+            param("resourceId", RELATED_RESOURCE.getValue()).
             param("from", twoHoursBefore.toString()).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
@@ -1053,7 +1043,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     Instant twoHoursBefore = Instant.now().minusSeconds(7200);
 
     MvcResult res = this.mockMvc.perform(get(API_METADATA_PATH).
-            param("resourceId", RELATED_RESOURCE.getIdentifier()).
+            param("resourceId", RELATED_RESOURCE.getValue()).
             param("until", oneHourBefore.toString()).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
@@ -1065,7 +1055,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     Assert.assertEquals(0, result.length);
 
     res = this.mockMvc.perform(get(API_METADATA_PATH).
-            param("resourceId", RELATED_RESOURCE.getIdentifier()).
+            param("resourceId", RELATED_RESOURCE.getValue()).
             param("from", twoHoursBefore.toString()).
             param("until", oneHourBefore.toString()).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
@@ -1162,7 +1152,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 //    Assert.assertNotEquals(record.getDocumentHash(), record2.getDocumentHash());
     SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    Assert.assertEquals(Long.parseLong(record.getVersion()), Long.parseLong(record2.getVersion()) - 1L);// version should be 1 higher
+    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
     SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
@@ -1196,7 +1186,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     Assert.assertEquals(dcMetadata, content);
 
-    Assert.assertEquals(locationUri.replace("version=1", "version=2"), locationUri2);
+    Assert.assertEquals(locationUri.replace("version=1.0.0", "version=2.0.0"), locationUri2);
   }
 
   @Test
@@ -1280,7 +1270,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 //    Assert.assertNotEquals(record.getDocumentHash(), record2.getDocumentHash());
     SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    Assert.assertEquals(Long.parseLong(record.getVersion()), Long.parseLong(record2.getVersion()) - 1L);// version should be 1 higher
+    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
     SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
@@ -1314,7 +1304,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     Assert.assertEquals(dcMetadata, content);
 
-    Assert.assertEquals(locationUri.replace("version=1", "version=2"), locationUri2);
+    Assert.assertEquals(locationUri.replace("version=1.0.0", "version=2.0.0"), locationUri2);
   }
 
   @Test
@@ -1366,7 +1356,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 //    Assert.assertNotEquals(record.getDocumentHash(), record2.getDocumentHash());
     SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    Assert.assertEquals(Long.parseLong(record.getVersion()), Long.parseLong(record2.getVersion()) - 1L);// version should be 1 higher
+    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
     SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
@@ -1400,7 +1390,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     Assert.assertEquals(dcMetadata, content);
 
-    Assert.assertEquals(locationUri.replace("version=1", "version=2"), locationUri2);
+    Assert.assertEquals(locationUri.replace("version=1.0.0", "version=2.0.0"), locationUri2);
   }
 
   @Test
@@ -1449,7 +1439,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     DataResource record2 = mapper.readValue(body, DataResource.class);
     SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    Assert.assertEquals(Long.parseLong(record.getVersion()), Long.parseLong(record2.getVersion()));// version should be the same
+    Assert.assertEquals(record.getVersion(), record2.getVersion());// version should be the same
     SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
     // Check ContentInformation of second version
@@ -1682,7 +1672,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     DataResource record3 = mapper.readValue(body, DataResource.class);
     SchemaRegistryControllerTestV2.validateCreateDates(record2.getDates(), record3.getDates());
     SchemaRegistryControllerTestV2.validateRelatedIdentifierSets(record2.getRelatedIdentifiers(), record2.getRelatedIdentifiers());
-    Assert.assertEquals(Long.parseLong(record2.getVersion()), Long.parseLong(record3.getVersion()) - 1L);// version should be 1 higher
+    MetadataControllerTestV2.testForNextVersion(record2.getVersion(), record3.getVersion());
     SchemaRegistryControllerTestV2.validateSets(record2.getAcls(), record3.getAcls());
     Assert.assertTrue(record2.getLastUpdate().isBefore(record3.getLastUpdate()));
   }
@@ -1782,7 +1772,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     DataResource record2 = mapper.readValue(body, DataResource.class);
     SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    Assert.assertEquals(Long.parseLong(record.getVersion()), Long.parseLong(record2.getVersion()) - 1L);// version should be 1 higher
+    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
     SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
     // Check ContentInformation of second version
@@ -1814,7 +1804,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     Assert.assertEquals(dcMetadata, content);
 
-    Assert.assertEquals(locationUri.replace("version=1", "version=2"), locationUri2);
+    Assert.assertEquals(locationUri.replace("version=1.0.0", "version=2.0.0"), locationUri2);
   }
 
   @Test
@@ -1859,7 +1849,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
    DataResource record2 = mapper.readValue(body, DataResource.class);
     SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    Assert.assertEquals(Long.parseLong(record.getVersion()), Long.parseLong(record2.getVersion()));// version should be the same
+    Assert.assertEquals(record.getVersion(), record2.getVersion());// version should be the same
     SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
     // Check ContentInformation of second version
@@ -2259,7 +2249,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     DataResource record2 = mapper.readValue(body, DataResource.class);
     SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    Assert.assertEquals(Long.parseLong(record.getVersion()), Long.parseLong(record2.getVersion()) - 1L);// version should be 1 higher
+    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
     SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
@@ -2276,7 +2266,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     Assert.assertEquals(dcMetadata, content);
 
-    Assert.assertEquals(locationUri.replace("version=1", "version=2"), locationUri2);
+    Assert.assertEquals(locationUri.replace("version=1.0.0", "version=2.0.0"), locationUri2);
     // Get version of record as array
     // Read all versions (only 2 versions available)
     this.mockMvc.perform(get(API_METADATA_PATH).
@@ -2312,7 +2302,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
             andExpect(status().isCreated()).
-            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).
+            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn();
     DataResource result = mapper.readValue(andReturn.getResponse().getContentAsString(), DataResource.class);
 
@@ -2344,7 +2334,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
             andExpect(status().isCreated()).
-            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1")).
+            andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn();
     DataResource result = mapper.readValue(andReturn.getResponse().getContentAsString(), DataResource.class);
 
@@ -2395,10 +2385,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     MvcResult res = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
             header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken).
-            param("version", "1")).
+            param("version", "1.0.0")).
             andDo(print()).andExpect(status().isOk()).
             andReturn();
-    String result = res.getRequest().getRequestURL() + "?version=1";
+    String result = res.getRequest().getRequestURL() + "?version=1.0.0";
     System.out.println("result " + result);
     return result.replaceFirst("8080", "41428");
   }

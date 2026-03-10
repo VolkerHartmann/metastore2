@@ -17,6 +17,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import org.springframework.http.MediaType;
 import org.xml.sax.SAXException;
 
 /**
@@ -57,14 +59,14 @@ public class XmlValidatorTest {
     @Test
     public void testSupportsSchemaType() {
         System.out.println("supportsSchemaType");
-        MetadataSchemaRecord.SCHEMA_TYPE type = MetadataSchemaRecord.SCHEMA_TYPE.JSON;
+        String type = MediaType.APPLICATION_JSON_VALUE;
         XmlValidator instance = new XmlValidator();
         boolean expResult = false;
-        boolean result = instance.supportsSchemaType(type);
+        boolean result = instance.supportsMimetype(type);
         assertEquals(expResult, result);
-        type = MetadataSchemaRecord.SCHEMA_TYPE.XML;
+        type = MediaType.APPLICATION_XML_VALUE;
         expResult = true;
-        result = instance.supportsSchemaType(type);
+        result = instance.supportsMimetype(type);
         assertEquals(expResult, result);
     }
 

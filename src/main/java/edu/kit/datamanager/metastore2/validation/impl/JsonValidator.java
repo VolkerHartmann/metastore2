@@ -35,11 +35,6 @@ public class JsonValidator implements IValidator {
   }
 
   @Override
-  public boolean supportsSchemaType(MetadataSchemaRecord.SCHEMA_TYPE type) {
-    return MetadataSchemaRecord.SCHEMA_TYPE.JSON.equals(type);
-  }
-
-  @Override
   public boolean supportsMimetype(String type) {
     return MediaType.APPLICATION_JSON_VALUE.equals(type);
   }
