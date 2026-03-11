@@ -36,7 +36,7 @@ public class MetaStoreMonitoringService implements MeterBinder {
   /**
    * Prefix for metrics.
    */
-  public static String PREFIX_METRICS = "metastore.";
+  public String PREFIX_METRICS = "metastore.";
   /**
    * Label for metrics of metadata documents.
    */

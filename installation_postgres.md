@@ -28,7 +28,7 @@ GRANT
 postgres=# \q
 user@localhost:/home/user/$
 ```
-Now postgreSQL is setup for metastore2.
+Now postgreSQL is set up for metastore2.
 
 To start/stop docker container afterwards use
 ```bash=bash

@@ -5,7 +5,6 @@
  */
 package edu.kit.datamanager.metastore2.util;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.test.CreateSchemaUtil;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -87,7 +86,7 @@ public class SchemaUtilsTest {
   @Test
   public void testGuessTypeXML() {
     System.out.println("guessType for XML");
-    byte[] schema = null;
+    byte[] schema;
     String expResult = MediaType.APPLICATION_XML_VALUE;
     String[] patterns = {"<?xml version=\"1.0\" encoding=\"UTF-8\" ?> \n  <xs:schema ", "<xs:schema=", " <xs:schema=", " < xs:schema=", " <schema=", "< schema=", " < schema=", " < sch:schema = "};
     for (String beginning : patterns) {
@@ -100,7 +99,7 @@ public class SchemaUtilsTest {
   @Test
   public void testGuessTypeNullXML() {
     System.out.println("guessType is neither XML nor JSON");
-    byte[] schema = null;
+    byte[] schema;
     String[] patterns = {"<?xml version=\"1.0\">\n<myschema> \n<xs:schema ", "<?xml version=\"1.0\" encoding=\"UTF-8\" ?> \n <xsschema ", " <sch:ema=", "< d:schema=", " < longprefix:schema=", " < schem=a = "};
     for (String beginning : patterns) {
       schema = beginning.getBytes(StandardCharsets.UTF_8);
@@ -115,7 +114,7 @@ public class SchemaUtilsTest {
   @Test
   public void testGuessTypeJSON() {
     System.out.println("guessType for JSON");
-    byte[] schema = null;
+    byte[] schema;
     String expResult =MediaType.APPLICATION_JSON_VALUE;
     String[] patterns = {"{ \"$schema\" : \"https://...", "{\n \"$schema\": ", "{ \"$id\" : \"...", "{\n \"$id\" : \"...", "\n{ \"$schema\" : \"https://...", "{ \"$schema\" : \"https://..."};
     for (String beginning : patterns) {
@@ -128,7 +127,7 @@ public class SchemaUtilsTest {
   @Test
   public void testGuessTypeNullJSON() {
     System.out.println("guessType is neither XML nor JSON");
-    byte[] schema = null;
+    byte[] schema;
     String[] patterns = {"<?xml version=\"1.0\">\n{ \"$schema\" : \"https://...", "schema: { \"$schema\" : \"https://...", "{ \"schema\" : \"https://...", "{\n \"schema\": ", "{ \"id\" : \"...", "{\n \"id\" : \"...", "\n{[ \"$schema\" : \"https://...", "{{ \"$schema\" : \"https://..."};
     for (String beginning : patterns) {
       schema = beginning.getBytes(StandardCharsets.UTF_8);

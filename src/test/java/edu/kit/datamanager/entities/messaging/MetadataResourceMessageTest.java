@@ -8,7 +8,6 @@ package edu.kit.datamanager.entities.messaging;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.exceptions.MessageValidationException;
-import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.RelatedIdentifier;
@@ -58,7 +57,7 @@ public class MetadataResourceMessageTest {
   @Test
   public void testConstructor() {
     MetadataResourceMessage mdrm = new MetadataResourceMessage();
-    assertTrue(true);
+    assertNotNull(mdrm);
   }
 
   /**
@@ -67,7 +66,7 @@ public class MetadataResourceMessageTest {
   @Test
   public void testFactoryCreateMetadataMessage() throws JsonProcessingException {
     System.out.println("factoryCreateMetadataMessage");
-    DataResource metadataRecord = null;
+    DataResource metadataRecord;
     String caller = "anyCaller";
     String sender = "anySender";
     String[] ids = {"id1", "id2", "id3", "id4"};
@@ -90,7 +89,7 @@ public class MetadataResourceMessageTest {
   @Test
   public void testActionIsNull() throws JsonProcessingException {
     System.out.println("factoryCreateMetadataMessage");
-    DataResource metadataRecord = null;
+    DataResource metadataRecord;
     String caller = "anyCaller";
     String sender = "anySender";
     String[] ids = {"id1"};
@@ -113,22 +112,21 @@ public class MetadataResourceMessageTest {
   }
 
   @Test
-  public void testIdIsNull() throws JsonProcessingException {
+  public void testIdIsNull() {
     System.out.println("testIdIsNull");
-    DataResource metadataRecord = null;
+    DataResource metadataRecord;
     String caller = "anyCaller";
     String sender = "anySender";
     String[] ids = {null, null, null, null};
     String[] versions= {null, null, "0.0.1", "0.0.2"};
     String[] types = {null, "type1", null, "type2"};
-    String action = DataResourceMessage.ACTION.CREATE.getValue();
     for (int index = 0; index < ids.length; index++) {
       String id = ids[index];
       String uri = versions[index];
       String type = types[index];
       metadataRecord = buildDataResourceRecord(id, uri, type);
       try {
-        MetadataResourceMessage result = MetadataResourceMessage.factoryCreateMetadataMessage(metadataRecord, caller, sender);
+        MetadataResourceMessage.factoryCreateMetadataMessage(metadataRecord, caller, sender);
         fail();
       } catch (IllegalArgumentException iae) {
         assertTrue(iae.getMessage().contains("Illegal character in path"));
@@ -160,7 +158,7 @@ public class MetadataResourceMessageTest {
   @Test
   public void testFactoryUpdateMetadataMessage() throws JsonProcessingException {
     System.out.println("factoryUpdateMetadataMessage");
-    DataResource metadataRecord = null;
+    DataResource metadataRecord;
     String caller = "anyCaller";
     String sender = "anySender";
     String[] ids = {"id1", "id2", "id3", "id4"};
@@ -183,7 +181,7 @@ public class MetadataResourceMessageTest {
   @Test
   public void testFactoryDeleteMetadataMessage() throws JsonProcessingException {
     System.out.println("factoryDeleteMetadataMessage");
-    DataResource metadataRecord = null;
+    DataResource metadataRecord;
     String caller = "anyCaller";
     String sender = "anySender";
     String[] ids = {"id1", "id2", "id3", "id4"};
@@ -250,9 +248,9 @@ public class MetadataResourceMessageTest {
    * Test of toString method, of class MetadataResourceMessage.
    */
   @Test
-  public void testToString() throws JsonProcessingException {
+  public void testToString() {
     System.out.println("toString");
-    DataResource metadataRecord = null;
+    DataResource metadataRecord;
     DataResourceMessage.ACTION action = DataResourceMessage.ACTION.FIX;
     DataResourceMessage.SUB_CATEGORY subCategory = null;
     String principal = "principal";
@@ -280,6 +278,7 @@ public class MetadataResourceMessageTest {
   private void checkJsonString(MetadataResourceMessage mdrm, String sender, String caller, String action, String id, String version, String type) throws JsonProcessingException {
     String jsonString = mdrm.toJson();
     System.out.println(jsonString);
+    System.out.println("Version: '" + version + "' is not used yet!");
     if (sender != null) {
       assertTrue(jsonString.contains("\"sender\":\"" + sender + "\""));
     } else {

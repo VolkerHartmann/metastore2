@@ -65,7 +65,7 @@ public class JsonUtils {
    * Validate JSON schema document based on detected JSON schema or version
    * 2020-12 if no schema is defined.
    *
-   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
+   * @see <a href=https://json-schema.org/draft/2020-12/json-schema-core.html>https://json-schema.org/draft/2020-12/json-schema-core.html</a>
    * @param jsonSchemaStream schema document as string
    * @return true if schema is valid.
    */
@@ -79,7 +79,7 @@ public class JsonUtils {
    * Validate JSON schema document based on detected JSON schema or version
    * 2020-12 if no schema is defined.
    *
-   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
+   * @see <a href=https://json-schema.org/draft/2020-12/json-schema-core.html>https://json-schema.org/draft/2020-12/json-schema-core.html</a>
    * @param jsonSchema schema document as string
    * @return true if schema is valid.
    */
@@ -92,7 +92,7 @@ public class JsonUtils {
   /**
    * Validate JSON schema document based on JSON Schema.
    *
-   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
+   * @see <a href=https://json-schema.org/draft/2020-12/json-schema-core.html>https://json-schema.org/draft/2020-12/json-schema-core.html</a>
    * @see VersionFlag
    * @param jsonSchemaStream schema document as string
    * @param version use specific version
@@ -107,7 +107,7 @@ public class JsonUtils {
   /**
    * Validate JSON schema document based on JSON Schema.
    *
-   * @see https://json-schema.org/draft/2020-12/json-schema-core.html
+   * @see <a href=https://json-schema.org/draft/2020-12/json-schema-core.html>https://json-schema.org/draft/2020-12/json-schema-core.html</a>
    * @see VersionFlag
    * @param jsonSchema schema document as string
    * @param version use specific version

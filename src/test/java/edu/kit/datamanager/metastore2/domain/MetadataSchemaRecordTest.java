@@ -11,7 +11,6 @@ import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -78,10 +77,9 @@ public class MetadataSchemaRecordTest {
   @Test
   public void testSetAndGetSchemaIdWithCapitalLetters() {
     System.out.println("getSchemaId");
-    String schemaIdWithCapitalLetter = "schemaWithCaptialLetter";
+    String expResult = "schemaWithCaptialLetter";
     MetadataSchemaRecord instance = new MetadataSchemaRecord();
-    String expResult = schemaIdWithCapitalLetter;//.toLowerCase(Locale.getDefault());
-    instance.setSchemaId(schemaIdWithCapitalLetter);
+    instance.setSchemaId(expResult);
     String result = instance.getSchemaId();
     assertEquals(expResult, result);
   }
@@ -290,15 +288,14 @@ public class MetadataSchemaRecordTest {
   /**
    * Test of hashCode method, of class MetadataSchemaRecord.
    */
- // @Test
+  @Test
   public void testHashCode() {
     System.out.println("hashCode");
     MetadataSchemaRecord instance = new MetadataSchemaRecord();
-    int expResult = 0;
+    int expResult = instance.hashCode();
+    // Hash code should be consistent across multiple calls, so we call it again and check if the result is the same.
     int result = instance.hashCode();
     assertEquals(expResult, result);
-    // TODO review the generated test code and remove the default call to fail.
-    fail("The test case is a prototype.");
   }
 
   /**

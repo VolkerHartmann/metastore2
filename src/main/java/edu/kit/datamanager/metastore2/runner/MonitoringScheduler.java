@@ -19,6 +19,7 @@ import edu.kit.datamanager.metastore2.configuration.MetaStoreMonitoringConfigura
 import edu.kit.datamanager.metastore2.service.MetaStoreMonitoringService;
 import edu.kit.datamanager.repo.configuration.MonitoringConfiguration;
 import jakarta.annotation.PostConstruct;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.Trigger;
@@ -74,7 +75,7 @@ public class MonitoringScheduler {
   private Trigger cronTrigger(String cronExpression) {
     return new Trigger() {
       @Override
-      public Instant nextExecution(TriggerContext triggerContext) {
+      public Instant nextExecution(@NonNull TriggerContext triggerContext) {
         return new CronTrigger(cronExpression).nextExecution(triggerContext);
       }
     };

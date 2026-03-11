@@ -5,7 +5,6 @@
  */
 package edu.kit.datamanager.metastore2.dao;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -60,11 +59,6 @@ public class ISchemaUrl2PathDaoTest {
   @Autowired
   private ISchemaUrl2PathDao dataRecordDao;
   private ISchemaUrl2PathDao instance;
-
-  private static final Instant MIN = LocalDateTime.parse("2021-03-01T00:00", DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm"))
-          .atZone(ZoneId.of("UTC"))
-          .toInstant();
-  private static final Instant MAX = Instant.now().plus(1, ChronoUnit.DAYS);
 
   public ISchemaUrl2PathDaoTest() {
   }

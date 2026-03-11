@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.IResource2FileVersionDao;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.Resource2FileVersion;
 import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
@@ -20,6 +19,7 @@ import edu.kit.datamanager.repo.dao.IDataResourceDao;
 import edu.kit.datamanager.repo.domain.*;
 import edu.kit.datamanager.repo.domain.Date;
 import edu.kit.datamanager.repo.domain.acl.AclEntry;
+import org.jspecify.annotations.NonNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -356,9 +356,9 @@ public class JsonSchemaRegistryControllerTestV2 {
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.json", "application/json", JSON_SCHEMA.getBytes());
-    RequestPostProcessor rpp = new RequestPostProcessor() {
+    new RequestPostProcessor() {
       @Override
-      public MockHttpServletRequest postProcessRequest(MockHttpServletRequest mhsr) {
+      public MockHttpServletRequest postProcessRequest(@NonNull MockHttpServletRequest mhsr) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
       }
     };
@@ -504,9 +504,9 @@ public class JsonSchemaRegistryControllerTestV2 {
             file(schemaFile)).andDo(print()).andExpect(status().isCreated()).andReturn();
 
     DataResource result = mapper.readValue(res.getResponse().getContentAsString(), DataResource.class);
-    Assert.assertEquals(result.getVersion(), "1.0.0");
+    Assert.assertEquals("1.0.0", result.getVersion() );
 
-    res = this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/").
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/schemas/").
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isConflict()).andReturn();
   }
@@ -994,7 +994,6 @@ public class JsonSchemaRegistryControllerTestV2 {
   public void testUpdateRecordWithWrongETag() throws Exception {
     ingestSchemaRecord();
     MvcResult result = this.mockMvc.perform(get("/api/v2/schemas/json").header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).andDo(print()).andExpect(status().isOk()).andReturn();
-    String etag = result.getResponse().getHeader("ETag") + "unknown";
     String body = result.getResponse().getContentAsString();
     ObjectMapper mapper = new ObjectMapper();
     DataResource record = mapper.readValue(body, DataResource.class);

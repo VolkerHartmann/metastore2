@@ -119,8 +119,6 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
    */
   @Autowired
   private Optional<IMessagingService> messagingService;
-
-  private final String guestToken;
   @Autowired
   private ISchemaUrl2PathDao iSchemaUrl2PathDao;
 
@@ -129,8 +127,6 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
    *
    * @param applicationProperties Configuration for controller.
    * @param metadataConfig Configuration for metadata documents repository.
-   * @param metadataRecordDao DAO for metadata records.
-   * @param schemaRecordDao DAO for schema records.
    */
   public MetadataControllerImplV2(ApplicationProperties applicationProperties,
           MetastoreConfiguration metadataConfig) {
@@ -140,12 +136,6 @@ public class MetadataControllerImplV2 implements IMetadataControllerV2 {
     LOG.info("------{}", this.metadataConfig);
     LOG.info("------------------------------------------------------");
     LOG.trace("Create guest token");
-    guestToken = edu.kit.datamanager.util.JwtBuilder.createUserToken("guest", RepoUserRole.GUEST).
-            addSimpleClaim("email", "metastore@localhost").
-            addSimpleClaim("loginFailures", 0).
-            addSimpleClaim("active", true).
-            addSimpleClaim("locked", false).getCompactToken(applicationProperties.getJwtSecret());
-    DataResourceRecordUtil.setToken(guestToken);
   }
 
   @Override

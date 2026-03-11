@@ -5,7 +5,6 @@
  */
 package edu.kit.datamanager.metastore2.validation.impl;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.exception.JsonValidationException;
 import edu.kit.datamanager.metastore2.util.JsonUtils;
 import edu.kit.datamanager.metastore2.validation.IValidator;

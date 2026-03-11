@@ -94,7 +94,7 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   @Parameter(names = {"--indices", "-i"}, description = "Parameter for 'reindex': Only for given indices (comma separated) or all indices if not present.")
   Set<String> indices;
   /**
-   * Restrict reindexing to dataresources new than given date.
+   * Restrict reindexing to dataresources newer than given date.
    */
   @Parameter(names = {"--updateDate", "-u"}, description = "Parameter for 'reindex': Starting reindexing only for documents updated at earliest on update date.")
   Date updateDate;
@@ -245,7 +245,7 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   }
 
   /**
-   * Determine all indices if an empty set is provided. Otherwise return
+   * Determine all indices if an empty set is provided. Otherwise, return
    * provided set without any change.
    *
    * @param indices Indices which should be reindexed.

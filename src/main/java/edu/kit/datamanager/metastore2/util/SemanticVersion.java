@@ -1,4 +1,7 @@
 package edu.kit.datamanager.metastore2.util;
+import jakarta.validation.constraints.NotNull;
+import org.jspecify.annotations.NonNull;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -7,13 +10,12 @@ import java.util.regex.Pattern;
 /**
  * Represents a semantic version in the format MAJOR.MINOR.PATCH
  * (without pre-release or build metadata).
- *
  * Valid examples: 0.0.0, 1.2.3, 10.11.12
  * Invalid examples: 01.2.3, 1.2, 1.2.3-alpha, 1.2.3+build, 1.2.3-SNAPSHOT
  */
 public final class SemanticVersion implements Comparable<SemanticVersion> {
 
-  public enum INCREMENT_LEVEL { MAJOR, MINOR, PATCH };
+  public enum INCREMENT_LEVEL { MAJOR, MINOR, PATCH }
 
   /**
    * Regex pattern for semantic versioning (MAJOR.MINOR.PATCH).
@@ -99,7 +101,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
   public int getPatch() { return patch; }
 
   @Override
-  public int compareTo(SemanticVersion other) {
+  public int compareTo(@NotNull SemanticVersion other) {
     Objects.requireNonNull(other, "other");
     int c = Integer.compare(this.major, other.major);
     if (c != 0) return c;

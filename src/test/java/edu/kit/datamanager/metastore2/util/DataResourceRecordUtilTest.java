@@ -20,7 +20,6 @@ import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
@@ -333,12 +332,12 @@ public class DataResourceRecordUtilTest {
   @Test
   public void testIncrementVersionWithoutVersion() {
     DataResource dr = DataResource.factoryNewDataResource();
-    DataResourceRecordUtil.incrementVersion(dr);
-    assertEquals("2.0.0", dr.getVersion());
-    DataResourceRecordUtil.incrementVersion(dr, SemanticVersion.INCREMENT_LEVEL.MINOR);
-    assertEquals("2.1.0", dr.getVersion());
-    DataResourceRecordUtil.incrementVersion(dr, SemanticVersion.INCREMENT_LEVEL.PATCH);
-    assertEquals("2.1.1", dr.getVersion());
+    DataResource dr2 = DataResourceRecordUtil.incrementVersion(dr);
+    assertEquals("2.0.0", dr2.getVersion());
+    DataResource dr3 = DataResourceRecordUtil.incrementVersion(dr, SemanticVersion.INCREMENT_LEVEL.MINOR);
+    assertEquals("2.1.0", dr3.getVersion());
+    DataResource dr4 = DataResourceRecordUtil.incrementVersion(dr, SemanticVersion.INCREMENT_LEVEL.PATCH);
+    assertEquals("2.1.1", dr4.getVersion());
   }
   @Test(expected = NullPointerException.class)
   public void testIncrementVersionWithLevelNull() {
@@ -346,5 +345,11 @@ public class DataResourceRecordUtilTest {
     dr.setVersion("1.2.3");
     DataResourceRecordUtil.incrementVersion(dr, null);
     assertEquals("2.0.0", dr.getVersion());
+  }
+
+  @Test
+  public void testCheckAccessRightsWithNull() {
+    boolean access = DataResourceRecordUtil.checkAccessRights(null, true);
+    assertTrue(access);
   }
 }

@@ -247,16 +247,16 @@ public class CreateSchemaUtil {
    * Update schema in MetaStore as user 'test_user'. If schema already exists
    * and noUpdate is false update schema.
    *
-   * @param mockMvc
-   * @param schemaId
-   * @param schemaContent
-   * @param jwtSecret
-   * @param noUpdate      Only ingest or do update also
-   * @return
-   * @throws Exception
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema record to ingest or update.
+   * @param schemaContent Schema content to ingest or update.
+   * @param jwtSecret JWT secret for creating user token. If null default value "
+   * @param update      Only ingest or do update also
+   * @param expectedStatus Expected status of ingest or update operation
+   * @return Uri of created or updated schema record
+   * @throws Exception if ingest or update operation fails
    */
   public static String ingestOrUpdateXmlSchemaRecord(MockMvc mockMvc, String schemaId, String schemaContent, String jwtSecret, boolean update, ResultMatcher expectedStatus) throws Exception {
-    String locationUri = null;
     jwtSecret = (jwtSecret == null) ? "jwtSecret" : jwtSecret;
     userToken = edu.kit.datamanager.util.JwtBuilder.createUserToken(otherUserPrincipal, RepoUserRole.USER).
             addSimpleClaim("email", "any@example.org").
@@ -271,13 +271,14 @@ public class CreateSchemaUtil {
    * Update schema in MetaStore as user 'test_user'. If schema already exists
    * and noUpdate is false update schema.
    *
-   * @param mockMvc
-   * @param schemaId
-   * @param schemaContent
-   * @param jwtSecret
-   * @param noUpdate      Only ingest or do update also
-   * @return
-   * @throws Exception
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId IDentifier of the schema record to ingest or update.
+   * @param schemaContent Schema content to ingest or update.
+   * @param update Only ingest or do update also
+   * @param userToken User token for authentication.
+   * @param expectedStatus Expected status of ingest or update operation
+   * @return Uri of created or updated schema record
+   * @throws Exception if ingest or update operation fails
    */
   public static String ingestOrUpdateXmlSchemaRecord(MockMvc mockMvc, String schemaId, String schemaContent, boolean update, String userToken, ResultMatcher expectedStatus) throws Exception {
     String locationUri = null;

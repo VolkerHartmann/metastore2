@@ -5,10 +5,8 @@
  */
 package edu.kit.datamanager.metastore2.validation.impl;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +22,7 @@ import static org.junit.Assert.*;
 /**
  *
  */
+@SuppressWarnings("FieldCanBeLocal")
 public class JsonValidatorTest {
   private final String jsonSchemaFile = "/tmp/JsonValidatorSchema.json";
   
@@ -98,7 +97,7 @@ public class JsonValidatorTest {
   @Test
   public void testIsSchemaValid() {
     System.out.println("isSchemaValid");
-    InputStream schemaStream = null;
+    InputStream schemaStream;
     schemaStream = new ByteArrayInputStream(jsonSchemaWithversiondraft201909.getBytes());
     JsonValidator instance = new JsonValidator();
     boolean expResult = true;
@@ -112,7 +111,7 @@ public class JsonValidatorTest {
   @Test
   public void testIsSchemaValidWithEmptySchema() {
     System.out.println("testIsSchemaValidWithEmptySchema");
-    InputStream schemaStream = null;
+    InputStream schemaStream;
     schemaStream = new ByteArrayInputStream("{}".getBytes());
     JsonValidator instance = new JsonValidator();
     boolean expResult = false;
@@ -127,7 +126,7 @@ public class JsonValidatorTest {
   public void testValidateMetadataDocumentWithNull() {
     System.out.println("testValidateMetadataDocumentWithNull");
     File schemaFile = null;
-    InputStream metadataDocumentStream = null;
+    InputStream metadataDocumentStream;
     metadataDocumentStream = new ByteArrayInputStream("{}".getBytes());
     JsonValidator instance = new JsonValidator();
     boolean expResult = false;
@@ -143,7 +142,7 @@ public class JsonValidatorTest {
   public void testValidateMetadataDocumentWithNotExistingFile() {
     System.out.println("testValidateMetadataDocumentWithNotExistingFile");
     File schemaFile = new File("/not/existing/file.txt");
-    InputStream metadataDocumentStream = null;
+    InputStream metadataDocumentStream;
     metadataDocumentStream = new ByteArrayInputStream("{}".getBytes());
     JsonValidator instance = new JsonValidator();
     boolean expResult = false;
@@ -158,7 +157,7 @@ public class JsonValidatorTest {
   public void testValidateMetadataDocumentWithDirectoryinsteadOfFile() {
     System.out.println("testValidateMetadataDocumentWithDirectoryinsteadOfFile");
     File schemaFile = new File("/tmp");
-    InputStream metadataDocumentStream = null;
+    InputStream metadataDocumentStream;
     metadataDocumentStream = new ByteArrayInputStream("{}".getBytes());
     JsonValidator instance = new JsonValidator();
     boolean expResult = false;
@@ -171,7 +170,6 @@ public class JsonValidatorTest {
     System.out.println("testValidateMetadataDocumentWithNullArguments");
     File schemaFile = null;
     InputStream schemaStream = null;
-    schemaStream = null;
     JsonValidator instance = new JsonValidator();
     boolean expResult = false;
     boolean result = instance.validateMetadataDocument(schemaFile, schemaStream);
@@ -179,7 +177,7 @@ public class JsonValidatorTest {
     assertNotNull(instance.getErrorMessage());
   }
   @Test
-  public void testValidateMetadataDocumentWithNullDocument() throws IOException {
+  public void testValidateMetadataDocumentWithNullDocument() {
     System.out.println("testValidateMetadataDocumentWithEmptyDocument");
     File schemaFile = new File(jsonSchemaFile);
     InputStream metadataDocumentStream = null;
@@ -189,10 +187,10 @@ public class JsonValidatorTest {
     assertEquals(expResult, result);
   }
   @Test
-  public void testValidateMetadataDocumentWithEmptyDocument() throws IOException {
+  public void testValidateMetadataDocumentWithEmptyDocument() {
     System.out.println("testValidateMetadataDocumentWithEmptyDocument");
     File schemaFile = new File(jsonSchemaFile);
-    InputStream metadataDocumentStream = null;
+    InputStream metadataDocumentStream;
     metadataDocumentStream = new ByteArrayInputStream("{}".getBytes());
     JsonValidator instance = new JsonValidator();
     boolean expResult = true;
@@ -201,10 +199,10 @@ public class JsonValidatorTest {
   }
 
   @Test
-  public void testValidateMetadataDocumentWithValidDocument() throws IOException {
+  public void testValidateMetadataDocumentWithValidDocument() {
     System.out.println("testValidateMetadataDocumentWithEmptyDocument");
     File schemaFile = new File(jsonSchemaFile);
-     InputStream metadataDocumentStream = null;
+     InputStream metadataDocumentStream;
     metadataDocumentStream = new ByteArrayInputStream(validDocument.getBytes());
     JsonValidator instance = new JsonValidator();
     boolean expResult = true;

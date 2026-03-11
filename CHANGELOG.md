@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update plugin org.owasp.dependencycheck to v12.1.9
 - Update plugin org.springframework.boot to v3.5.8
 
-### Github Actions
+### GitHub Actions
 - Update actions/checkout action to v6
 - Update actions/setup-java action to v5
 - Update github/codeql-action action to v4
@@ -202,7 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.4] - 2024-08-20
 
 ### Changed
-- Bump gradle from 8.7 to 8.8. 
+- Bump Gradle from 8.7 to 8.8. 
 - Forbid upper cases in schemaIDs.
  
 ### Libs
@@ -222,7 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump org.springframework.cloud:spring-cloud-gateway-mvc from 4.1.3 to 5.3.1.
 - Bump springDocVersion from 2.5.0 to 2.6.0
 
-### Github Actions
+### GitHub Actions
 - Bump docker/build-push-action from 5 to 6 
 
 ## [1.4.3] - 2024-04-19
@@ -247,7 +247,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add licenseUri to metadata (schema) records
 
 ### Changed
-- Bump gradle from 8.2.1 to 8.7
+- Bump Gradle from 8.2.1 to 8.7
  
 ### Fixed
 - Fix health endpoint to evaluate elasticsearch if needed
@@ -270,7 +270,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump org.springframework.data:spring-data-elasticsearch from 5.2.2 to 5.2.4
 - Bump springDocVersion from 2.3.0 to 2.5.0
 
-### Github Actions
+### GitHub Actions
 - Bump codecov/codecov-action from 3 to 4
 
 ## [1.4.1] - 2024-01-13
@@ -278,7 +278,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Switch to GitHub Packages.
-- Logo for SCC (Scientific Computing Centre)
+- Logo for SCC (Scientific Computing Center)
 
 ### Libs
 - Bump com.google.errorprone:error_prone_core from 2.24.0 to 2.24.1
@@ -307,7 +307,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refine return messages (#309, #402, #403)
 - Check usage of schema before deleting (#
 - Metadata schema identifiers support lowercase only
-#### Github Actions
+#### GitHub Actions
 - Bump actions/checkout from 3 to 4
 - Bump actions/setup-java from 3 to 4
 - Bump crazy-max/ghaction-docker-meta from 4 to 5
@@ -316,7 +316,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump docker/setup-buildx-action from 2 to 3
 - Bump docker/setup-qemu-action from 2 to 3
 - Bump github/codeql-acion from 2 o 3
-- Bump gradle from 7.6.1 to 8.2.1
+- Bump Gradle from 7.6.1 to 8.2.1
 - Bump org.mockito:mockito-core from 5.4.0 to 5.7.0
 #### Plugins
 - Bump io.freefair.lombok from 8.1.0 to 8.4
@@ -392,7 +392,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump com.networknt:json-schema-validator from 1.0.78 to 1.0.79
 - Bump edu.kit.datamanager:repo-core from 1.1.1 to 1.1.2
 - Bump edu.kit.datamanager:service-base from 1.1.0 to 1.1.1 
-- Bump gradle from 7.6 to 7.6.1.
+- Bump Gradle from 7.6 to 7.6.1.
 - Bump io.freefair.maven-publish-java from 6.6.3 to 8.0.1 
 - Bump io.freefair.lombok from 6.6.3 to 8.0.1 
 - Bump org.mockito:mockito-core from 5.1.1 to 5.3.0 
@@ -452,7 +452,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bump commons-text from 1.9 to 1.10.0
-- Bump gradle from 7.5.1 to 7.6
+- Bump Gradle from 7.5.1 to 7.6
 - Bump httpclient from 4.5.13 to 4.5.14 
 - Bump io.freefair.lombok from 6.5.1 to 6.6.1
 - Bump io.freefair.maven-publish-java from 6.5.1 to 6.6.1 

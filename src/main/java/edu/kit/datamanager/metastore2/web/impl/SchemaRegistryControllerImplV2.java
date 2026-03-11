@@ -218,7 +218,6 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
 
     //if security is enabled, include principal in query
     LOG.debug("Performing query for records.");
-    DataResource recordByIdAndVersion;
     List<DataResource> recordList = new ArrayList<>();
     long totalNoOfElements = 5;
     try {
