@@ -1126,8 +1126,8 @@ public class DataResourceRecordUtil {
       }
     } else {
       LOG.trace("Provided format(s) for schema document: '{}'", dataResource.getFormats());
-      if ((mimeType.toLowerCase(Locale.ENGLISH).contains("json") && !dataResource.getResourceType().getValue().toLowerCase().contains("json")) ||
-              (mimeType.toLowerCase(Locale.ENGLISH).contains("xml") && !dataResource.getResourceType().getValue().toLowerCase().contains("xml"))) {
+      if ((mimeType.toLowerCase(Locale.ENGLISH).contains("json") && !dataResource.getResourceType().getValue().toLowerCase(Locale.ENGLISH).contains("json")) ||
+              (mimeType.toLowerCase(Locale.ENGLISH).contains("xml") && !dataResource.getResourceType().getValue().toLowerCase(Locale.ENGLISH).contains("xml"))) {
         // resource type doesn't match provided format(s) -> throw BadArgumentException
         String message = "Provided resource type '" + dataResource.getResourceType().getValue() + "' doesn't match provided format(s) '" + dataResource.getFormats() + "'. Returning HTTP BAD_REQUEST.";
         LOG.error(message);

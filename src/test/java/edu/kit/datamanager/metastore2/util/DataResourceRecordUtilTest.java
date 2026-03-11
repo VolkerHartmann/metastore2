@@ -180,7 +180,7 @@ public class DataResourceRecordUtilTest {
   }
 
   @Test
-  public void testAddProvenanceWithVersion1() throws URISyntaxException {
+  public void testAddProvenanceWithVersion1() {
     System.out.println("testAddProvenanceWithVersion1");
     DataResource factoryNewDataResource = DataResource.factoryNewDataResource();
     Set<RelatedIdentifier> relatedIdentifiers = factoryNewDataResource.getRelatedIdentifiers();
@@ -190,7 +190,7 @@ public class DataResourceRecordUtilTest {
   }
 
   @Test
-  public void testMergeIdenticalAcls() throws URISyntaxException {
+  public void testMergeIdenticalAcls() {
     System.out.println("testMergeIdenticalAcls");
     Set<AclEntry> acls = new HashSet<>();
     Set<AclEntry> mergeAcl = DataResourceRecordUtil.mergeAcl(acls, acls);
@@ -198,7 +198,7 @@ public class DataResourceRecordUtilTest {
   }
 
   @Test
-  public void testMergeNullAcls() throws URISyntaxException {
+  public void testMergeNullAcls() {
     System.out.println("testMergeNullAcls");
     Set<AclEntry> mergeAcl = DataResourceRecordUtil.mergeAcl(null, null);
     assertNotNull(mergeAcl);
@@ -206,7 +206,7 @@ public class DataResourceRecordUtilTest {
   }
 
   @Test
-  public void testFixSchemaUrl() throws URISyntaxException, IOException {
+  public void testFixSchemaUrl() {
     System.out.println("testFixSchemaUrl");
     DataResourceRecordUtil.fixSchemaUrl((RelatedIdentifier) null);
     RelatedIdentifier ri1 = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "test" + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + "1.0.0", null, null);
@@ -220,14 +220,14 @@ public class DataResourceRecordUtilTest {
   }
 
   @Test(expected = CustomInternalServerError.class)
-  public void testFixSchemaUrlWrongFormat() throws URISyntaxException, IOException {
+  public void testFixSchemaUrlWrongFormat() {
     System.out.println("testFixSchemaUrl");
     DataResourceRecordUtil.fixSchemaUrl((RelatedIdentifier) null);
     RelatedIdentifier ri1 = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "test" + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + "1" + DataResourceRecordUtil.SCHEMA_VERSION_SEPARATOR + "2", null, null);
     ri1.setIdentifierType(Identifier.IDENTIFIER_TYPE.INTERNAL);
     DataResourceRecordUtil.fixSchemaUrl(ri1);
     // following line shouldn't be reached
-    assertFalse(true);
+    fail();
   }
 
   @Test
@@ -235,7 +235,7 @@ public class DataResourceRecordUtilTest {
     System.out.println("testvalidateRelatedResources4MetadataDocuments");
     try {
       DataResourceRecordUtil.validateRelatedResources4MetadataDocuments(null);
-      assertTrue(false);
+      fail();
     } catch (BadArgumentException bae) {
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
@@ -243,7 +243,7 @@ public class DataResourceRecordUtilTest {
     try {
       DataResource hasNoRelatedIdentifier = DataResource.factoryNewDataResource();
       DataResourceRecordUtil.validateRelatedResources4MetadataDocuments(hasNoRelatedIdentifier);
-      assertTrue(false);
+      fail();
     } catch (BadArgumentException bae) {
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
@@ -253,7 +253,7 @@ public class DataResourceRecordUtilTest {
       hasNeitherSchemaNorDataResource.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(RelatedIdentifier.RELATION_TYPES.IS_CITED_BY, "citation", null, null));
       hasNeitherSchemaNorDataResource.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(RelatedIdentifier.RELATION_TYPES.IS_DOCUMENTED_BY, "documentation", null, null));
       DataResourceRecordUtil.validateRelatedResources4MetadataDocuments(hasNeitherSchemaNorDataResource);
-      assertTrue(false);
+      fail();
     } catch (BadArgumentException bae) {
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
@@ -263,7 +263,7 @@ public class DataResourceRecordUtilTest {
       hasTwoDataResourcesButNoSchema.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "first data", null, null));
       hasTwoDataResourcesButNoSchema.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "second data", null, null));
       DataResourceRecordUtil.validateRelatedResources4MetadataDocuments(hasTwoDataResourcesButNoSchema);
-      assertTrue(false);
+      fail();
     } catch (BadArgumentException bae) {
       assertFalse("Multiple '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "' should be allowed!", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
@@ -273,7 +273,7 @@ public class DataResourceRecordUtilTest {
       hasTwoSchemasAndNoDataResource.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, "first schema", null, null));
       hasTwoSchemasAndNoDataResource.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, "second schema", null, null));
       DataResourceRecordUtil.validateRelatedResources4MetadataDocuments(hasTwoSchemasAndNoDataResource);
-      assertTrue(false);
+      fail();
     } catch (BadArgumentException bae) {
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
@@ -282,7 +282,7 @@ public class DataResourceRecordUtilTest {
       DataResource hasOneSchemaAndNoDataResource = DataResource.factoryNewDataResource();
       hasOneSchemaAndNoDataResource.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_SCHEMA_TYPE, "first schema", null, null));
       DataResourceRecordUtil.validateRelatedResources4MetadataDocuments(hasOneSchemaAndNoDataResource);
-      assertTrue(false);
+      fail();
     } catch (BadArgumentException bae) {
       assertFalse("Error should not contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
@@ -297,7 +297,7 @@ public class DataResourceRecordUtilTest {
     } catch (BadArgumentException bae) {
       assertFalse("Error should not contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
       assertFalse("Multiple '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "' should be allowed!", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
-      assertTrue(false);
+      fail();
     }
     try {
       DataResource hasTwoSchemasAndTwoDataResources = DataResource.factoryNewDataResource();
@@ -306,7 +306,7 @@ public class DataResourceRecordUtilTest {
       hasTwoSchemasAndTwoDataResources.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "first data", null, null));
       hasTwoSchemasAndTwoDataResources.getRelatedIdentifiers().add(RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "second data", null, null));
       DataResourceRecordUtil.validateRelatedResources4MetadataDocuments(hasTwoSchemasAndTwoDataResources);
-      assertTrue(false);
+      fail();
     } catch (BadArgumentException bae) {
       assertTrue("Error should contain '" + DataResourceRecordUtil.RELATED_SCHEMA_TYPE + "'", bae.getMessage().contains(DataResourceRecordUtil.RELATED_SCHEMA_TYPE.name()));
       assertFalse("Multiple '" + DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE + "' should be allowed!", bae.getMessage().contains(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE.name()));
@@ -316,6 +316,7 @@ public class DataResourceRecordUtilTest {
   @Test(expected = CustomInternalServerError.class)
   public void testCheckDocumentForChangesWithNoContentInformation() {
     boolean result = DataResourceRecordUtil.checkDocumentForChanges(null, null);
+    fail();
   }
 
   @Test(expected = BadArgumentException.class)
@@ -324,6 +325,7 @@ public class DataResourceRecordUtilTest {
     ci.setContentUri("file:///tmp/somethingTotallyStrange");
     MultipartFile mpf = new MockMultipartFile("hallo.txt", "noContent".getBytes());
     boolean result = DataResourceRecordUtil.checkDocumentForChanges(ci, mpf);
+    fail("Should have thrown BadArgumentException because content URI is not valid Result: " + result);
   }
   @Test(expected = NullPointerException.class)
   public void testIncrementVersionAllNull() {

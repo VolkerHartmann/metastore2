@@ -232,12 +232,12 @@ public class CreateSchemaUtil {
    * Ingest schema in MetaStore as user 'test_user' If schema already exists
    * update schema.
    *
-   * @param mockMvc
-   * @param schemaId
-   * @param schemaContent
-   * @param jwtSecret
-   * @return
-   * @throws Exception
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema record to ingest.
+   * @param schemaContent Schema content to ingest.
+   * @param jwtSecret JWT secret for creating user token. If null default value
+   * @return Uri of created schema record
+   * @throws Exception If ingest operation fails
    */
   public static String ingestXmlSchemaRecord(MockMvc mockMvc, String schemaId, String schemaContent, String jwtSecret) throws Exception {
     return ingestOrUpdateXmlSchemaRecord(mockMvc, schemaId, schemaContent, jwtSecret, false, status().isCreated());
@@ -335,11 +335,36 @@ public class CreateSchemaUtil {
     }
     return locationUri;
   }
-
+  /**
+   * Ingest metadata document in MetaStore as user 'test_user'
+   *
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema linked to the metadata document.
+   * @param version Version of the schema linked to the metadata document. Can be null if no versioning is used.
+   * @param metadataId Identifier of the metadata document to ingest or update.
+   * @param metadataDocument Metadata document content to ingest or update.
+   * @param jwtSecret JWT secret for creating user token. If null default value "
+   * @return MvcResult of ingest or update operation
+   * @throws Exception if ingest or update operation fails
+   */
   public static MvcResult ingestXmlMetadataDocument(MockMvc mockMvc, String schemaId, Long version, String metadataId, String metadataDocument, String jwtSecret) throws Exception {
     return ingestOrUpdateXmlMetadataDocument(mockMvc, schemaId, version, metadataId, metadataDocument, jwtSecret, false, status().isCreated());
   }
-
+  /**
+   * Update metadata document in MetaStore as user 'test_user'. If metadata
+   * document already exists and update is true update metadata document.
+   *
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema linked to the metadata document.
+   * @param version Version of the schema linked to the metadata document. Can be null if no versioning is used.
+   * @param metadataId Identifier of the metadata document to ingest or update.
+   * @param metadataDocument Metadata document content to ingest or update.
+   * @param jwtSecret JWT secret for creating user token. If null default value "
+   * @param update Only ingest or do update also
+   * @param expectedStatus Expected status of ingest or update operation
+   * @return MvcResult of ingest or update operation
+   * @throws Exception if ingest or update operation fails
+   */
   public static MvcResult ingestOrUpdateXmlMetadataDocument(MockMvc mockMvc, String schemaId, Long version, String metadataId, String metadataDocument, String jwtSecret, boolean update, ResultMatcher expectedStatus) throws Exception {
     jwtSecret = (jwtSecret == null) ? "jwtSecret" : jwtSecret;
     userToken = edu.kit.datamanager.util.JwtBuilder.createUserToken(otherUserPrincipal, RepoUserRole.USER).
@@ -350,7 +375,21 @@ public class CreateSchemaUtil {
             addSimpleClaim("locked", false).getCompactToken(jwtSecret);
     return ingestOrUpdateXmlMetadataDocument(mockMvc, schemaId, version, metadataId, metadataDocument, update, userToken, expectedStatus);
   }
-
+  /**
+   * Update metadata document in MetaStore. If metadata
+   * document already exists and update is true update metadata document.
+   *
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema linked to the metadata document.
+   * @param version Version of the schema linked to the metadata document. Can be null if no versioning is used.
+   * @param metadataId Identifier of the metadata document to ingest or update.
+   * @param metadataDocument Metadata document content to ingest or update.
+   * @param update Only ingest or do update also
+   * @param userToken User token for authentication.
+   * @param expectedStatus Expected status of ingest or update operation
+   * @return MvcResult of ingest or update operation
+   * @throws Exception if ingest or update operation fails
+   */
   public static MvcResult ingestOrUpdateXmlMetadataDocument(MockMvc mockMvc, String schemaId, Long version, String metadataId, String metadataDocument, boolean update, String userToken, ResultMatcher expectedStatus) throws Exception {
     // Test if metadataId is already registered.
     MvcResult result = null;
@@ -419,21 +458,29 @@ public class CreateSchemaUtil {
     }
     return result;
   }
-
+  /**
+   * Ingest KIT schema in MetaStore as user 'test_user'.
+   *
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema record to ingest.
+   * @param jwtSecret JWT secret for creating user token. If null default value "
+   * @return Uri of created schema record
+   * @throws Exception If ingest operation fails
+   */
   public static String ingestKitSchemaRecordV2(MockMvc mockMvc, String schemaId, String jwtSecret) throws Exception {
     return CreateSchemaUtil.ingestXmlSchemaRecordV2(mockMvc, schemaId, KIT_SCHEMA, jwtSecret);
   }
 
   /**
-   * Ingest schema in MetaStore as user 'test_user' If schema already exists
+   * Ingest XML schema in MetaStore as user 'test_user' If schema already exists
    * update schema.
    *
-   * @param mockMvc
-   * @param schemaId
-   * @param schemaContent
-   * @param jwtSecret
-   * @return
-   * @throws Exception
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema record to ingest.
+   * @param schemaContent Schema content to ingest.
+   * @param jwtSecret JWT secret for creating user token. If null default value "
+   * @return Uri of created schema record
+   * @throws Exception If ingest operation fails
    */
   public static String ingestXmlSchemaRecordV2(MockMvc mockMvc, String schemaId, String schemaContent, String jwtSecret) throws Exception {
     return ingestOrUpdateXmlSchemaRecordV2(mockMvc, schemaId, schemaContent, jwtSecret, false, status().isCreated());
@@ -443,29 +490,31 @@ public class CreateSchemaUtil {
    * Update schema in MetaStore as user 'test_user'. If schema already exists
    * and noUpdate is false update schema.
    *
-   * @param mockMvc
-   * @param schemaId
-   * @param schemaContent
-   * @param jwtSecret
-   * @param noUpdate      Only ingest or do update also
-   * @return
-   * @throws Exception
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema record to ingest or update.
+   * @param schemaContent Schema content to ingest or update.
+   * @param jwtSecret JWT secret for creating user token. If null default value "
+   * @param update Only ingest or do update also
+   * @param expectedStatus Expected status of ingest or update operation
+   * @return Uri of created or updated schema record
+   * @throws Exception if ingest or update operation fails
    */
   public static String ingestOrUpdateXmlSchemaRecordV2(MockMvc mockMvc, String schemaId, String schemaContent, String jwtSecret, boolean update, ResultMatcher expectedStatus) throws Exception {
     return ingestOrUpdateSchemaRecordV2(mockMvc, MediaType.APPLICATION_XML, schemaId, schemaContent, jwtSecret, update, expectedStatus);
   }
 
   /**
-   * Update schema in MetaStore as user 'test_user'. If schema already exists
+   * Update JSON schema in MetaStore as user 'test_user'. If schema already exists
    * and noUpdate is false update schema.
    *
-   * @param mockMvc
-   * @param schemaId
-   * @param schemaContent
-   * @param jwtSecret
-   * @param update      Only ingest or do update also
-   * @return
-   * @throws Exception
+   * @param mockMvc MockMvc instance for performing requests.
+   * @param schemaId Identifier of the schema record to ingest or update.
+   * @param schemaContent Schema content to ingest or update.
+   * @param jwtSecret JWT secret for creating user token. If null default value "
+   * @param update Only ingest or do update also
+   * @param expectedStatus Expected status of ingest or update operation
+   * @return Uri of created or updated schema record
+   * @throws Exception if ingest or update operation fails
    */
   public static String ingestOrUpdateJsonSchemaRecordV2(MockMvc mockMvc, String schemaId, String schemaContent, String jwtSecret, boolean update, ResultMatcher expectedStatus) throws Exception {
     return ingestOrUpdateSchemaRecordV2(mockMvc, MediaType.APPLICATION_JSON, schemaId, schemaContent, jwtSecret, update, expectedStatus);

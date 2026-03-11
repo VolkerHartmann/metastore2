@@ -1,6 +1,5 @@
 package edu.kit.datamanager.metastore2.util;
 import jakarta.validation.constraints.NotNull;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Objects;
 import java.util.Optional;

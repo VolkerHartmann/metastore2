@@ -2654,7 +2654,8 @@ public class MetadataControllerTestV2 {
     String schemaId = "deleteschema";
     String metadataRecordId = "deletedocument";
     String jwtSecret = schemaConfig.getJwtSecret();
-    ingestKitSchemaRecord(this.mockMvc, schemaId, jwtSecret);
+    String schemaUrl = ingestKitSchemaRecord(this.mockMvc, schemaId, jwtSecret);
+    Assert.assertNotNull(schemaUrl);
     ingestXmlMetadataDocument(this.mockMvc, schemaId, null, metadataRecordId, DC_DOCUMENT, jwtSecret);
     // Deletion of schema shouldn't work
     // Get ETag.

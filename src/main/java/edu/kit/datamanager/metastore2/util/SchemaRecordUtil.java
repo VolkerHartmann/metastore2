@@ -100,7 +100,7 @@ public class SchemaRecordUtil {
 
   public static IValidator getValidatorForRecord(MetastoreConfiguration metastoreProperties, SchemaUrl2Path schemaRecord, byte[] schemaDocument) {
     String mimeType = schemaRecord != null ? schemaRecord.getMimetype() : null;
-    return getValidatorForRecord(metastoreProperties, schemaRecord.getMimetype(), schemaDocument);
+    return getValidatorForRecord(metastoreProperties, mimeType, schemaDocument);
   }
 
   public static IValidator getValidatorForRecord(MetastoreConfiguration metastoreProperties, String mimeType, byte[] schemaDocument) {

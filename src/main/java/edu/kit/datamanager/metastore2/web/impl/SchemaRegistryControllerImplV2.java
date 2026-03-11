@@ -332,7 +332,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
    * @param dataResourceRecord Record holding schemaId and version.
    * @return URI for accessing schema document.
    */
-  public static final URI getSchemaDocumentUri(DataResource dataResourceRecord) {
+  public static URI getSchemaDocumentUri(DataResource dataResourceRecord) {
     return WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(SchemaRegistryControllerImplV2.class).getSchemaDocumentById(dataResourceRecord.getId(), dataResourceRecord.getVersion(), null, null)).toUri();
   }
 }

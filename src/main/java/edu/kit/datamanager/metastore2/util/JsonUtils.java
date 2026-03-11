@@ -232,15 +232,15 @@ public class JsonUtils {
    * @param schemaContent schema document
    * @param version version of the schema
    * @return JsonSchema represented by string
-   * @throws Exception Not a valid schema.
+   * @throws JsonSchemaException Not a valid schema.
    */
-  protected static JsonSchema getJsonSchemaFromString(String schemaContent, VersionFlag version) throws Exception {
+  protected static JsonSchema getJsonSchemaFromString(String schemaContent, VersionFlag version) {
     JsonSchemaFactory factory = JsonSchemaFactory.getInstance(version);
     JsonSchema schema = factory.getSchema(schemaContent);
     checkSchema(schema);
     Optional<VersionFlag> optionalVersionFound = SpecVersionDetector.detectOptionalVersion(schema.getSchemaNode(), false);
     VersionFlag versionFound = version;
-    if (!optionalVersionFound.isEmpty()) {
+    if (optionalVersionFound.isPresent()) {
       versionFound = optionalVersionFound.get();
     }
     if (!Objects.equals(version, versionFound)) {
@@ -269,7 +269,7 @@ public class JsonUtils {
    * @throws JsonValidationException Error reading from stream.
    */
   private static String transformStreamToString(InputStream inputStream) throws JsonValidationException {
-    String string = null;
+    String string;
     try {
       string = IOUtils.toString(inputStream, ENCODING);
     } catch (Exception ex) {
@@ -296,7 +296,7 @@ public class JsonUtils {
    * @return Content of the meta schema as String.
    */
   protected static String getSchema(VersionFlag version) {
-    String content = null;
+    String content;
     URI resourceUrl = null;
 
     try {

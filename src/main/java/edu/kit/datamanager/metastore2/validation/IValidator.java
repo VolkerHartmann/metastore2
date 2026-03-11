@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.validation;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 
 import java.io.File;
 import java.io.InputStream;
