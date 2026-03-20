@@ -29,72 +29,75 @@ public class JsonUtilsTest {
   private final String jsonSchemaWithversiondraft06 = "{\"$schema\": \"https://json-schema.org/draft-06/schema\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
   private final String jsonSchemaWithversiondraft07 = "{\"$schema\": \"https://json-schema.org/draft-07/schema\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
   private final String jsonSchemaWithversiondraft201909 = "{\"$schema\": \"https://json-schema.org/draft/2019-09/schema\", \"properties\": { \"id\": {\"type\": \"number\"}}}";
-  private final String moreComplexExample = "{\n"
-          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"string\",\n"
-          + "        \"number\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"string\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"The string schema\",\n"
-          + "            \"description\": \"An explanation about the purpose of this instance.\",\n"
-          + "            \"default\": \"no default\"\n"
-          + "        },\n"
-          + "        \"number\": {\n"
-          + "            \"type\": \"integer\",\n"
-          + "            \"title\": \"The number schema\",\n"
-          + "            \"description\": \"An explanation about the purpose of this instance.\",\n"
-          + "            \"default\": 0\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
-  private final String dateExample = "{\n"
-          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\",\n"
-          + "        \"date\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        },\n"
-          + "        \"date\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",\n"
-          + "            \"format\": \"date\",\n"
-          + "            \"title\": \"Date\",\n"
-          + "            \"description\": \"Date of object\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
-  private final String invalidJsonSchemaDocumentWithversiondraft201909 = "{\n"
-          + "  \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "  \"$id\": \"http://localhost:8040/api/v1/schemas/Test\",\n"
-          + "  \"title\": \"Test\",\n"
-          + "  \"type\": \"object\",\n"
-          + "  \"properties\": {\n"
-          + "    \"asd\": {\n"
-          + "      \"type\": \"lllll\",\n"
-          + "      \"pattern\": 100,\n"
-          + "      \"maxLength\": \"asda\"\n"
-          + "    }\n"
-          + "  },\n"
-          + "  \"allOf\": \"nope\"\n"
-          + "}";
+  private final String moreComplexExample = """
+          {
+              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+              \"$id\": \"http://www.example.org/schema/json\",
+              \"type\": \"object\",
+              \"title\": \"Json schema for tests\",
+              \"default\": {},
+              \"required\": [
+                  \"string\",
+                  \"number\"
+              ],
+              \"properties\": {
+                  \"string\": {
+                      \"type\": \"string\",
+                      \"title\": \"The string schema\",
+                      \"description\": \"An explanation about the purpose of this instance.\",
+                      \"default\": \"no default\"
+                  },
+                  \"number\": {
+                      \"type\": \"integer\",
+                      \"title\": \"The number schema\",
+                      \"description\": \"An explanation about the purpose of this instance.\",
+                      \"default\": 0
+                  }
+              },
+              \"additionalProperties\": false
+          }""";
+  private final String dateExample = """
+              {
+              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+              \"$id\": \"http://www.example.org/schema/json\",
+              \"type\": \"object\",
+              \"title\": \"Json schema for tests\",
+              \"default\": {},
+              \"required\": [
+                  \"title\",
+                  \"date\"
+              ],
+              \"properties\": {
+                  \"title\": {
+                      \"type\": \"string\",
+                      \"title\": \"Title\",
+                      \"description\": \"Title of object.\"
+                  },
+                  \"date\": {
+                      \"type\": \"string\",
+                      \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",
+                      \"format\": \"date\",
+                      \"title\": \"Date\",
+                      \"description\": \"Date of object\"
+                  }
+              },
+              \"additionalProperties\": false
+          }""";
+  private final String invalidJsonSchemaDocumentWithversiondraft201909 = """
+            {
+            \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+            \"$id\": \"http://localhost:8040/api/v1/schemas/Test\",
+            \"title\": \"Test\",
+            \"type\": \"object\",
+            \"properties\": {
+              \"asd\": {
+                \"type\": \"lllll\",
+                \"pattern\": 100,
+                \"maxLength\": \"asda\"
+              }
+            },
+            \"allOf\": \"nope\"
+          }""";
   private final String validJsonDocument = "{\"string\":\"any string\",\"number\":3}";
   private final String invalidJsonDocument1 = "{\"string\":\"any string\",\"number\":3,}";
   private final String invalidJsonDocument2 = "{\"string\":2,\"number\":3}";

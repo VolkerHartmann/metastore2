@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
-import edu.kit.datamanager.metastore2.test.SchemaRegistryControllerTestV2;
+import edu.kit.datamanager.metastore2.test.SchemaRegistryControllerV2Test;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.domain.DataResource;
 import edu.kit.datamanager.repo.domain.ResourceType;
@@ -91,7 +91,7 @@ import org.springframework.web.context.WebApplicationContext;
 @TestPropertySource(properties = {"metastore.metadata.metadataFolder=file:///tmp/metastore2/v2/restdocu/xml/metadata"})
 @TestPropertySource(properties = {"metastore.metadata.schemaRegistries="})
 @TestPropertySource(properties = {"server.error.include-message=always"})
-public class SchemaRegistryControllerDocumentationTestV2 {
+public class SchemaRegistryControllerDocumentationV2Test {
 
   private MockMvc mockMvc;
   @Autowired
@@ -185,7 +185,7 @@ public class SchemaRegistryControllerDocumentationTestV2 {
   private static final ResourceIdentifier RELATED_RESOURCE = ResourceIdentifier.factoryUrlResourceIdentifier("https://repo/anyResourceId");
 
   @Before
-  public void setUp() throws JsonProcessingException {
+  public void setUp() {
     try {
       try (Stream<Path> walk = Files.walk(Paths.get(URI.create("file://" + TEMP_DIR_4_SCHEMAS)))) {
         walk.sorted(Comparator.reverseOrder())
@@ -236,10 +236,10 @@ public class SchemaRegistryControllerDocumentationTestV2 {
     //  1. Registering metadata schema
     //**************************************************************************
     schemaRecord.setId(EXAMPLE_SCHEMA_ID);
-    SchemaRegistryControllerTestV2.setTitle(schemaRecord, "Title for " + EXAMPLE_SCHEMA_ID);
-//    SchemaRegistryControllerTestV2.setComment(schemaRecord, "Comment for " + EXAMPLE_SCHEMA_ID);
-//    SchemaRegistryControllerTestV2.setDefinition(schemaRecord, "Definition for " + EXAMPLE_SCHEMA_ID);
-//    SchemaRegistryControllerTestV2.setLabel(schemaRecord, "Labels for " + EXAMPLE_SCHEMA_ID);
+    SchemaRegistryControllerV2Test.setTitle(schemaRecord, "Title for " + EXAMPLE_SCHEMA_ID);
+//    SchemaRegistryControllerV2Test.setComment(schemaRecord, "Comment for " + EXAMPLE_SCHEMA_ID);
+//    SchemaRegistryControllerV2Test.setDefinition(schemaRecord, "Definition for " + EXAMPLE_SCHEMA_ID);
+//    SchemaRegistryControllerV2Test.setLabel(schemaRecord, "Labels for " + EXAMPLE_SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
 
@@ -305,7 +305,7 @@ public class SchemaRegistryControllerDocumentationTestV2 {
     //  6. Registering another metadata schema
     //**************************************************************************
     schemaRecord.setId(ANOTHER_SCHEMA_ID);
-    SchemaRegistryControllerTestV2.setTitle(schemaRecord, "Title for " + ANOTHER_SCHEMA_ID);
+    SchemaRegistryControllerV2Test.setTitle(schemaRecord, "Title for " + ANOTHER_SCHEMA_ID);
 
     schemaFile = new MockMultipartFile("schema", "another-schema.xsd", "application/xml", ANOTHER_SCHEMA.getBytes());
     recordFile = new MockMultipartFile("record", "another-schema-record.json", "application/json", new ByteArrayInputStream(mapper.writeValueAsString(schemaRecord).getBytes()));
@@ -415,12 +415,12 @@ public class SchemaRegistryControllerDocumentationTestV2 {
     //**************************************************************************
     // Create a metadata record.
     DataResource metadataRecord = new DataResource();
-    SchemaRegistryControllerTestV2.setTitle(metadataRecord, "Title of first XML metadata document");
+    SchemaRegistryControllerV2Test.setTitle(metadataRecord, "Title of first XML metadata document");
     metadataRecord.setResourceType(ResourceType.createResourceType(DataResourceRecordUtil.XML_METADATA_TYPE, ResourceType.TYPE_GENERAL.MODEL));
 
 //    record.setId("my_id");
-    SchemaRegistryControllerTestV2.setRelatedResource(metadataRecord, RELATED_RESOURCE.getIdentifier());
-    SchemaRegistryControllerTestV2.setRelatedSchema(metadataRecord, exampleSchemaV1);
+    SchemaRegistryControllerV2Test.setRelatedResource(metadataRecord, RELATED_RESOURCE.getIdentifier());
+    SchemaRegistryControllerV2Test.setRelatedSchema(metadataRecord, exampleSchemaV1);
 
     recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(metadataRecord).getBytes());
     MockMultipartFile metadataFile = new MockMultipartFile("document", "metadata.xml", "application/xml", DOCUMENT_V1.getBytes());
@@ -467,7 +467,7 @@ public class SchemaRegistryControllerDocumentationTestV2 {
     mapper = new ObjectMapper();
     DataResource record = mapper.readValue(body, DataResource.class);
     record.getAcls().add(new AclEntry("guest", PERMISSION.READ));
-    SchemaRegistryControllerTestV2.setRelatedSchema(record, exampleSchemaV2);
+    SchemaRegistryControllerV2Test.setRelatedSchema(record, exampleSchemaV2);
     recordFile = new MockMultipartFile("record", "metadata-record-v2.json", "application/json", mapper.writeValueAsString(record).getBytes());
     metadataFile = new MockMultipartFile("document", "metadata-v2.xml", "application/xml", DOCUMENT_V2.getBytes());
 
@@ -492,7 +492,7 @@ public class SchemaRegistryControllerDocumentationTestV2 {
             andDo(document("v2-get-metadata-record-v2")).
             andExpect(status().isOk()).
             andReturn().getResponse();
-    SchemaRegistryControllerTestV2.setRelatedSchema(record, EXAMPLE_SCHEMA_ID);
+    SchemaRegistryControllerV2Test.setRelatedSchema(record, EXAMPLE_SCHEMA_ID);
     recordFile = new MockMultipartFile("record", "metadata-record-v3.json", "application/json", mapper.writeValueAsString(record).getBytes());
     metadataFile = new MockMultipartFile("document", "metadata-v3.xml", "application/xml", DOCUMENT_V3.getBytes());
 

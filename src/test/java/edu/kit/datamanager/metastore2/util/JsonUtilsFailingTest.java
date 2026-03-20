@@ -28,28 +28,6 @@ import static org.mockito.Mockito.when;
  */
 public class JsonUtilsFailingTest {
 
-  private final String jsonSchemaWithversiondraft201909 = "{"
-          + "  \"$schema\": \"https://json-schema.org/draft/2019-09/schema\", "
-          + "  \"properties\": {"
-          + "    \"id\": {"
-          + "      \"type\": \"number\""
-          + "    }"
-          + "  }"
-          + "}";
-  private final String invalidJsonSchemaDocumentWithversiondraft201909 = "{\n"
-          + "  \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "  \"$id\": \"http://localhost:8040/api/v1/schemas/Test\",\n"
-          + "  \"title\": \"Test\",\n"
-          + "  \"type\": \"object\",\n"
-          + "  \"properties\": {\n"
-          + "    \"asd\": {\n"
-          + "      \"type\": \"lllll\",\n"
-          + "      \"pattern\": 100,\n"
-          + "      \"maxLength\": \"asda\"\n"
-          + "    }\n"
-          + "  },\n"
-          + "  \"allOf\": \"nope\"\n"
-          + "}";
   private final static String ENCODING = "UTF-8";
 
   public JsonUtilsFailingTest() {
@@ -75,7 +53,21 @@ public class JsonUtilsFailingTest {
   public void testValidateInvalidJsonSchemaDocumentWithNotExistingVersion() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909ButWrongVersion");
 
-    String schemaDocument = invalidJsonSchemaDocumentWithversiondraft201909;
+    String schemaDocument = """
+          {
+            \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+            \"$id\": \"http://localhost:8040/api/v1/schemas/Test\",
+            \"title\": \"Test\",
+            \"type\": \"object\",
+            \"properties\": {
+              \"asd\": {
+                \"type\": \"lllll\",
+                \"pattern\": 100,
+                \"maxLength\": \"asda\"
+              }
+            },
+            \"allOf\": \"nope\"
+          }""";
 
     try ( MockedStatic<SimpleServiceClient> utilities = Mockito.mockStatic(SimpleServiceClient.class)) {
       utilities.when(() -> SimpleServiceClient.create(any(String.class)))
@@ -97,6 +89,15 @@ public class JsonUtilsFailingTest {
   @Test
   public void testValidateJsonSchemaDocumentWithSchemaDraft201909AsStreamButWrongVersion() throws IOException {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909AsStreamButWrongVersion");
+    String jsonSchemaWithversiondraft201909 = """
+          {
+            \"$schema\": \"https://json-schema.org/draft/2019-09/schema\", 
+            \"properties\": {
+              \"id\": {
+                \"type\": \"number\"
+              }
+            }
+          }""";
     InputStream schemaDocument = IOUtils.toInputStream(jsonSchemaWithversiondraft201909, ENCODING);
     try {
       // unfortunately there is no suitable way to test 'default' branch inside switch with enum

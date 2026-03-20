@@ -5,7 +5,6 @@
  */
 package org.openarchives.oai._2;
 
-import jakarta.xml.bind.annotation.XmlEnumValue;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

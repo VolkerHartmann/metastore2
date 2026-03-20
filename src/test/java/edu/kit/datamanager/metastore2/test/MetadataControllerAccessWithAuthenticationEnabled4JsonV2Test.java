@@ -31,9 +31,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.hamcrest.Matchers;
 import org.javers.core.Javers;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -82,25 +80,51 @@ import org.springframework.web.context.WebApplicationContext;
   TransactionalTestExecutionListener.class,
   WithSecurityContextTestExecutionListener.class})
 @ActiveProfiles("test")
-@TestPropertySource(properties = {"server.port=41423"})
-@TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_schema_v2_accesswithaai;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE"})
-@TestPropertySource(properties = {"metastore.schema.schemaFolder=file:///tmp/metastore2/v2/schema/aai/access/schema"})
-@TestPropertySource(properties = {"metastore.metadata.metadataFolder=file:///tmp/metastore2/v2/schema/aai/access/metadata"})
+@TestPropertySource(properties = {"server.port=41435"})
+@TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_md_accesswithaai4json_v2;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE"})
+@TestPropertySource(properties = {"metastore.schema.schemaFolder=file:///tmp/metastore2/v2/md/aai/access/json/schema"})
+@TestPropertySource(properties = {"metastore.metadata.metadataFolder=file:///tmp/metastore2/v2/md/aai/access/json/metadata"})
 @TestPropertySource(properties = {"repo.auth.enabled=true"})
 @TestPropertySource(properties = {"metastore.metadata.schemaRegistries="})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
+public class MetadataControllerAccessWithAuthenticationEnabled4JsonV2Test {
 
-  private static final String API_BASE_PATH = "/api/v2";
-  private static final String ALTERNATE_API_SCHEMA_PATH = API_BASE_PATH + "/schemas";
-  private static final String API_SCHEMA_PATH = ALTERNATE_API_SCHEMA_PATH + "/";
-  private static final String API_METADATA_PATH = API_BASE_PATH + "/metadata/";
-
-  private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/v2/schema/aai/access/";
+  private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/v2/md/aai/access/json/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
   private static final String SCHEMA_ID = "my_dc_access_aai";
   private static final String INVALID_SCHEMA = "invalid_dc";
+  private final static String JSON_SCHEMA = """
+          {
+              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+              \"$id\": \"http://www.example.org/schema/json\",
+              \"type\": \"object\",
+              \"title\": \"Json schema for tests\",
+              \"default\": {},
+              \"required\": [
+                  \"title\",
+                  \"date\"
+              ],
+              \"properties\": {
+                  \"title\": {
+                      \"type\": \"string\",
+                      \"title\": \"Title\",
+                      \"description\": \"Title of object.\"
+                  },
+                  \"date\": {
+                      \"type\": \"string\",
+                      \"format\": \"date\",
+                      \"title\": \"Date\",
+                      \"description\": \"Date of object\"
+                  }
+              },
+              \"additionalProperties\": false
+          }""";
+  private final static String JSON_DOCUMENT = """
+          {
+              \"title\": \"Json schema for tests\",
+              \"date\": \"2022-07-29\"
+          }""";
 
   private String adminToken;
   private String userToken;
@@ -111,6 +135,8 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
   private final String userPrincipal = "user1";
   private final String otherUserPrincipal = "test_user";
   private final String guestPrincipal = "guest";
+
+  private final String ANONYMOUS_ID = "id_for_public_available_do4json";
 
   private static Boolean alreadyInitialized = Boolean.FALSE;
 
@@ -128,7 +154,7 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
   @Autowired
   private IAllIdentifiersDao allIdentifiersDao;
   @Autowired
-  private ISchemaUrl2PathDao schemaSchemaUrl2PathDao;
+  private ISchemaUrl2PathDao schemaUrl2PathDao;
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
@@ -138,9 +164,9 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
   public void setUp() throws Exception {
     // setup mockMvc
     this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
-            .apply(springSecurity())
+            .apply(springSecurity()) 
             .apply(documentationConfiguration(this.restDocumentation).uris()
-                    .withPort(41413))
+                    .withPort(41415))
             .build();
     adminToken = edu.kit.datamanager.util.JwtBuilder.createUserToken(adminPrincipal, RepoUserRole.ADMINISTRATOR).
             addSimpleClaim("email", "thomas.jejkal@kit.edu").
@@ -167,20 +193,20 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
             addSimpleClaim("locked", false).getCompactToken(applicationProperties.getJwtSecret());
 
     guestToken = edu.kit.datamanager.util.JwtBuilder.createUserToken(guestPrincipal, RepoUserRole.GUEST).
-            addSimpleClaim("email", "guest@kit.edu").
-            addSimpleClaim("orcid", "0123-4567-89AB-CDEF").
+            addSimpleClaim("email", "thomas.jejkal@kit.edu").
+            addSimpleClaim("orcid", "0000-0003-2804-688X").
             addSimpleClaim("loginFailures", 0).
             addSimpleClaim("active", true).
             addSimpleClaim("locked", false).getCompactToken(applicationProperties.getJwtSecret());
     if (!isInitialized()) {
-      System.out.println("------MetadataControllerAccessTestWithAAI-------------");
+      System.out.println("------MetadataControllerAccessTestWithAAI4Json--------");
       System.out.println("------" + this.metadataConfig);
       System.out.println("------------------------------------------------------");
 
       contentInformationDao.deleteAll();
       dataResourceDao.deleteAll();
       allIdentifiersDao.deleteAll();
-      schemaSchemaUrl2PathDao.deleteAll();
+      schemaUrl2PathDao.deleteAll();
 
       try {
         // Create schema only once.
@@ -201,52 +227,16 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
         ex.printStackTrace();
       }
 
+      CreateSchemaUtil.ingestKitSchemaRecordV2(mockMvc, SCHEMA_ID, applicationProperties.getJwtSecret());
       int schemaNo = 1;
       for (PERMISSION user1 : PERMISSION.values()) {
         for (PERMISSION guest : PERMISSION.values()) {
-          ingestSchemaRecord(SCHEMA_ID + "_" + schemaNo, user1, guest);
+          ingestDataResource(SCHEMA_ID + "_" + schemaNo, user1, guest);
           schemaNo++;
         }
       }
-      ingestSchemaRecord4UnregisteredUsers(SCHEMA_ID + "_" + schemaNo);
+      ingestDataResource4UnregisteredUsers(SCHEMA_ID + "_" + schemaNo);
     }
-  }
-
-  @Test
-  public void testCreateRecordWithoutAuthentication() throws Exception {
-    String schemaId = "no_authentication";
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Schema(schemaId);
-    ObjectMapper mapper = new ObjectMapper();
-
-    MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
-    MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", CreateSchemaUtil.KIT_SCHEMA.getBytes());
-
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
-            file(recordFile).
-            file(schemaFile)).
-            // Test with no authentication
-            //            header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken)).
-            andDo(print()).
-            andExpect(status().isUnauthorized());
-  }
-
-  @Test
-  @Ignore
-  public void testCreateRecordAsGuestOnly() throws Exception {
-    String schemaId = "guest_authentication";
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Schema(schemaId);
-    ObjectMapper mapper = new ObjectMapper();
-
-    MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
-    MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", CreateSchemaUtil.KIT_SCHEMA.getBytes());
-
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
-            file(recordFile).
-            file(schemaFile).
-            // Test with guest rights only
-            header(HttpHeaders.AUTHORIZATION, "Bearer " + guestToken)).
-            andDo(print()).
-            andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -255,7 +245,7 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
     CollectionType mapCollectionType = mapper.getTypeFactory()
             .constructCollectionType(List.class, DataResource.class);
 
-    MvcResult mvcResult = this.mockMvc.perform(get(API_SCHEMA_PATH).
+    MvcResult mvcResult = this.mockMvc.perform(get("/api/v2/metadata/").
             param("size", Integer.toString(200)).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)).
             andDo(print()).
@@ -264,9 +254,7 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
             andReturn();
     List<DataResource> resultList = mapper.readValue(mvcResult.getResponse().getContentAsString(), mapCollectionType);
     for (DataResource item : resultList) {
-      // First test for ACL
-      Assert.assertFalse("There should be at least one ACL entry!", item.getAcls().isEmpty());
-      this.mockMvc.perform(get(API_SCHEMA_PATH + item.getId()).
+      this.mockMvc.perform(get("/api/v2/metadata/" + item.getId()).
               header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)).
               andDo(print()).
               andExpect(status().isOk());
@@ -279,7 +267,7 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
     CollectionType mapCollectionType = mapper.getTypeFactory()
             .constructCollectionType(List.class, DataResource.class);
 
-    MvcResult mvcResult = this.mockMvc.perform(get(API_SCHEMA_PATH).
+    MvcResult mvcResult = this.mockMvc.perform(get("/api/v2/metadata/").
             param("size", Integer.toString(200)).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
             andDo(print()).
@@ -288,9 +276,7 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
             andReturn();
     List<DataResource> resultList = mapper.readValue(mvcResult.getResponse().getContentAsString(), mapCollectionType);
     for (DataResource item : resultList) {
-      // First test for ACL
-      Assert.assertFalse("There should be at least one ACL entry!", item.getAcls().isEmpty());
-      this.mockMvc.perform(get(API_SCHEMA_PATH + item.getId()).
+      this.mockMvc.perform(get("/api/v2/metadata/" + item.getId()).
               header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)).
               andDo(print()).
               andExpect(status().isOk());
@@ -303,18 +289,15 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
     CollectionType mapCollectionType = mapper.getTypeFactory()
             .constructCollectionType(List.class, DataResource.class);
 
-    MvcResult mvcResult = this.mockMvc.perform(get(API_SCHEMA_PATH).
+    MvcResult mvcResult = this.mockMvc.perform(get("/api/v2/metadata/").
             param("size", Integer.toString(200)).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + guestToken)).
-            andDo(print()).
-            andExpect(status().isOk()).
+            andDo(print()).andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(13))).
             andReturn();
     List<DataResource> resultList = mapper.readValue(mvcResult.getResponse().getContentAsString(), mapCollectionType);
     for (DataResource item : resultList) {
-      // First test for ACL
-      Assert.assertFalse("There should be at least one ACL entry!", item.getAcls().isEmpty());
-      this.mockMvc.perform(get(API_SCHEMA_PATH + item.getId()).
+      this.mockMvc.perform(get("/api/v2/metadata/" + item.getId()).
               header(HttpHeaders.AUTHORIZATION, "Bearer " + guestToken)).
               andDo(print()).
               andExpect(status().isOk());
@@ -327,7 +310,7 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
     CollectionType mapCollectionType = mapper.getTypeFactory()
             .constructCollectionType(List.class, DataResource.class);
 
-    MvcResult mvcResult = this.mockMvc.perform(get(API_SCHEMA_PATH).
+    MvcResult mvcResult = this.mockMvc.perform(get("/api/v2/metadata/").
             param("size", Integer.toString(200)).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken)).
             andDo(print()).
@@ -336,9 +319,7 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
             andReturn();
     List<DataResource> resultList = mapper.readValue(mvcResult.getResponse().getContentAsString(), mapCollectionType);
     for (DataResource item : resultList) {
-      // First test for ACL
-      Assert.assertFalse("There should be at least one ACL entry!", item.getAcls().isEmpty());
-      this.mockMvc.perform(get(API_SCHEMA_PATH + item.getId()).
+      this.mockMvc.perform(get("/api/v2/metadata/" + item.getId()).
               header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken)).
               andDo(print()).
               andExpect(status().isOk());
@@ -351,17 +332,14 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
     CollectionType mapCollectionType = mapper.getTypeFactory()
             .constructCollectionType(List.class, DataResource.class);
 
-    MvcResult mvcResult = this.mockMvc.perform(get(API_SCHEMA_PATH).
+    MvcResult mvcResult = this.mockMvc.perform(get("/api/v2/metadata/").
             param("size", Integer.toString(200))).
-            andDo(print()).
-            andExpect(status().isOk()).
+            andDo(print()).andExpect(status().isOk()).
             andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(1))).
             andReturn();
     List<DataResource> resultList = mapper.readValue(mvcResult.getResponse().getContentAsString(), mapCollectionType);
     for (DataResource item : resultList) {
-      // First test for ACL
-      Assert.assertFalse("There should be at least one ACL entry!", item.getAcls().isEmpty());
-      this.mockMvc.perform(get(API_SCHEMA_PATH + item.getId())).
+      this.mockMvc.perform(get("/api/v2/metadata/" + item.getId())).
               andDo(print()).
               andExpect(status().isOk());
     }
@@ -375,8 +353,8 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
    * @param guest
    * @throws Exception
    */
-  private void ingestSchemaRecord(String schemaId, PERMISSION user, PERMISSION guest) throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Schema(schemaId);
+  private void ingestDataResource(String schemaId, PERMISSION user, PERMISSION guest) throws Exception {
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(schemaId, SCHEMA_ID);
     Set<AclEntry> aclEntries = new HashSet<>();
     if (user != PERMISSION.NONE) {
       aclEntries.add(new AclEntry(userPrincipal, user));
@@ -390,14 +368,13 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
-    MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", CreateSchemaUtil.KIT_SCHEMA.getBytes());
+    MockMultipartFile schemaFile = new MockMultipartFile("document", "metadata.xml", "application/xml", CreateSchemaUtil.KIT_DOCUMENT.getBytes());
 
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/metadata/").
             file(recordFile).
             file(schemaFile).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken)).
-            andDo(print()).
-            andExpect(status().isCreated()).
+            andDo(print()).andExpect(status().isCreated()).
             andReturn();
   }
 
@@ -407,17 +384,17 @@ public class SchemaRegistryControllerTestAccessWithAuthenticationEnabledV2 {
    * @param schemaId
    * @throws Exception
    */
-  private void ingestSchemaRecord4UnregisteredUsers(String schemaId) throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Schema(schemaId);
+  private void ingestDataResource4UnregisteredUsers(String schemaId) throws Exception {
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(ANONYMOUS_ID, SCHEMA_ID);
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL, PERMISSION.READ));
     record.setAcls(aclEntries);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
-    MockMultipartFile schemaFile = new MockMultipartFile("schema", "schema.xsd", "application/xml", CreateSchemaUtil.KIT_SCHEMA.getBytes());
+    MockMultipartFile schemaFile = new MockMultipartFile("document", "metadata.xml", "application/xml", CreateSchemaUtil.KIT_DOCUMENT.getBytes());
 
-    this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
+    this.mockMvc.perform(MockMvcRequestBuilders.multipart("/api/v2/metadata/").
             file(recordFile).
             file(schemaFile).
             header(HttpHeaders.AUTHORIZATION, "Bearer " + otherUserToken)).

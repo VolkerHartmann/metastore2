@@ -211,12 +211,13 @@ public class CreateSchemaUtil {
             <ex:title>Title of second version</ex:title>
             <ex:date>2021-06-15</ex:date>
           </ex:metadata>""";
-  public final static String XML_DOCUMENT_V3 = "<?xml version='1.0' encoding='utf-8'?>\n"
-          + "<ex:metadata xmlns:ex=\"http://www.example.org/schema/xsd/\">\n"
-          + "  <ex:title>Title of third version</ex:title>\n"
-          + "  <ex:date>2021-06-16</ex:date>\n"
-          + "  <ex:note>since version 3</ex:note>\n"
-          + "</ex:metadata>";
+  public final static String XML_DOCUMENT_V3 = """
+          <?xml version='1.0' encoding='utf-8'?>
+          <ex:metadata xmlns:ex=\"http://www.example.org/schema/xsd/\">
+            <ex:title>Title of third version</ex:title>
+            <ex:date>2021-06-16</ex:date>
+            <ex:note>since version 3</ex:note>
+          </ex:metadata>""";
   private static String userToken;
 
   private final static String otherUserPrincipal = "test_user";
@@ -535,7 +536,6 @@ public class CreateSchemaUtil {
    * @throws Exception
    */
   public static String ingestOrUpdateSchemaRecordV2(MockMvc mockMvc, MediaType mediaType, String schemaId, String schemaContent, String jwtSecret, boolean update, ResultMatcher expectedStatus) throws Exception {
-    String locationUri = null;
     jwtSecret = (jwtSecret == null) ? "jwtSecret" : jwtSecret;
     userToken = edu.kit.datamanager.util.JwtBuilder.createUserToken(otherUserPrincipal, RepoUserRole.USER).
             addSimpleClaim("email", "any@example.org").
@@ -564,9 +564,9 @@ public class CreateSchemaUtil {
       String locationUri = null;
     DataResource record;
     if (mediaType.toString().contains("xml")) {
-      record = SchemaRegistryControllerTestV2.createDataResource4XmlSchema(schemaId);
+      record = SchemaRegistryControllerV2Test.createDataResource4XmlSchema(schemaId);
     } else {
-      record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema(schemaId);
+      record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema(schemaId);
     }
     record.getAcls().add(new AclEntry(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL, PERMISSION.READ));
 
@@ -641,7 +641,7 @@ public class CreateSchemaUtil {
       versionAsString = version.toString() + ".0.0";
     }
 
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(metadataId, schemaId, versionAsString);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(metadataId, schemaId, versionAsString);
     fixRelatedIdentifier4Schema(record, schemaId, versionAsString);
     if (versionAsString != null) {
       record.setVersion(versionAsString);

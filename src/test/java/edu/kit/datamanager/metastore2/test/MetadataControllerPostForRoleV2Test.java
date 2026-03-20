@@ -76,7 +76,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 @TestPropertySource(properties = {"metastore.postEnabledForRole=USER"})
 @TestPropertySource(properties = {"metastore.metadata.schemaRegistries="})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class MetadataControllerTestPostForRoleV2 {
+public class MetadataControllerPostForRoleV2Test {
 
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/v2/md/aai/postaccess/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";

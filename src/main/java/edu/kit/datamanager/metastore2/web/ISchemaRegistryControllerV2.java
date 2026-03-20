@@ -56,14 +56,38 @@ import java.util.List;
   @ApiResponse(responseCode = "403", description = "Forbidden is returned if the caller has no sufficient privileges.")})
 public interface ISchemaRegistryControllerV2 extends InfoContributor {
 
-  @Operation(operationId = "createSchema",
-          summary = "Register a schema document and its record.", 
-          description = "This endpoint allows to register a schema document and its (datacite) record. "
-          + "The record must contain at least an unique identifier (schemaId) and the type of the schema (type).",
+  @Operation(operationId = "registerSchema",
+          summary = "Register a GitHub repo containing a schema document.",
+          description = "This endpoint allows to register a GitHub repo containing a schema document and its (datacite) record. "
+                  + "The record must contain at least an unique identifier (schemaId) and the type of the schema (type)."
+                  + "The schema is per default readable by world, the version is retrieved from the release."
+                  + "Updates will be done automatically by a scheduled job (for non major releases only). "
+                  + "Major updates has to be commited by the user or an administrator. "
+                  + "The endpoint is only for registering GitHub repos, "
+                  + "if you want to register a schema document directly, please use the createSchema endpoint.",
           responses = {
-            @ApiResponse(responseCode = "201", description = "Created is returned only if the record has been validated, persisted and the document was successfully validated and stored.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
-            @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided metadata record is invalid or if the validation of the provided schema failed."),
-            @ApiResponse(responseCode = "409", description = "A Conflict is returned, if there is already a record for the provided schema id.")})
+                  @ApiResponse(responseCode = "201", description = "Created is returned only if the record has been validated, persisted and the document was successfully validated and stored.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+                  @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided metadata record is invalid or if the validation of the provided schema failed."),
+                  @ApiResponse(responseCode = "409", description = "A Conflict is returned, if there is already a record for the provided schema id.")})
+  @RequestMapping(value = {"/register/"}, method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+  @ResponseBody
+  ResponseEntity<DataResource> registerSchema(
+          @Parameter(description = "Json representation of the schema record.", required = true) @RequestPart(name = "record", required = true) final MultipartFile schemaRecord,
+          @Parameter(description = "Organization of the GitHub repo (e.g.: https://github.com/myOrg/schema.git -> myOrg).", required = true) @RequestParam(name = "organization", required = true) final String organization,
+          @Parameter(description = "Repo name of the GitHub repo (e.g.: https://github.com/myOrg/schema.git -> schema).", required = true) @RequestParam(name = "repoName", required = true) final String repoName,
+          @Parameter(description = "(Absolute) path to the schema file (e.g.: /xml/schemaOfMyOrg.xsd).", required = true) @RequestParam(name = "schemaPath", required = true) final String schemaPath,
+          final HttpServletRequest request,
+          final HttpServletResponse response,
+          final UriComponentsBuilder uriBuilder);
+
+  @Operation(operationId = "createSchema",
+          summary = "Register a schema document and its record.",
+          description = "This endpoint allows to register a schema document and its (datacite) record. "
+                  + "The record must contain at least an unique identifier (schemaId) and the type of the schema (type).",
+          responses = {
+                  @ApiResponse(responseCode = "201", description = "Created is returned only if the record has been validated, persisted and the document was successfully validated and stored.", content = @Content(schema = @Schema(implementation = MetadataSchemaRecord.class))),
+                  @ApiResponse(responseCode = "400", description = "Bad Request is returned if the provided metadata record is invalid or if the validation of the provided schema failed."),
+                  @ApiResponse(responseCode = "409", description = "A Conflict is returned, if there is already a record for the provided schema id.")})
   @RequestMapping(value = {"/"}, method = RequestMethod.POST, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
   @ResponseBody
   ResponseEntity<DataResource> createRecord(

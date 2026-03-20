@@ -21,8 +21,6 @@ import edu.kit.datamanager.metastore2.domain.MetadataRecord;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
-import static edu.kit.datamanager.metastore2.util.DataResourceRecordUtil.fixSchemaUrl;
-import static edu.kit.datamanager.metastore2.util.DataResourceRecordUtil.getSchemaDocumentUri;
 
 import edu.kit.datamanager.metastore2.web.ILandingPageControllerV2;
 import edu.kit.datamanager.repo.domain.DataResource;

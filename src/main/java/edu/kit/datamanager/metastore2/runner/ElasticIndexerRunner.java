@@ -117,10 +117,6 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   Set<String> purgeIds;
 
   /**
-   * Determine the baseUrl of the service.
-   */
-  private String baseUrl;
-  /**
    * Logger.
    */
   private static final Logger LOG = LoggerFactory.getLogger(ElasticIndexerRunner.class);
@@ -191,7 +187,7 @@ public class ElasticIndexerRunner implements CommandLineRunner {
           }
         }
         SchemaUrl2Path findByPath = findAllSchemas.get(0);
-        baseUrl = findByPath.getUrl().split("/api/v1/schema")[0];
+        String baseUrl = findByPath.getUrl().split("/api/v1/schema")[0];
         LOG.trace("Found baseUrl: '{}'", baseUrl);
         DataResourceRecordUtil.setBaseUrl(baseUrl);
       }

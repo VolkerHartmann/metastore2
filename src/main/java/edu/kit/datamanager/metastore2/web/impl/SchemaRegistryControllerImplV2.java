@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
+import edu.kit.datamanager.metastore2.domain.RepoInfo;
 import edu.kit.datamanager.metastore2.util.ActuatorUtil;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.metastore2.web.ISchemaRegistryControllerV2;
@@ -64,7 +65,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
-import java.util.logging.Level;
 
 /**
  * Controller for schema documents.
@@ -81,8 +81,6 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
 
   private final MetastoreConfiguration schemaConfig;
 
-  private final IDataResourceDao dataResourceDao;
-
   /**
    * Constructor for schema documents controller.
    *
@@ -95,11 +93,32 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
           IDataResourceDao dataResourceDao) {
     this.applicationProperties = applicationProperties;
     this.schemaConfig = schemaConfig;
-    this.dataResourceDao = dataResourceDao;
-    DataResourceRecordUtil.setDataResourceDao(this.dataResourceDao);
+    DataResourceRecordUtil.setDataResourceDao(dataResourceDao);
     LOG.info("------------------------------------------------------");
     LOG.info("------{}", schemaConfig);
     LOG.info("------------------------------------------------------");
+  }
+
+  @Override
+  public ResponseEntity<DataResource> registerSchema(
+          @RequestPart(name = "record") final MultipartFile recordDocument,
+          @RequestParam(name = "organization") String organization,
+          @RequestParam(name = "repoName") String repoName,
+          @RequestParam(name = "schemaPath") String schemaPath,
+          HttpServletRequest request,
+          HttpServletResponse response,
+          UriComponentsBuilder uriBuilder) {
+    LOG.trace("Performing registerSchema({}, {}, {}, {}....", recordDocument, organization, repoName, schemaPath);
+    RepoInfo repoInfo = new RepoInfo(organization, repoName, schemaPath);
+    LOG.trace("RepoInfo: {}", repoInfo);
+    DataResource dataResourceRecord = DataResourceRecordUtil.createDataResourceRecord4GitHubSchema(schemaConfig, recordDocument, repoInfo);
+    LOG.trace("Schema record successfully registered. Returning result.");
+    String etag = dataResourceRecord.getEtag();
+
+    URI locationUri;
+    locationUri = SchemaRegistryControllerImplV2.getSchemaDocumentUri(dataResourceRecord);
+    LOG.trace("Set locationUri to '{}'", locationUri);
+    return ResponseEntity.created(locationUri).eTag("\"" + etag + "\"").body(dataResourceRecord);
   }
 
   @Override
@@ -120,7 +139,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
         json = ow.writeValueAsString(dataResourceRecord);
         LOG.trace(json);
       } catch (JsonProcessingException ex) {
-        java.util.logging.Logger.getLogger(SchemaRegistryControllerImplV2.class.getName()).log(Level.SEVERE, null, ex);
+        LOG.error(null, ex);
       }
     }
 

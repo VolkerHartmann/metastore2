@@ -90,101 +90,105 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"spring.datasource.url=jdbc:h2:mem:db_schema_json;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=VALUE"})
 @TestPropertySource(properties = {"metastore.schema.schemaFolder=file:///tmp/metastore2/jsontest/schema"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class JsonSchemaRegistryControllerTestV2 {
+public class JsonSchemaRegistryControllerV2Test {
 
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/jsontest/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private static final String INVALID_SCHEMA_ID = "invalid/json";
-  private final static String JSON_SCHEMA = "{\n"
-          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\",\n"
-          + "        \"date\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        },\n"
-          + "        \"date\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"format\": \"date\",\n"
-          + "            \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",\n"
-          + "            \"title\": \"Date\",\n"
-          + "            \"description\": \"Date of object\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
-  private final static String JSON_SCHEMA_V2 = "{\n"
-          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\",\n"
-          + "        \"date\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        },\n"
-          + "        \"date\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"format\": \"date\",\n"
-          + "            \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",\n"
-          + "            \"title\": \"Date\",\n"
-          + "            \"description\": \"Date of object\"\n"
-          + "        },\n"
-          + "        \"note\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Note\",\n"
-          + "            \"description\": \"Additonal information about object.\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
+  private final static String JSON_SCHEMA = """
+          {
+              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+              \"$id\": \"http://www.example.org/schema/json\",
+              \"type\": \"object\",
+              \"title\": \"Json schema for tests\",
+              \"default\": {},
+              \"required\": [
+                  \"title\",
+                  \"date\"
+              ],
+              \"properties\": {
+                  \"title\": {
+                      \"type\": \"string\",
+                      \"title\": \"Title\",
+                      \"description\": \"Title of object.\"
+                  },
+                  \"date\": {
+                      \"type\": \"string\",
+                      \"format\": \"date\",
+                      \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",
+                      \"title\": \"Date\",
+                      \"description\": \"Date of object\"
+                  }
+              },
+              \"additionalProperties\": false
+          }""";
+  private final static String JSON_SCHEMA_V2 = """
+          {
+              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+              \"$id\": \"http://www.example.org/schema/json\",
+              \"type\": \"object\",
+              \"title\": \"Json schema for tests\",
+              \"default\": {},
+              \"required\": [
+                  \"title\",
+                  \"date\"
+              ],
+              \"properties\": {
+                  \"title\": {
+                      \"type\": \"string\",
+                      \"title\": \"Title\",
+                      \"description\": \"Title of object.\"
+                  },
+                  \"date\": {
+                      \"type\": \"string\",
+                      \"format\": \"date\",
+                      \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",
+                      \"title\": \"Date\",
+                      \"description\": \"Date of object\"
+                  },
+                  \"note\": {
+                      \"type\": \"string\",
+                      \"title\": \"Note\",
+                      \"description\": \"Additonal information about object.\"
+                  }
+              },
+              \"additionalProperties\": false
+          }""";
 
-  private final static String JSON_SCHEMA4UPDATE = "{\n"
-          + "    \"type\": \"object\", "
-          + "    \"properties\": "
-          + "    { "
-          + "        \"title\": "
-          + "        { "
-          + "            \"type\": \"string\", "
-          + "            \"title\": \"Title\", "
-          + "            \"description\": \"Title of object.\" "
-          + "        } "
-          + "    } "
-          + "}";
+  private final static String JSON_SCHEMA4UPDATE = """
+          {
+              \"type\": \"object\", 
+              \"properties\": 
+              { 
+                  \"title\": 
+                  { 
+                      \"type\": \"string\", 
+                      \"title\": \"Title\", 
+                      \"description\": \"Title of object.\" 
+                  } 
+              } 
+          }""";
   private final static String JSON_DOCUMENT = "{\"title\":\"any string\",\"date\": \"2020-10-16\"}";
   private final static String INVALID_JSON_DOCUMENT = "{\"title\":\"any string\",\"date\":\"2020-10-16T10:13:24\"}";
-  private final static String DC_DOCUMENT = "<?xml version='1.0' encoding='utf-8'?>\n"
-          + "<oai_dc:dc xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">\n"
-          + "  <dc:creator>Carbon, Seth</dc:creator>\n"
-          + "  <dc:creator>Mungall, Chris</dc:creator>\n"
-          + "  <dc:date>2018-07-02</dc:date>\n"
-          + "  <dc:description>Archival bundle of GO data release.</dc:description>\n"
-          + "  <dc:identifier>https://zenodo.org/record/3477535</dc:identifier>\n"
-          + "  <dc:identifier>10.5281/zenodo.3477535</dc:identifier>\n"
-          + "  <dc:identifier>oai:zenodo.org:3477535</dc:identifier>\n"
-          + "  <dc:relation>doi:10.5281/zenodo.1205166</dc:relation>\n"
-          + "  <dc:relation>url:https://zenodo.org/communities/gene-ontology</dc:relation>\n"
-          + "  <dc:relation>url:https://zenodo.org/communities/zenodo</dc:relation>\n"
-          + "  <dc:rights>info:eu-repo/semantics/openAccess</dc:rights>\n"
-          + "  <dc:rights>http://creativecommons.org/licenses/by/4.0/legalcode</dc:rights>\n"
-          + "  <dc:title>Gene Ontology Data Archive</dc:title>\n"
-          + "  <dc:type>info:eu-repo/semantics/other</dc:type>\n"
-          + "  <dc:type>dataset</dc:type>\n"
-          + "</oai_dc:dc>";
+  private final static String DC_DOCUMENT = """
+          <?xml version='1.0' encoding='utf-8'?>
+          <oai_dc:dc xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">
+            <dc:creator>Carbon, Seth</dc:creator>
+            <dc:creator>Mungall, Chris</dc:creator>
+            <dc:date>2018-07-02</dc:date>
+            <dc:description>Archival bundle of GO data release.</dc:description>
+            <dc:identifier>https://zenodo.org/record/3477535</dc:identifier>
+            <dc:identifier>10.5281/zenodo.3477535</dc:identifier>
+            <dc:identifier>oai:zenodo.org:3477535</dc:identifier>
+            <dc:relation>doi:10.5281/zenodo.1205166</dc:relation>
+            <dc:relation>url:https://zenodo.org/communities/gene-ontology</dc:relation>
+            <dc:relation>url:https://zenodo.org/communities/zenodo</dc:relation>
+            <dc:rights>info:eu-repo/semantics/openAccess</dc:rights>
+            <dc:rights>http://creativecommons.org/licenses/by/4.0/legalcode</dc:rights>
+            <dc:title>Gene Ontology Data Archive</dc:title>
+            <dc:type>info:eu-repo/semantics/other</dc:type>
+            <dc:type>dataset</dc:type>
+          </oai_dc:dc>""";
 
   private MockMvc mockMvc;
   @Autowired
@@ -204,7 +208,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("------JsonSchemaRegistryControllerTestV2----------------");
+    System.out.println("------JsonSchemaRegistryControllerV2Test----------------");
     System.out.println("------" + this.schemaConfig);
     System.out.println("------------------------------------------------------");
     contentInformationDao.deleteAll();
@@ -229,7 +233,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecord() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry("test", PERMISSION.READ));
     aclEntries.add(new AclEntry("SELF", PERMISSION.ADMINISTRATE));
@@ -246,7 +250,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordWithoutMimetype() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json_2");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json_2");
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry("test", PERMISSION.READ));
     aclEntries.add(new AclEntry("SELF", PERMISSION.ADMINISTRATE));
@@ -263,7 +267,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordWithoutContentType() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry("test", PERMISSION.READ));
     aclEntries.add(new AclEntry("SELF", PERMISSION.ADMINISTRATE));
@@ -280,7 +284,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordWithLocationUri() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry("test", PERMISSION.READ));
     aclEntries.add(new AclEntry("SELF", PERMISSION.ADMINISTRATE));
@@ -351,7 +355,7 @@ public class JsonSchemaRegistryControllerTestV2 {
   }
   // @Test 
   public void testCreateSchemaRecordFromExternal() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -389,7 +393,7 @@ public class JsonSchemaRegistryControllerTestV2 {
   @Test
   public void testCreateSchemaRecordWrongType() throws Exception {
     // Create XML schema record with JSON schema content
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4XmlSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4XmlSchema("my_json");
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -402,7 +406,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordGuessingType() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     record.setResourceType(null);
     record.getFormats().clear();
     ObjectMapper mapper = new ObjectMapper();
@@ -419,7 +423,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordGuessingTypeFails() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     record.setResourceType(null);
     record.getFormats().clear();
     ObjectMapper mapper = new ObjectMapper();
@@ -435,7 +439,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordWithBadSchema() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -448,7 +452,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordWithEmptySchema() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -468,7 +472,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateSchemaRecordWithoutSchema() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json");
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -480,7 +484,7 @@ public class JsonSchemaRegistryControllerTestV2 {
   public void testCreateSchemaRecordWithBadRecord() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
     // No schemaId
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("any_id");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("any_id");
     record.setId(null);
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -493,7 +497,7 @@ public class JsonSchemaRegistryControllerTestV2 {
 
   @Test
   public void testCreateTwoVersionsOfSchemaRecord() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4JsonSchema("my_json_with_version");
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema("my_json_with_version");
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -850,7 +854,7 @@ public class JsonSchemaRegistryControllerTestV2 {
     Assert.assertEquals("Check methods: ", methodsBefore, DataResourceRecordUtil.getDescription(record2, Description.TYPE.METHODS).getDescription());
     Assert.assertEquals("Check technical info: ", technicalInfoBefore, DataResourceRecordUtil.getDescription(record2, Description.TYPE.TECHNICAL_INFO).getDescription());
     if (record.getAcls() != null) {
-      Assert.assertTrue(SchemaRegistryControllerTestV2.isSameSetOfAclEntries(record.getAcls(), record2.getAcls()));
+      Assert.assertTrue(SchemaRegistryControllerV2Test.isSameSetOfAclEntries(record.getAcls(), record2.getAcls()));
     }
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
   }
@@ -882,7 +886,7 @@ public class JsonSchemaRegistryControllerTestV2 {
     Assert.assertEquals(mimeTypeBefore, record2.getFormats().iterator().next());//mime type is not allowed to be changed
     Assert.assertNotEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed (as it is linked to schema)
     Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
-    SemanticVersion.INCREMENT_LEVEL incrementLevel = MetadataControllerTestV2.testForNextVersion(versionBefore, record2.getVersion());
+    SemanticVersion.INCREMENT_LEVEL incrementLevel = MetadataControllerV2Test.testForNextVersion(versionBefore, record2.getVersion());
     Assert.assertEquals("Increment level should be patch as only patch version was incremented in request", SemanticVersion.INCREMENT_LEVEL.PATCH, incrementLevel);
     Assert.assertEquals(record.getId(), record2.getId());
     if (record.getAcls() != null) {
@@ -915,7 +919,7 @@ public class JsonSchemaRegistryControllerTestV2 {
     DataResource record2 = mapper.readValue(body, DataResource.class);
     Assert.assertEquals(record.getFormats().iterator().next(), record2.getFormats().iterator().next());//mime type was changed (as it is linked to schema)
     Assert.assertEquals(DataResourceRecordUtil.getCreationDate(record), DataResourceRecordUtil.getCreationDate(record2));
-    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
+    MetadataControllerV2Test.testForNextVersion(record.getVersion(), record2.getVersion());
     Assert.assertEquals(record.getId(), record2.getId());
     if (record.getAcls() != null) {
       Assert.assertTrue(record.getAcls().containsAll(record2.getAcls()));

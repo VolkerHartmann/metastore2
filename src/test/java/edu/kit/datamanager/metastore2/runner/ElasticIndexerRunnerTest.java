@@ -130,35 +130,37 @@ public class ElasticIndexerRunnerTest {
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/elasticRunner/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
-  private final static String JSON_SCHEMA = "{\n"
-          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\",\n"
-          + "        \"date\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        },\n"
-          + "        \"date\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"format\": \"date\",\n"
-          + "            \"title\": \"Date\",\n"
-          + "            \"description\": \"Date of object\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
-  private final static String JSON_DOCUMENT = "{\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"date\": \"2022-07-29\"\n"
-          + "}";
+  private final static String JSON_SCHEMA = """
+          {
+              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
+              \"$id\": \"http://www.example.org/schema/json\",
+              \"type\": \"object\",
+              \"title\": \"Json schema for tests\",
+              \"default\": {},
+              \"required\": [
+                  \"title\",
+                  \"date\"
+              ],
+              \"properties\": {
+                  \"title\": {
+                      \"type\": \"string\",
+                      \"title\": \"Title\",
+                      \"description\": \"Title of object.\"
+                  },
+                  \"date\": {
+                      \"type\": \"string\",
+                      \"format\": \"date\",
+                      \"title\": \"Date\",
+                      \"description\": \"Date of object\"
+                  }
+              },
+              \"additionalProperties\": false
+          }""";
+  private final static String JSON_DOCUMENT = """
+          {
+              \"title\": \"Json schema for tests\",
+              \"date\": \"2022-07-29\"
+          }""";
 
   public ElasticIndexerRunnerTest() {
   }

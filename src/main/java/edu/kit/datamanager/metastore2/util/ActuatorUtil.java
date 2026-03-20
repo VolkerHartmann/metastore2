@@ -53,7 +53,7 @@ public class ActuatorUtil {
    * @param pathUrl URL of directory
    * @return Map with details.
    */
-  public static final Map<String, String> testDirectory(URL pathUrl) {
+  public static Map<String, String> testDirectory(URL pathUrl) {
     Map<String, String> properties = new HashMap<>();
     try {
       Path path = Paths.get(pathUrl.toURI());
@@ -70,7 +70,7 @@ public class ActuatorUtil {
    * @param elasticUrl URL of directory
    * @return Map with details.
    */
-  public static final Map<String, String> testElastic(URL elasticUrl) {
+  public static Map<String, String> testElastic(URL elasticUrl) {
     Map<String, String> properties = new HashMap<>();
     try {
       SimpleServiceClient client = SimpleServiceClient.create(elasticUrl.toString());
@@ -90,14 +90,14 @@ public class ActuatorUtil {
    * @param path URL of directory
    * @return Map with details.
    */
-  private static final Map<String, String> determineDetailsForPath(Path path) {
+  private static Map<String, String> determineDetailsForPath(Path path) {
     Map<String, String> properties = new HashMap<>();
     String totalSpace;
     String freeSpace;
     Path probe = Paths.get(path.toString(), "probe.txt");
     try {
       probe = Files.createFile(probe);
-      Files.write(probe, "Success".getBytes(StandardCharsets.UTF_8));
+      Files.writeString(probe, "Success");
       File repoDir = path.toFile();
       double total = repoDir.getTotalSpace();
       double free = repoDir.getFreeSpace();

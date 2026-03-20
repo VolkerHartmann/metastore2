@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.util;
 
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;

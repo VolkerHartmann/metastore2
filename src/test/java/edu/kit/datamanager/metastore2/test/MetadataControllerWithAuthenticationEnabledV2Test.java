@@ -12,7 +12,6 @@ import edu.kit.datamanager.entities.RepoUserRole;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
-import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
@@ -96,7 +95,7 @@ import org.springframework.web.context.WebApplicationContext;
 @TestPropertySource(properties = {"repo.auth.enabled=true"})
 @TestPropertySource(properties = {"metastore.metadata.schemaRegistries="})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class MetadataControllerTestWithAuthenticationEnabledV2 {
+public class MetadataControllerWithAuthenticationEnabledV2Test {
 
   private static final String API_BASE_PATH = "/api/v2";
   private static final String ALTERNATE_API_SCHEMA_PATH = API_BASE_PATH + "/schemas";
@@ -151,7 +150,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("----- MetadataControllerTestV2 with authentication ---");
+    System.out.println("----- MetadataControllerV2Test with authentication ---");
     System.out.println("------" + this.metadataConfig);
     System.out.println("------------------------------------------------------");
 
@@ -223,7 +222,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithoutAuthentication() throws Exception {
     String id = "testCreateRecordWithoutAuthentication";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
@@ -247,7 +246,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecord() throws Exception {
     String id = "testCreateRecord";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -270,7 +269,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithValidUrlSchema() throws Exception {
     String id = "testCreateRecordWithValidUrlSchema";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     // Get URL of schema
     String schemaUrl = getSchemaUrl(SCHEMA_ID);
 //    record.setId("my_id");
@@ -297,7 +296,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithUrlSchemaNull() throws Exception {
     String id = "testCreateRecordWithUrlSchemaNull";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     RelatedIdentifier schemaIdentifier = DataResourceRecordUtil.getSchemaIdentifier(record);
     schemaIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
@@ -321,7 +320,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithInvalidUrl() throws Exception {
     String id = "testCreateRecordWithInvalidUrl";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     // Get URL of schema and remove first character
     String invalidSchemaUrl = getSchemaUrl(SCHEMA_ID).substring(1);
 
@@ -347,7 +346,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithInvalidUrlSchema() throws Exception {
     String id = "testCreateRecordWithInvalidUrlSchema";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     // Get URL of schema and replace schema by an invalid one
      String urlWithInvalidSchema = getSchemaUrl(SCHEMA_ID).replace(SCHEMA_ID, INVALID_SCHEMA);
 
@@ -373,7 +372,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithoutResourceType() throws Exception {
     String id = "testCreateRecordWithoutResourceType";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     // Empty resource type
     record.setResourceType(null);
 
@@ -400,7 +399,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithAnyValidUrl() throws Exception {
     String id = "testCreateRecordWithAnyValidUrl";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     // Set URL of schema to a broken url
     String schemaUrl = "http://anyurl.example.org/shouldNotExist";
 
@@ -426,7 +425,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithId() throws Exception {
     String id = "testCreateRecordWithId";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -452,7 +451,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithIdTwice() throws Exception {
     String id = "testCreateRecordWithIdTwice";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -483,7 +482,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithLocationUri() throws Exception {
     String id = "testCreateRecordWithLocationUri";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -517,7 +516,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateInvalidRecord() throws Exception {
     String id = "testCreateInvalidRecord";
     String schemaId = INVALID_SCHEMA;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -641,7 +640,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateMetadataUnknownSchemaId() throws Exception {
     String id = "testCreateMetadataUnknownSchemaId";
     String schemaId = "unknown_schema";
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -661,7 +660,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithBadSchema() throws Exception {
     String id = "testCreateRecordWithBadSchema";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -681,7 +680,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithInvalidMetadataNamespace() throws Exception {
     String id = "testCreateRecordWithInvalidMetadataNamespace";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -701,7 +700,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithInvalidMetadata() throws Exception {
     String id = "testCreateRecordWithInvalidMetadata";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -732,7 +731,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithoutSchema() throws Exception {
     String id = "testCreateRecordWithoutSchema";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -749,7 +748,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithBadRecord() throws Exception {
     String id = "testCreateRecordWithBadRecord";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     RelatedIdentifier schemaIdentifier = DataResourceRecordUtil.getSchemaIdentifier(record);
     schemaIdentifier.setValue(null);
@@ -772,7 +771,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateRecordWithBadRecord2() throws Exception {
     String id = "testCreateRecordWithBadRecord2";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     RelatedIdentifier schemaIdentifier = DataResourceRecordUtil.getSchemaIdentifier(record);
     Set<RelatedIdentifier> relatedIdentifiers = record.getRelatedIdentifiers();
@@ -802,7 +801,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     // Two records with same schema and same related resource are now allowed.
     String id = "testCreateRecordWithBadRecord2";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -820,7 +819,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     DataResource result = mapper.readValue(res.getResponse().getContentAsString(), DataResource.class);
     Assert.assertEquals("1.0.0", result.getVersion());
 
-    record = SchemaRegistryControllerTestV2.createDataResource4Document(id + "_2", schemaId);
+    record = SchemaRegistryControllerV2Test.createDataResource4Document(id + "_2", schemaId);
     recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
     this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_METADATA_PATH).
             file(recordFile).
@@ -835,7 +834,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testCreateTwoVersions() throws Exception {
     String id = "testCreateTwoVersions";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -884,7 +883,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testGetRecord() throws Exception {
     String id = "testCreateTwoVersions";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     Set<AclEntry> acl = new HashSet<>();
     acl.add(new AclEntry("test1.0.0", PERMISSION.ADMINISTRATE));
@@ -1150,10 +1149,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
 //    Assert.assertNotEquals(record.getDocumentHash(), record2.getDocumentHash());
-    SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
+    SchemaRegistryControllerV2Test.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
-    SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
+    MetadataControllerV2Test.testForNextVersion(record.getVersion(), record2.getVersion());
+    SchemaRegistryControllerV2Test.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
     // Check ContentInformation of second version
@@ -1268,10 +1267,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
 //    Assert.assertNotEquals(record.getDocumentHash(), record2.getDocumentHash());
-    SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
+    SchemaRegistryControllerV2Test.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
-    SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
+    MetadataControllerV2Test.testForNextVersion(record.getVersion(), record2.getVersion());
+    SchemaRegistryControllerV2Test.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
     // Check ContentInformation of second version
@@ -1354,10 +1353,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
 //    Assert.assertNotEquals(record.getDocumentHash(), record2.getDocumentHash());
-    SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
+    SchemaRegistryControllerV2Test.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
-    SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
+    MetadataControllerV2Test.testForNextVersion(record.getVersion(), record2.getVersion());
+    SchemaRegistryControllerV2Test.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
     // Check ContentInformation of second version
@@ -1437,10 +1436,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     body = result.getResponse().getContentAsString();
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
-    SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
+    SchemaRegistryControllerV2Test.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
     Assert.assertEquals(record.getVersion(), record2.getVersion());// version should be the same
-    SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
+    SchemaRegistryControllerV2Test.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
     // Check ContentInformation of second version
     result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
@@ -1634,7 +1633,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testUpdateRecordWithoutExplizitGet() throws Exception {
     String id = "testUpdateRecordWithoutExplizitGet";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     ObjectMapper mapper = new ObjectMapper();
 
@@ -1670,10 +1669,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     body = result.getResponse().getContentAsString();
 
     DataResource record3 = mapper.readValue(body, DataResource.class);
-    SchemaRegistryControllerTestV2.validateCreateDates(record2.getDates(), record3.getDates());
-    SchemaRegistryControllerTestV2.validateRelatedIdentifierSets(record2.getRelatedIdentifiers(), record2.getRelatedIdentifiers());
-    MetadataControllerTestV2.testForNextVersion(record2.getVersion(), record3.getVersion());
-    SchemaRegistryControllerTestV2.validateSets(record2.getAcls(), record3.getAcls());
+    SchemaRegistryControllerV2Test.validateCreateDates(record2.getDates(), record3.getDates());
+    SchemaRegistryControllerV2Test.validateRelatedIdentifierSets(record2.getRelatedIdentifiers(), record2.getRelatedIdentifiers());
+    MetadataControllerV2Test.testForNextVersion(record2.getVersion(), record3.getVersion());
+    SchemaRegistryControllerV2Test.validateSets(record2.getAcls(), record3.getAcls());
     Assert.assertTrue(record2.getLastUpdate().isBefore(record3.getLastUpdate()));
   }
 
@@ -1770,10 +1769,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     body = result.getResponse().getContentAsString();
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
-    SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
+    SchemaRegistryControllerV2Test.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
-    SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
+    MetadataControllerV2Test.testForNextVersion(record.getVersion(), record2.getVersion());
+    SchemaRegistryControllerV2Test.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
     // Check ContentInformation of second version
     result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
@@ -1847,10 +1846,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     body = result.getResponse().getContentAsString();
 
    DataResource record2 = mapper.readValue(body, DataResource.class);
-    SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
+    SchemaRegistryControllerV2Test.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
     Assert.assertEquals(record.getVersion(), record2.getVersion());// version should be the same
-    SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
+    SchemaRegistryControllerV2Test.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
     // Check ContentInformation of second version
     result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
@@ -1928,7 +1927,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   public void testUpdateRecordWithoutResourceType() throws Exception {
     String id = "testCreateRecordWithoutResourceType";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     // Empty resource type
     record.setResourceType(null);
 
@@ -2247,10 +2246,10 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     String locationUri2 = result.getResponse().getHeader("Location");
 
     DataResource record2 = mapper.readValue(body, DataResource.class);
-    SchemaRegistryControllerTestV2.validateCreateDates(record.getDates(), record2.getDates());
+    SchemaRegistryControllerV2Test.validateCreateDates(record.getDates(), record2.getDates());
     Assert.assertEquals(DataResourceRecordUtil.getSchemaIdentifier(record), DataResourceRecordUtil.getSchemaIdentifier(record2));
-    MetadataControllerTestV2.testForNextVersion(record.getVersion(), record2.getVersion());
-    SchemaRegistryControllerTestV2.validateSets(record.getAcls(), record2.getAcls());
+    MetadataControllerV2Test.testForNextVersion(record.getVersion(), record2.getVersion());
+    SchemaRegistryControllerV2Test.validateSets(record.getAcls(), record2.getAcls());
     Assert.assertTrue(record.getLastUpdate().isBefore(record2.getLastUpdate()));
 
     // Check for new metadata document.
@@ -2281,7 +2280,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   private String createDCMetadataRecordWithAdminForAnonymous() throws Exception {
      String id = "createDCMetadataRecordWithAdminForAnonymous";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     record.setId(null);
     record.getAlternateIdentifiers().clear();
@@ -2315,7 +2314,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
     private String createDCMetadataRecord(Set<AclEntry> aclEntries) throws Exception {
      String id = "createDCMetadataRecord";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
     if (aclEntries != null) {
       record.setAcls(aclEntries);
     }
@@ -2356,7 +2355,7 @@ public class MetadataControllerTestWithAuthenticationEnabledV2 {
   }
 
   private void ingestSchemaRecord() throws Exception {
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4XmlSchema(SCHEMA_ID);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4XmlSchema(SCHEMA_ID);
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry("anonymousUser", PERMISSION.READ));
     record.setAcls(aclEntries);

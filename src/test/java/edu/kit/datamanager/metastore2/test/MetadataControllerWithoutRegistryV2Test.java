@@ -77,7 +77,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"metastore.metadata.landingpage=http://www.example.org/metadata?id=$(id)&version=$(version)"})
 @TestPropertySource(properties = {"metastore.schema.landingpage=http://www.example.org/schema/$(id)?version=$(version)"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class MetadataControllerWithoutRegistryTestV2 {
+public class MetadataControllerWithoutRegistryV2Test {
 
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/withoutRegistry/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
@@ -110,7 +110,7 @@ public class MetadataControllerWithoutRegistryTestV2 {
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("------MetadataControllerWithoutRegistryTestV2--------------------------");
+    System.out.println("------MetadataControllerWithoutRegistryV2Test--------------------------");
     System.out.println("------" + this.metadataConfig);
     System.out.println("------------------------------------------------------");
 
@@ -139,7 +139,7 @@ public class MetadataControllerWithoutRegistryTestV2 {
       }
       Paths.get(TEMP_DIR_4_METADATA).toFile().mkdir();
       // Ingest schema.
-      SchemaRegistryControllerTestV2.ingestOrUpdateXmlSchemaRecord(mockMvc, SCHEMA_ID, KIT_SCHEMA, schemaConfig.getJwtSecret(), false, status().isCreated());
+      SchemaRegistryControllerV2Test.ingestOrUpdateXmlSchemaRecord(mockMvc, SCHEMA_ID, KIT_SCHEMA, schemaConfig.getJwtSecret(), false, status().isCreated());
     } catch (IOException ex) {
       ex.printStackTrace();
     }
@@ -149,7 +149,7 @@ public class MetadataControllerWithoutRegistryTestV2 {
   public void testCreateRecord() throws Exception {
     String id = "testCreateRecord";
     String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerTestV2.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
 
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));

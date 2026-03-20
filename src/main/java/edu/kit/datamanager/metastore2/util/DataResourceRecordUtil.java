@@ -16,6 +16,7 @@
 package edu.kit.datamanager.metastore2.util;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.Identifier;
 import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.entities.RepoUserRole;
@@ -24,6 +25,7 @@ import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
 import edu.kit.datamanager.metastore2.dao.IResource2FileVersionDao;
 import edu.kit.datamanager.metastore2.dao.ISchemaUrl2PathDao;
 import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
+import edu.kit.datamanager.metastore2.domain.RepoInfo;
 import edu.kit.datamanager.metastore2.domain.Resource2FileVersion;
 import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.metastore2.validation.IValidator;
@@ -198,7 +200,8 @@ public class DataResourceRecordUtil {
         dataResourceRecord.getFormats().add(document.getContentType());
       }
     }
-    dataResourceRecord.setVersion(SemanticVersion.parse("1.0.0").toString());
+
+    check4GivenVersion(dataResourceRecord, "1.0.0");
     // create record.
     DataResource dataResource = dataResourceRecord;
     DataResource createResource = DataResourceUtils.createResource(applicationProperties, dataResource);
@@ -215,6 +218,62 @@ public class DataResourceRecordUtil {
     saveNewResource2FileVersion(dataResourceRecord, contentInformation);
 
     return dataResourceRecord;
+  }
+
+  /**
+   * Create/Ingest an instance of MetadataSchemaRecord.
+   *
+   * @param applicationProperties Settings of repository.
+   * @param recordDocument        Record of the schema.
+   * @param repoInfo              RepoInfo containing information about the GitHub repository to fetch the schema document from.
+   * @return Record of registered schema document.
+   */
+  public static DataResource createDataResourceRecord4GitHubSchema(MetastoreConfiguration applicationProperties,
+                                                             MultipartFile recordDocument,
+                                                             RepoInfo repoInfo){
+  /*  1. Check if recordDocument and repoInfo are not empty
+            2. Create DataResource from recordDocument
+            2.a) Get ID of the schema
+            3. Set ID in repoInfo
+            4. Get TemporaryMultipartFile from repository
+            5. Set ACL to readable for WORLD (if not already)
+            6. Set format and resource type (if not already set)
+            7. Create TemporaryMultipartFile from dataResource */
+    DataResource dataResourceRecord;
+    // Do some checks first.
+    if (recordDocument == null || recordDocument.isEmpty() || repoInfo == null || repoInfo.getOrganization() == null || repoInfo.getRepoName() == null) {
+      throw new BadArgumentException("Record document or repo info is null or empty");
+    }
+    ObjectMapper mapper = new ObjectMapper();
+    LOG.trace("Start mapping dataresource record from record document. ");
+    try {
+      dataResourceRecord = mapper.readValue(recordDocument.getInputStream(), DataResource.class);
+    } catch (IOException e) {
+      LOG.error("Error reading data resource record from record document. ", e);
+      throw new BadArgumentException("Error reading data resource record from record document. ");
+    }
+    LOG.trace("Create data resource record successfully registered. Returning result. '{}'", dataResourceRecord);
+
+    if (dataResourceRecord.getId() == null) {
+      String message = "Mandatory attribute 'id' not found in record. Returning HTTP BAD_REQUEST.";
+      LOG.error(message);
+      throw new BadArgumentException(message);
+    }
+    DataResourceRecordUtil.check4validSchemaId(dataResourceRecord);
+
+    LOG.trace("Id is now set to '{}'", dataResourceRecord.getId());
+    repoInfo.setSchemaId(dataResourceRecord.getId());
+    MultipartFile schemaDocument = null;
+     try {
+      schemaDocument = GitHubReleaseFetcher.fetchLatestRelease(repoInfo);
+      check4GivenVersion(dataResourceRecord, repoInfo.getVersion());
+      InputStream stream = new ByteArrayInputStream(mapper.writeValueAsBytes(dataResourceRecord));
+      recordDocument = new TemporaryMultipartFile(recordDocument.getName(), recordDocument.getOriginalFilename(), stream);
+    } catch (IOException e) {
+      LOG.error("Error reading data resource record from record document. ", e);
+      throw new BadArgumentException("Error reading data resource record from record document. ");
+    }
+    return createDataResourceRecord4Schema(applicationProperties, recordDocument, schemaDocument);
   }
 
   /**
@@ -243,7 +302,7 @@ public class DataResourceRecordUtil {
     // validate schema document / determine or correct resource type
     validateMetadataDocument(applicationProperties, document, dataResource);
 
-    dataResource.setVersion(getSchemaRecordFromDataResource(dataResource).getVersion());
+    check4GivenVersion(dataResource, getSchemaRecordFromDataResource(dataResource).getVersion());
     // create record.
     DataResource createResource = DataResourceUtils.createResource(applicationProperties, dataResource);
     // store document
@@ -1012,10 +1071,12 @@ public class DataResourceRecordUtil {
   public static void check4validId(DataResource metadataRecord, boolean allowUpperCase) {
     String id = metadataRecord.getId();
     String lowerCaseId;
-    lowerCaseId = id.toLowerCase(Locale.getDefault());
+    lowerCaseId = id.toLowerCase(Locale.ENGLISH);
 
     if (allowUpperCase) {
       lowerCaseId = id;
+    } else {
+      metadataRecord.setId(lowerCaseId);
     }
     metadataRecord.getAlternateIdentifiers().add(Identifier.factoryInternalIdentifier(lowerCaseId));
     if (!lowerCaseId.equals(id)) {
@@ -1937,6 +1998,30 @@ public class DataResourceRecordUtil {
       resource = DataResourceRecordUtil.incrementVersion(resource, SemanticVersion.INCREMENT_LEVEL.MAJOR);
     }
     return resource;
+  }
+
+  /**
+   * Set a version for the first record of a data resource. If a version is provided check if it is valid.
+   * If it is not valid return HTTP BAD_REQUEST. If it is valid do nothing.
+   * If no version is provided set it to default or if no default is given to '1.0.0'.
+   * @param dataResourceRecord
+   * @param defaultVersion
+   */
+  private static void check4GivenVersion(DataResource dataResourceRecord, String defaultVersion) {
+    if (dataResourceRecord.getVersion() != null) {
+      // Check for valid version
+      if (SemanticVersion.tryParse(dataResourceRecord.getVersion()).isEmpty()) {
+        String message = "Invalid version format! Version should be in format 'major.minor.patch' (e.g., 1.0.0). Returning HTTP BAD_REQUEST.";
+        LOG.error(message);
+        throw new BadArgumentException(message);
+      }
+    } else {
+      if (SemanticVersion.tryParse(defaultVersion).isEmpty()) {
+        dataResourceRecord.setVersion("1.0.0");
+      } else  {
+        dataResourceRecord.setVersion(defaultVersion);
+      }
+    }
   }
 
   /**
