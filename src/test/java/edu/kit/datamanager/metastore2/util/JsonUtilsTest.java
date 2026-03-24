@@ -242,9 +242,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocumentWithSchemaDraft04() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft04");
-    String schemaDocument = jsonSchemaWithversiondraft04;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJsonSchemaDocument(schemaDocument);
+    boolean result = JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft04);
     assertEquals(expResult, result);
   }
 
@@ -254,9 +253,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocumentWithSchemaDraft06() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft06");
-    String schemaDocument = jsonSchemaWithversiondraft06;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJsonSchemaDocument(schemaDocument);
+    boolean result = JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft06);
     assertEquals(expResult, result);
   }
 
@@ -266,9 +264,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocumentWithSchemaDraft07() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft07");
-    String schemaDocument = jsonSchemaWithversiondraft07;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJsonSchemaDocument(schemaDocument);
+    boolean result = JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft07);
     assertEquals(expResult, result);
   }
 
@@ -278,9 +275,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocumentWithSchemaDraft201909() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909");
-    String schemaDocument = jsonSchemaWithversiondraft201909;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJsonSchemaDocument(schemaDocument);
+    boolean result = JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft201909);
     assertEquals(expResult, result);
   }
 
@@ -304,9 +300,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocumentWithSchemaDraft201909ButWrongVersion() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909ButWrongVersion");
-    String schemaDocument = jsonSchemaWithversiondraft201909;
     try {
-      JsonUtils.validateJsonSchemaDocument(schemaDocument, SpecVersion.VersionFlag.V4);
+      JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft201909, SpecVersion.VersionFlag.V4);
       fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
@@ -320,9 +315,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateInvalidJsonSchemaDocument() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909ButWrongVersion");
-    String schemaDocument = invalidJsonSchemaDocumentWithversiondraft201909;
     try {
-      JsonUtils.validateJsonSchemaDocument(schemaDocument);
+      JsonUtils.validateJsonSchemaDocument(invalidJsonSchemaDocumentWithversiondraft201909);
       fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
@@ -354,9 +348,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocumentWithSchemaDraft04ButWrongVersion() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909ButWrongVersion");
-    String schemaDocument = jsonSchemaWithversiondraft04;
     try {
-      JsonUtils.validateJsonSchemaDocument(schemaDocument, SpecVersion.VersionFlag.V201909);
+      JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft04, SpecVersion.VersionFlag.V201909);
       fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
@@ -389,9 +382,8 @@ public class JsonUtilsTest {
   public void testValidateJsonSchemaDocumentWithSchemaButNullVersion() {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaButNullVersion");
     try {
-      String schemaDocument = jsonSchemaWithversiondraft04;
       SpecVersion.VersionFlag version = null;
-      JsonUtils.validateJsonSchemaDocument(schemaDocument, version);
+      JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft04, version);
       fail(); //should not executed.
     } catch (JsonValidationException jvex) {
       assertTrue(true);
@@ -460,10 +452,9 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocument() throws Exception {
     System.out.println("getJsonSchemaFromStringContent");
-    String schemaContent = jsonSchemaWithversiondraft201909;
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJsonSchemaDocument(schemaContent, version);
+    boolean result = JsonUtils.validateJsonSchemaDocument(jsonSchemaWithversiondraft201909, version);
     assertEquals(expResult, result);
   }
 
@@ -490,9 +481,8 @@ public class JsonUtilsTest {
   @Test
   public void testGetJsonSchemaFromStringContent() throws Exception {
     System.out.println("getJsonSchemaFromStringContent");
-    String schemaContent = jsonSchemaWithversiondraft201909;
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
-    JsonSchema result = JsonUtils.getJsonSchemaFromString(schemaContent, version);
+    JsonSchema result = JsonUtils.getJsonSchemaFromString(jsonSchemaWithversiondraft201909, version);
     assertNotNull(result);
   }
 
@@ -504,8 +494,7 @@ public class JsonUtilsTest {
   @Test
   public void testGetJsonNodeFromStringContent() throws Exception {
     System.out.println("getJsonNodeFromStringContent");
-    String content = jsonSchemaWithversiondraft04;
-    JsonNode result = JsonUtils.getJsonNodeFromString(content);
+    JsonNode result = JsonUtils.getJsonNodeFromString(jsonSchemaWithversiondraft04);
     assertNotNull(result);
   }
 
@@ -515,9 +504,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonSchemaDocumentWithComplexSchemaDraft201909() {
     System.out.println("testValidateJsonSchemaDocumentWithComplexSchemaDraft201909");
-    String schemaDocument = moreComplexExample;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJsonSchemaDocument(schemaDocument);
+    boolean result = JsonUtils.validateJsonSchemaDocument(moreComplexExample);
     assertEquals(expResult, result);
   }
 
@@ -527,10 +515,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJson() {
     System.out.println("validateJson");
-    String jsonDocument = validJsonDocument;
-    String jsonSchema = moreComplexExample;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJson(jsonDocument, jsonSchema);
+    boolean result = JsonUtils.validateJson(validJsonDocument, moreComplexExample);
     assertEquals(expResult, result);
   }
 
@@ -555,11 +541,9 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonWithVersion() {
     System.out.println("testValidateJsonWithVersion");
-    String jsonDocument = validJsonDocument;
-    String jsonSchema = moreComplexExample;
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJson(jsonDocument, jsonSchema, version);
+    boolean result = JsonUtils.validateJson(validJsonDocument, moreComplexExample, version);
     assertEquals(expResult, result);
   }
 
@@ -585,11 +569,9 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonWithEmptySchema() {
     System.out.println("testValidateJsonWithEmptySchema");
-    String jsonDocument = validJsonDocument;
-    String jsonSchema = emptySchema;
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V201909;
     try {
-      JsonUtils.validateJson(jsonDocument, jsonSchema, version);
+      JsonUtils.validateJson(validJsonDocument, emptySchema, version);
       fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
@@ -623,11 +605,9 @@ public class JsonUtilsTest {
   @Test
   public void testValidateJsonWithWrongVersion() {
     System.out.println("testValidateJsonWithWrongVersion");
-    String jsonDocument = validJsonDocument;
-    String jsonSchema = moreComplexExample;
     SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V7;
     try {
-      JsonUtils.validateJson(jsonDocument, jsonSchema, version);
+      JsonUtils.validateJson(validJsonDocument, moreComplexExample, version);
       fail();
     } catch (JsonValidationException jvex) {
       assertTrue(true);
@@ -662,12 +642,10 @@ public class JsonUtilsTest {
   public void testValidateJsonWithInvalidDocuments() {
     System.out.println("testValidateJsonWithInvalidDocuments");
     String[] jsonDocuments = {invalidJsonDocument1, invalidJsonDocument2, invalidJsonDocument3, invalidJsonDocument4, invalidJsonDocument5, invalidJsonDocument6, invalidJsonDocument7, invalidJsonDocument8};
-    String jsonSchema = moreComplexExample;
     boolean expResult = false;
-//  String jsonDocument = invalidJsonDocument2;
     for (String jsonDocument : jsonDocuments) {
       try {
-        boolean result = JsonUtils.validateJson(jsonDocument, jsonSchema);
+        boolean result = JsonUtils.validateJson(jsonDocument, moreComplexExample);
         System.out.println(jsonDocument);
         assertEquals(expResult, result);
       } catch (JsonValidationException jvex) {
@@ -707,10 +685,8 @@ public class JsonUtilsTest {
   @Test
   public void testValidateDateJson() {
     System.out.println("validateDateJson");
-    String jsonDocument = validDateDocument;
-    String jsonSchema = dateExample;
     boolean expResult = true;
-    boolean result = JsonUtils.validateJson(jsonDocument, jsonSchema);
+    boolean result = JsonUtils.validateJson(validDateDocument, dateExample);
     assertEquals(expResult, result);
   }
 
@@ -721,12 +697,11 @@ public class JsonUtilsTest {
   public void testValidateJsonWithInvalidDateDocument() {
     System.out.println("testValidateJsonWithInvalidDateDocument");
     String[] jsonDocuments = {invalidDateDocument};
-    String jsonSchema = dateExample;
     boolean expResult = false;
 //  String jsonDocument = invalidJsonDocument2;
     for (String jsonDocument : jsonDocuments) {
       try {
-        boolean result = JsonUtils.validateJson(jsonDocument, jsonSchema);
+        boolean result = JsonUtils.validateJson(jsonDocument, dateExample);
         System.out.println(jsonDocument);
         assertEquals(expResult, result);
       } catch (JsonValidationException jvex) {

@@ -131,7 +131,7 @@ public class MetadataControllerAccessWithAuthenticationEnabledV2Test {
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {
@@ -216,7 +216,7 @@ public class MetadataControllerAccessWithAuthenticationEnabledV2Test {
           schemaNo++;
         }
       }
-      ingestDataResource4UnregisteredUsers(SCHEMA_ID + "_" + schemaNo);
+      ingestDataResource4UnregisteredUsers(SCHEMA_ID);
     }
   }
 
@@ -428,7 +428,7 @@ public class MetadataControllerAccessWithAuthenticationEnabledV2Test {
    * @throws Exception
    */
   private void ingestDataResource4UnregisteredUsers(String schemaId) throws Exception {
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(ANONYMOUS_ID, SCHEMA_ID);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(ANONYMOUS_ID, schemaId);
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL, PERMISSION.READ));
     record.setAcls(aclEntries);

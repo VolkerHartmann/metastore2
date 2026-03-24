@@ -127,67 +127,72 @@ public class MetadataControllerV2Test {
   private final static String DC_DOCUMENT_WRONG_NAMESPACE = CreateSchemaUtil.KIT_DOCUMENT_WRONG_NAMESPACE;
   private final static String DC_DOCUMENT_INVALID = CreateSchemaUtil.KIT_DOCUMENT_INVALID_1;
 
-  private static final String JSON_SCHEMA = "{\n"
-          + "  \"type\": \"object\",\n"
-          + "  \"title\": \"Json schema for tests\",\n"
-          + "  \"default\": {},\n"
-          + "  \"required\": [\n"
-          + "      \"title\"\n"
-          + " ],\n"
-          + "  \"properties\": {\n"
-          + "    \"title\": {\n"
-          + "      \"type\": \"string\",\n"
-          + "      \"title\": \"Title\",\n"
-          + "      \"description\": \"Title of object.\"\n"
-          + "    }\n"
-          + "  },\n"
-          + "  \"additionalProperties\": false\n"
-          + "}\n";
+  private static final String JSON_SCHEMA = """
+          {
+            "type": "object",
+            "title": "Json schema for tests",
+            "default": {},
+            "required": [
+                "title"
+           ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "title": "Title",
+                "description": "Title of object."
+              }
+            },
+            "additionalProperties": false
+          }""";
 
-  private final static String JSON_HTTP_SCHEMA = "{\n"
-          + "    \"$schema\": \"http://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
+  private final static String JSON_HTTP_SCHEMA = """ 
+          {
+              "$schema": "http://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title"
+              ],
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
+                  }
+              },
+              "additionalProperties": false
+          }""";
 
-  private final static String JSON_HTTP_SCHEMA_WITH_HASH = "{\n"
-          + "    \"$schema\": \"http://json-schema.org/draft/2019-09/schema#\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
-  private static final String JSON_DOCUMENT_VERSION_1 = "{\n"
-          + "  \"title\": \"My first JSON document\" \n"
-          + "}\n";
+  private final static String JSON_HTTP_SCHEMA_WITH_HASH = """
+          {
+              "$schema": "http://json-schema.org/draft/2019-09/schema#",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title"
+              ],
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
+                  }
+              },
+              "additionalProperties": false
+          }""";
+  private static final String JSON_DOCUMENT_VERSION_1 = """
+          {
+            "title": "My first JSON document" 
+          }""";
 
-  private static final String JSON_DOCUMENT_VERSION_2 = "{\n"
-          + "  \"title\": \"My updated JSON document\" \n"
-          + "}\n";
+  private static final String JSON_DOCUMENT_VERSION_2 = """
+          {
+            "title": "My updated JSON document" 
+          }""";
 
   private static Boolean alreadyInitialized = Boolean.FALSE;
 
@@ -205,7 +210,7 @@ public class MetadataControllerV2Test {
   @Autowired
   private MetastoreConfiguration schemaConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {
@@ -247,8 +252,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecord() throws Exception {
     String id = "testCreateRecord";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
 
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
@@ -268,8 +272,7 @@ public class MetadataControllerV2Test {
   public void testCreateRecordWithHttpSchema() throws Exception {
     ingestHttpJsonSchemaRecord();
     String id = "testCreateRecordWithHttpSchema";
-    String schemaId = JSON_HTTP_SCHEMA_ID_URL;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonDocument(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonDocument(id, JSON_HTTP_SCHEMA_ID_URL);
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
 //    aclEntries.add(new AclEntry("test2",PERMISSION.ADMINISTRATE));
@@ -288,8 +291,7 @@ public class MetadataControllerV2Test {
   public void testCreateRecordWithHttpSchemaAndHash() throws Exception {
     ingestHttpJsonSchemaRecordWithHash();
     String id = "testCreateRecordWithHttpSchemaAndHash";
-    String schemaId = JSON_HTTP_SCHEMA_ID_WITH_HASH;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonDocument(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonDocument(id, JSON_HTTP_SCHEMA_ID_WITH_HASH);
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));
 //    aclEntries.add(new AclEntry("test2",PERMISSION.ADMINISTRATE));
@@ -307,8 +309,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordAlternateEndpoint() throws Exception {
     String id = "testCreateRecordAlternateEndpoint";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -322,8 +323,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithRelatedResourceOfTypeUrl() throws Exception {
     String id = "testCreateRecordWithRelatedResourceOfTypeUrl";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4XmlDocument(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4XmlDocument(id, SCHEMA_ID);
     RelatedIdentifier relatedResourceIdentifier = DataResourceRecordUtil.getRelatedIdentifier(record, DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE);
     relatedResourceIdentifier.setIdentifierType(Identifier.IDENTIFIER_TYPE.URL);
     ObjectMapper mapper = new ObjectMapper();
@@ -353,8 +353,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithValidUrlSchema() throws Exception {
     String id = "testCreateRecordWithValidUrlSchema";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -393,8 +392,7 @@ public class MetadataControllerV2Test {
   public void testCreateRecordWithInvalidUrl() throws Exception {
     String id = "testCreateRecordWithInvalidUrl";
     String invalidSchemaUrl = getSchemaUrl(SCHEMA_ID).substring(1);
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     for (RelatedIdentifier item : record.getRelatedIdentifiers()) {
       if (item.getRelationType().equals(DataResourceRecordUtil.RELATED_SCHEMA_TYPE)) {
         item.setValue(invalidSchemaUrl);
@@ -417,9 +415,8 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithInvalidUrlSchema() throws Exception {
     String id = "testCreateRecordWithInvalidUrlSchema";
-    String schemaId = INVALID_SCHEMA;
     String urlWithInvalidSchema = getSchemaUrl(SCHEMA_ID).replace(SCHEMA_ID, INVALID_SCHEMA);
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, INVALID_SCHEMA);
     for (RelatedIdentifier item : record.getRelatedIdentifiers()) {
       if (item.getRelationType().equals(DataResourceRecordUtil.RELATED_SCHEMA_TYPE)) {
         item.setValue(urlWithInvalidSchema);
@@ -452,9 +449,8 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithAnyValidUrl() throws Exception {
     String id = "testCreateRecordWithAnyValidUrl";
-    String schemaId = INVALID_SCHEMA;
     String schemaUrl = "http://anyurl.example.org/shouldNotExist";
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, INVALID_SCHEMA);
     for (RelatedIdentifier item : record.getRelatedIdentifiers()) {
       if (item.getRelationType().equals(DataResourceRecordUtil.RELATED_SCHEMA_TYPE)) {
         item.setValue(schemaUrl);
@@ -489,8 +485,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithId() throws Exception {
     String id = "SomeValidId";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -504,8 +499,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithInvalidId() throws Exception {
     String id = "http://localhost:8080/d1";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -519,8 +513,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithIdTwice() throws Exception {
     String id = "AnyValidId";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -545,8 +538,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithLocationUri() throws Exception {
     String id = "testCreateRecordWithLocationUri";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -566,8 +558,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateInvalidRecord() throws Exception {
     String id = "testCreateInvalidRecord";
-    String schemaId = INVALID_SCHEMA;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, INVALID_SCHEMA);
 //    MetadataRecord record = new MetadataRecord();
 //    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(INVALID_SCHEMA));
 //    record.setRelatedResource(RELATED_RESOURCE);
@@ -619,8 +610,7 @@ public class MetadataControllerV2Test {
   // Test is not active as remote address seems not to work
   public void testCreateRecordFromExternal() throws Exception {
     String id = "testCreateRecordFromExternal";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
 //    DataResource record = new DataResource();
 //    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(SCHEMA_ID));
 //    record.setRelatedResource(RELATED_RESOURCE);
@@ -642,8 +632,7 @@ public class MetadataControllerV2Test {
   //@Test @ToDo Set external remote address.
   public void testCreateRecordUpdateFromExternal() throws Exception {
     String id = "testCreateRecordUpdateFromExternal";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
 //    DataResource record = new DataResource();
 //    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier("my_dcExt"));
 //    record.setRelatedResource(RELATED_RESOURCE);
@@ -680,8 +669,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithBadMetadata() throws Exception {
     String id = "testCreateRecordWithBadMetadata";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
 //    DataResource record = new DataResource();
 //    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(SCHEMA_ID));
 //    record.setRelatedResource(RELATED_RESOURCE);
@@ -698,8 +686,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithEmptyAclSid() throws Exception {
     String id = "testCreateRecordWithEmptyAclSid";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry(null, PERMISSION.READ));
     record.setAcls(aclEntries);
@@ -719,8 +706,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithInvalidMetadataNamespace() throws Exception {
     String id = "testCreateRecordWithInvalidMetadataNamespace";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -734,8 +720,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithInvalidMetadata() throws Exception {
     String id = "testCreateRecordWithInvalidMetadata";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -749,8 +734,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithInvalidorEmptyResource() throws Exception {
     String id = "testCreateRecordWithInvalidorEmptyResource";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
     // empty resource type
     record.setResourceType(null);
@@ -801,8 +785,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithoutSchema() throws Exception {
     String id = "testCreateRecordWithoutSchema";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -838,8 +821,7 @@ public class MetadataControllerV2Test {
     ObjectMapper mapper = new ObjectMapper();
 
     String id = "testCreateRecordWithLocationUri";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     //remove related resource
     RelatedIdentifier relatedIdentifier = DataResourceRecordUtil.getRelatedIdentifier(record, DataResourceRecordUtil.RELATED_SCHEMA_TYPE);
     record.getRelatedIdentifiers().remove(relatedIdentifier);
@@ -855,8 +837,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateRecordWithoutDocument() throws Exception {
     String id = "testCreateRecordWithoutDocument";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
 //    DataResource record = new DataResource();
 ////    record.setId("my_id");
 //    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(SCHEMA_ID));
@@ -876,8 +857,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateTwoVersionsOfSameRecord() throws Exception {
     String id = "testCreateTwoVersionsOfSameRecord";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
 //    DataResource record = new DataResource();
 ////    record.setId("my_id");
 //    record.setSchema(ResourceIdentifier.factoryInternalResourceIdentifier(SCHEMA_ID));
@@ -906,8 +886,7 @@ public class MetadataControllerV2Test {
   @Test
   public void testCreateTwoVersions() throws Exception {
     String id = "testCreateTwoVersions";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -1402,9 +1381,7 @@ public class MetadataControllerV2Test {
     MvcResult result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).accept(MediaType.APPLICATION_XML)).andDo(print()).andExpect(status().isOk()).andReturn();
     String content = result.getResponse().getContentAsString();
 
-    String dcMetadata = DC_DOCUMENT;
-
-    Assert.assertEquals(dcMetadata, content);
+    Assert.assertEquals(DC_DOCUMENT, content);
   }
 
   @Test
@@ -1433,6 +1410,7 @@ public class MetadataControllerV2Test {
     String locationUri = result.getResponse().getHeader("Location");
     String etag = result.getResponse().getHeader("ETag");
     body = result.getResponse().getContentAsString();
+    Assert.assertNotNull(locationUri);
 
     DataResource record = mapper.readValue(body, DataResource.class);
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -1481,9 +1459,7 @@ public class MetadataControllerV2Test {
             andReturn();
     String content = result.getResponse().getContentAsString();
 
-    String dcMetadata = DC_DOCUMENT_VERSION_2;
-
-    Assert.assertEquals(dcMetadata, content);
+    Assert.assertEquals(DC_DOCUMENT_VERSION_2, content);
 
     Assert.assertEquals(locationUri.replace("version=1.0.0", "version=2.0.0"), locationUri2);
   }
@@ -1593,16 +1569,13 @@ public class MetadataControllerV2Test {
             andReturn();
     String content = result.getResponse().getContentAsString();
 
-    String dcMetadata = DC_DOCUMENT_VERSION_2;
-
-    Assert.assertEquals(dcMetadata, content);
+    Assert.assertEquals(DC_DOCUMENT_VERSION_2, content);
   }
 
   @Test
   public void testUpdateRecordWithoutExplizitGet() throws Exception {
     String id = "testUpdateRecordWithoutExplizitGet";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "metadata-record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -1771,7 +1744,8 @@ public class MetadataControllerV2Test {
   public void testUpdateRecordWithoutRecord4Json() throws Exception {
     String metadataRecordId = "testUpdateRecordWithoutRecord4Json";
     // Update only Json document
-    CreateSchemaUtil.ingestOrUpdateJsonSchemaRecordV2(mockMvc, JSON_SCHEMA_ID, JSON_SCHEMA, schemaConfig.getJwtSecret(), false, status().isCreated());
+    String uri = ingestOrUpdateJsonSchemaRecordV2(mockMvc, JSON_SCHEMA_ID, JSON_SCHEMA, schemaConfig.getJwtSecret(), false, status().isCreated());
+    Assert.assertNotNull(uri);
     MvcResult result = CreateSchemaUtil.ingestOrUpdateXmlMetadataDocumentV2(mockMvc, JSON_SCHEMA_ID, 1L, metadataRecordId, JSON_DOCUMENT_VERSION_1, schemaConfig.getJwtSecret(), false, status().isCreated());
     String locationUri = result.getResponse().getHeader("Location");
     String etag = result.getResponse().getHeader("ETag");
@@ -2029,9 +2003,7 @@ public class MetadataControllerV2Test {
             andReturn();
     String content = result.getResponse().getContentAsString();
 
-    String dcMetadata = DC_DOCUMENT_VERSION_2;
-
-    Assert.assertEquals(dcMetadata, content);
+    Assert.assertEquals(DC_DOCUMENT_VERSION_2, content);
 
     result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
                     header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).
@@ -2171,9 +2143,7 @@ public class MetadataControllerV2Test {
             andReturn();
     String content = result.getResponse().getContentAsString();
 
-    String dcMetadata = DC_DOCUMENT_VERSION_2;
-
-    Assert.assertEquals(dcMetadata, content);
+    Assert.assertEquals(DC_DOCUMENT_VERSION_2, content);
   }
 
   @Test
@@ -2235,9 +2205,7 @@ public class MetadataControllerV2Test {
             andReturn();
     String content = result.getResponse().getContentAsString();
 
-    String dcMetadata = DC_DOCUMENT_VERSION_2;
-
-    Assert.assertEquals(dcMetadata, content);
+    Assert.assertEquals(DC_DOCUMENT_VERSION_2, content);
 
     result = this.mockMvc.perform(get(API_METADATA_PATH + metadataRecordId).
             header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).
@@ -2355,11 +2323,9 @@ public class MetadataControllerV2Test {
               andReturn();
       String content = result.getResponse().getContentAsString();
 
-      String dcMetadata = DC_DOCUMENT;
-
       if (version == 1) {
 
-        Assert.assertTrue(content.startsWith(dcMetadata));
+        Assert.assertTrue(content.startsWith(DC_DOCUMENT));
 
 //    Assert.assertEquals(record.getEtag().replace("version=1.0.0", "version=2.0.0"), record2.getEtag());
         // Get version of record as array
@@ -2656,10 +2622,11 @@ public class MetadataControllerV2Test {
     String jwtSecret = schemaConfig.getJwtSecret();
     String schemaUrl = ingestKitSchemaRecord(this.mockMvc, schemaId, jwtSecret);
     Assert.assertNotNull(schemaUrl);
-    ingestXmlMetadataDocument(this.mockMvc, schemaId, null, metadataRecordId, DC_DOCUMENT, jwtSecret);
+    MvcResult result = ingestXmlMetadataDocument(this.mockMvc, schemaId, null, metadataRecordId, DC_DOCUMENT, jwtSecret);
+    Assert.assertNotNull(result.getResponse().getContentAsString());
     // Deletion of schema shouldn't work
     // Get ETag.
-    MvcResult result = mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
+    result = mockMvc.perform(get(API_SCHEMA_PATH + schemaId).
             header("Accept", DataResourceRecordUtil.DATA_RESOURCE_MEDIA_TYPE)).
             andDo(print()).
             andExpect(status().isOk()).
@@ -2837,8 +2804,7 @@ public class MetadataControllerV2Test {
   }
 
   private void ingestHttpJsonSchemaRecord() throws Exception {
-    String schemaId = JSON_HTTP_SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema(schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema(JSON_HTTP_SCHEMA_ID);
 //    MetadataSchemaRecord record = new MetadataSchemaRecord();
 //    record.setSchemaId(JSON_HTTP_SCHEMA_ID);
 //    record.setType(MetadataSchemaRecord.SCHEMA_TYPE.JSON);
@@ -2857,8 +2823,7 @@ public class MetadataControllerV2Test {
   }
 
   private void ingestHttpJsonSchemaRecordWithHash() throws Exception {
-    String schemaId = JSON_HTTP_SCHEMA_ID_WITH_HASH;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema(schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4JsonSchema(JSON_HTTP_SCHEMA_ID_WITH_HASH);
     ObjectMapper mapper = new ObjectMapper();
 
     MockMultipartFile recordFile = new MockMultipartFile("record", "record.json", "application/json", mapper.writeValueAsString(record).getBytes());
@@ -2892,7 +2857,7 @@ public class MetadataControllerV2Test {
     int index2 = second.lastIndexOf("=");
     SemanticVersion firstVersion = SemanticVersion.parse(first.substring(index1 + 1));
     SemanticVersion secondVersion = SemanticVersion.parse(second.substring(index2 + 1));
-    Assert.assertTrue(secondVersion.toString() + " > " + firstVersion, secondVersion.isAfter(firstVersion));
+    Assert.assertTrue(secondVersion + " > " + firstVersion, secondVersion.isAfter(firstVersion));
     incrementLevel = secondVersion.getDifferenceLevel(firstVersion);
     System.out.println("New version has level:" + incrementLevel);
     return incrementLevel;

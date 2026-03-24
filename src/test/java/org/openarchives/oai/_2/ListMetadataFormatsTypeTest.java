@@ -45,8 +45,7 @@ public class ListMetadataFormatsTypeTest {
     public void testGetMetadataFormat() {
         System.out.println("getMetadataFormat");
         ListMetadataFormatsType instance = new ListMetadataFormatsType();
-        List<MetadataFormatType> value = null;
-        List<MetadataFormatType> expResult = value;
+        List<MetadataFormatType> expResult = null;
         List<MetadataFormatType> result = instance.getMetadataFormat();
         assertTrue(result.isEmpty());
         expResult = result;

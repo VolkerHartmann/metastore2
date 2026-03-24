@@ -85,7 +85,6 @@ public class ResourceIdentifierTest {
   @Test
   public void testEqualsTrue() {
     System.out.println("equals(true)");
-    Object other = null;
     boolean expResult = true;
     ResourceIdentifier instance1 = new ResourceIdentifier();
     ResourceIdentifier instance2 = new ResourceIdentifier();

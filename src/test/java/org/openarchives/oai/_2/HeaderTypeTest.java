@@ -81,8 +81,7 @@ public class HeaderTypeTest {
     public void testGetSetSpec() {
         System.out.println("getSetSpec");
         HeaderType instance = new HeaderType();
-        List<String> value = null;
-        List<String> expResult = value;
+        List<String> expResult = null;
         List<String> result = instance.getSetSpec();
         assertTrue(result.isEmpty());
         expResult = result;

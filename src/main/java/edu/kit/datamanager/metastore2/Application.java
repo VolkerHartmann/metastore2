@@ -257,7 +257,7 @@ public class Application {
     rbc.setDataResourceService(schemaResourceService());
     rbc.setContentInformationService(schemaInformationService());
     rbc.setEventPublisher(eventPublisher);
-    LOG.trace("Looking for versioningServices....");
+    LOG.trace("Looking for versioningServices 4 schema....");
     for (IRepoVersioningService versioningService : this.versioningServices) {
       LOG.trace(LIST_ITEM, versioningService.getServiceName());
       if (Objects.equals(versioningService.getServiceName(), DEFAULT_VERSIONING)) {
@@ -265,7 +265,7 @@ public class Application {
         break;
       }
     }
-    LOG.trace("Looking for storageServices....");
+    LOG.trace("Looking for storageServices 4 schema....");
     for (IRepoStorageService storageService : this.storageServices) {
       LOG.trace(LIST_ITEM, storageService.getServiceName());
       if (Objects.equals(storageService.getServiceName(), DEFAULT_STORAGE)) {
@@ -292,7 +292,7 @@ public class Application {
     fixBasePath(rbc);
 
     printSettings(rbc);
-    LOG.trace("Content audit service: '{}'", contentAuditService);
+    LOG.trace("Content audit service 4 schema: '{}'", contentAuditService);
 
     return rbc;
   }

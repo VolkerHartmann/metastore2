@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.documentation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.Identifier;
@@ -100,125 +99,66 @@ public class RestDocumentation4WebpageTestV2 {
   public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   private final static String EXAMPLE_SCHEMA_ID = "my_first_json";
-  private final static String ANOTHER_SCHEMA_ID = "another_json";
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/webpage/json/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
   private final static String SCHEMA_V1 = """
           {
-              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-              \"$id\": \"http://www.example.org/schema/json\",
-              \"type\": \"object\",
-              \"title\": \"Json schema for tests\",
-              \"default\": {},
-              \"required\": [
-                  \"title\"
+              "$schema": "https://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title"
               ],
-              \"properties\": {
-                  \"title\": {
-                      \"type\": \"string\",
-                      \"title\": \"Title\",
-                      \"description\": \"Title of object.\"
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
                   }
               },
-              \"additionalProperties\": false
+              "additionalProperties": false
           }""";
 
   private final static String SCHEMA_V2 = """
           {
-              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-              \"$id\": \"http://www.example.org/schema/json\",
-              \"type\": \"object\",
-              \"title\": \"Json schema for tests\",
-              \"default\": {},
-              \"required\": [
-                  \"title\",
-                  \"date\"
+              "$schema": "https://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title",
+                  "date"
               ],
-              \"properties\": {
-                  \"title\": {
-                      \"type\": \"string\",
-                      \"title\": \"Title\",
-                      \"description\": \"Title of object.\"
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
                   },
-                  \"date\": {
-                      \"type\": \"string\",
-                      \"format\": \"date\",
-                      \"title\": \"Date\",
-                      \"description\": \"Date of object\"
+                  "date": {
+                      "type": "string",
+                      "format": "date",
+                      "title": "Date",
+                      "description": "Date of object"
                   }
               },
-              \"additionalProperties\": false
+              "additionalProperties": false
           }""";
 
-  private final static String SCHEMA_V3 = """
-          {
-              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-              \"$id\": \"http://www.example.org/schema/json\",
-              \"type\": \"object\",
-              \"title\": \"Json schema for tests\",
-              \"default\": {},
-              \"required\": [
-                  \"title\",
-                  \"date\"
-              ],
-              \"properties\": {
-                  \"title\": {
-                      \"type\": \"string\",
-                      \"title\": \"Title\",
-                      \"description\": \"Title of object.\"
-                  },
-                  \"date\": {
-                      \"type\": \"string\",
-                      \"format\": \"date\",
-                      \"title\": \"Date\",
-                      \"description\": \"Date of object\"
-                  },
-                  \"note\": {
-                      \"type\": \"string\",
-                      \"title\": \"Note\",
-                      \"description\": \"Additonal information about object\"
-                  }
-              },
-              \"additionalProperties\": false
-          }""";
-
-  private final static String ANOTHER_SCHEMA = """
-          {
-              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-              \"$id\": \"http://www.example.org/schema/json/example\",
-              \"type\": \"object\",
-              \"title\": \"Another Json schema for tests\",
-              \"default\": {},
-              \"required\": [
-                  \"description\"
-              ],
-              \"properties\": {
-                  \"description\": {
-                      \"type\": \"string\",
-                      \"title\": \"Description\",
-                      \"description\": \"Any description.\"
-                  }
-              },
-              \"additionalProperties\": false
-          }""";
 
   private final static String DOCUMENT_V1 = """
           {
-          \"title\": \"My first JSON document\"
+          "title": "My first JSON document"
           }""";
 
   private final static String DOCUMENT_V2 = """
           {
-          \"title\": \"My second JSON document\",
-          \"date\": \"2018-07-02\"
-          }""";
-
-  private final static String DOCUMENT_V3 = """
-          {
-          \"title\": \"My third JSON document\",
-          \"date\": \"2018-07-02\",
-          \"note\": \"since version 3 notes are allowed\"
+          "title": "My second JSON document",
+          "date": "2018-07-02"
           }""";
   private static final RelatedIdentifier RELATED_RESOURCE = RelatedIdentifier.factoryRelatedIdentifier(DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE, "https://repo/anyResourceId", null, null);
 
@@ -248,7 +188,10 @@ public class RestDocumentation4WebpageTestV2 {
                     .uris().withPort(8040).and()
                     .operationPreprocessors()
                     .withRequestDefaults(prettyPrint())
-                    .withResponseDefaults(Preprocessors.removeHeaders("X-Content-Type-Options", "X-XSS-Protection", "X-Frame-Options"), prettyPrint()))
+                    .withResponseDefaults(Preprocessors.modifyHeaders().
+                            remove("X-Content-Type-Options").
+                            remove("X-XSS-Protection").
+                            remove("X-Frame-Options"), prettyPrint()))
             .build();
   }
 
@@ -411,8 +354,7 @@ public class RestDocumentation4WebpageTestV2 {
             andExpect(status().isCreated()).
             andExpect(redirectedUrlPattern("http://*:*/**/*?version=1.0.0")).
             andReturn().getResponse().getHeader("Location");
-    // Get URL
-    String newLocation = location.split("[?]")[0];
+    Assert.assertNotNull(location);
 
     // 2. Accessing metadata document
     //**************************************************************************

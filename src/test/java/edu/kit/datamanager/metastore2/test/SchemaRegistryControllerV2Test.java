@@ -113,16 +113,16 @@ public class SchemaRegistryControllerV2Test {
   private static final String KIT_SCHEMA = CreateSchemaUtil.KIT_SCHEMA;
   private static final String APACHE_2_LICENSE = "https://spdx.org/licenses/Apache-2.0";
   private static final String KIT_SCHEMA_V2 = """
-          <xs:schema targetNamespace=\"http://www.example.org/schema/xsd/\"
-              xmlns=\"http://www.example.org/schema/xsd/\"
-              xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"
-              elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">
-            <xs:element name=\"metadata\">
+          <xs:schema targetNamespace="http://www.example.org/schema/xsd/"
+              xmlns="http://www.example.org/schema/xsd/"
+              xmlns:xs="http://www.w3.org/2001/XMLSchema"
+              elementFormDefault="qualified" attributeFormDefault="unqualified">
+            <xs:element name="metadata">
               <xs:complexType>
                 <xs:sequence>
-                  <xs:element name=\"title\" type=\"xs:string\"/>
-                  <xs:element name=\"date\" type=\"xs:date\"/>
-                  <xs:element name=\"note\" type=\"xs:string\" minOccurs=\"0\"/>
+                  <xs:element name="title" type="xs:string"/>
+                  <xs:element name="date" type="xs:date"/>
+                  <xs:element name="note" type="xs:string" minOccurs="0"/>
                 </xs:sequence>
               </xs:complexType>
             </xs:element>
@@ -138,24 +138,25 @@ public class SchemaRegistryControllerV2Test {
   private static final String XML_DOCUMENT_V3 = CreateSchemaUtil.XML_DOCUMENT_V3;
   private static final String JSON_DOCUMENT = "{\"title\":\"any string\",\"date\": \"2020-10-16\"}";
   private static final String RELATED_RESOURCE_STRING = "anyResourceId";
-  private final static String JSON_SCHEMA = "{\n"
-          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
+  private final static String JSON_SCHEMA = """
+          {
+              "$schema": "https://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title"
+              ],
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
+                  }
+              },
+              "additionalProperties": false
+          }""";
 
   private MockMvc mockMvc;
   @Autowired
@@ -171,7 +172,7 @@ public class SchemaRegistryControllerV2Test {
   @Autowired
   private MetastoreConfiguration schemaConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {
@@ -486,6 +487,7 @@ public class SchemaRegistryControllerV2Test {
     MvcResult result = this.mockMvc.perform(MockMvcRequestBuilders.multipart(API_SCHEMA_PATH).
             file(recordFile).
             file(schemaFile)).andDo(print()).andExpect(status().isBadRequest()).andReturn();
+    Assert.assertNotNull(result.getResponse().getContentAsString());
   }
 
   @Test
@@ -1680,13 +1682,11 @@ public class SchemaRegistryControllerV2Test {
 
     this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "1.0.0")).andDo(print()).andExpect(status().isOk()).andReturn();
 
-    String dcSchema = SCHEMA_V1;
-
 //    Assert.assertEquals(dcMetadata, content);
     result = this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "2.0.0")).andDo(print()).andExpect(status().isOk()).andReturn();
     String content = result.getResponse().getContentAsString();
 
-    Assert.assertNotEquals(dcSchema, content);
+    Assert.assertNotEquals(SCHEMA_V1, content);
     Assert.assertEquals("Length must differ!", SCHEMA_V2.length(), content.length());
     // check for higher versions which should be not available (if version > 2)
     this.mockMvc.perform(get(API_SCHEMA_PATH + schemaId).param("version", "3.0.0")).andDo(print()).andExpect(status().isNotFound());

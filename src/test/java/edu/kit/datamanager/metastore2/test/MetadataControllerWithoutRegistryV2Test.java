@@ -7,7 +7,6 @@ package edu.kit.datamanager.metastore2.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.repo.dao.IAllIdentifiersDao;
 import edu.kit.datamanager.repo.dao.IContentInformationDao;
 import edu.kit.datamanager.repo.dao.IDataResourceDao;
@@ -83,11 +82,8 @@ public class MetadataControllerWithoutRegistryV2Test {
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
   private static final String SCHEMA_ID = "my_dc";
-  private static final ResourceIdentifier RELATED_RESOURCE = ResourceIdentifier.factoryInternalResourceIdentifier("anyResourceId");
 
   private final static String KIT_SCHEMA = CreateSchemaUtil.KIT_SCHEMA;
-
-  private final static String KIT_DOCUMENT = CreateSchemaUtil.KIT_DOCUMENT;
 
   @Autowired
   private MockMvc mockMvc;
@@ -106,7 +102,7 @@ public class MetadataControllerWithoutRegistryV2Test {
   @Autowired
   private MetastoreConfiguration schemaConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {
@@ -148,8 +144,7 @@ public class MetadataControllerWithoutRegistryV2Test {
   @Test
   public void testCreateRecord() throws Exception {
     String id = "testCreateRecord";
-    String schemaId = SCHEMA_ID;
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, schemaId);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(id, SCHEMA_ID);
 
     Set<AclEntry> aclEntries = new HashSet<>();
 //    aclEntries.add(new AclEntry("SELF",PERMISSION.READ));

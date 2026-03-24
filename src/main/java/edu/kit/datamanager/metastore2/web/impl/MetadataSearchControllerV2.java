@@ -136,7 +136,7 @@ public class MetadataSearchControllerV2 {
    * @param pgbl page information
    * @return Prepared query with post filter for authorization.
    */
-  private ObjectNode prepareQuery(JsonNode body, Pageable pgbl) {
+  private void prepareQuery(JsonNode body, Pageable pgbl) {
     LOG.trace("Provided Elastic query: '{}'", body.toString());
 
     // Set or replace post-filter
@@ -145,6 +145,5 @@ public class MetadataSearchControllerV2 {
     ElasticSearchUtil.buildPostFilter(on);
 
     LOG.trace("Generated elastic query with post filter: '{}'", on.toPrettyString());
-    return on;
   }
 }

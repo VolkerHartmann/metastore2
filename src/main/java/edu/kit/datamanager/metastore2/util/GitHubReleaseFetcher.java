@@ -94,7 +94,6 @@ public class GitHubReleaseFetcher {
         }
 
         conn.disconnect();
-        boolean tagFound = false;
         JsonNode jsonNode = JsonUtils.getJsonNodeFromString(response.toString());
         for (JsonNode node : jsonNode) {
           String name = node.path("name").asText("No release yet!");
@@ -117,7 +116,6 @@ public class GitHubReleaseFetcher {
             // Set tag
             repoInfo.setTagName(tag);
             // Set version
-            String version = repoInfo.getVersion();
             LOG.debug("Extracted version: " + newVersion);
             // if an asset is available by a GitHub action this will be downloaded. The download URL is determined by the first asset in the release.
             // If no asset is available, try to download the file from the given path.
@@ -131,7 +129,6 @@ public class GitHubReleaseFetcher {
                       .replace(PLACEHOLDER_PATH2SCHEMA, repoInfo.getPath2Schema());
             }
             schemaDocument = getLatestJsonSchema(downloadUrl4Schema);
-            tagFound = true;
             break;
           } else {
             LOG.debug("Release " + name + " does not match the expected schemaId: " + repoInfo.getSchemaId());

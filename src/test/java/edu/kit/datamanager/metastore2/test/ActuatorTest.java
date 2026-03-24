@@ -100,7 +100,7 @@ public class ActuatorTest {
   @Autowired
   private SearchConfiguration elasticConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {

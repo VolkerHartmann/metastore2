@@ -16,18 +16,14 @@
 package edu.kit.datamanager.metastore2.util;
 
 import edu.kit.datamanager.entities.Identifier;
-import edu.kit.datamanager.entities.PERMISSION;
 import edu.kit.datamanager.exceptions.BadArgumentException;
 import edu.kit.datamanager.exceptions.CustomInternalServerError;
 import edu.kit.datamanager.exceptions.UnprocessableEntityException;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord;
-import edu.kit.datamanager.metastore2.domain.MetadataSchemaRecord.SCHEMA_TYPE;
 import edu.kit.datamanager.metastore2.domain.ResourceIdentifier;
 import edu.kit.datamanager.metastore2.domain.SchemaUrl2Path;
 import edu.kit.datamanager.metastore2.validation.IValidator;
 import edu.kit.datamanager.metastore2.validation.impl.XmlValidator;
-import edu.kit.datamanager.repo.domain.acl.AclEntry;
 import org.junit.*;
 
 import java.io.ByteArrayInputStream;
@@ -37,9 +33,7 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Set;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -89,9 +83,8 @@ public class SchemaRecordUtilTest {
 
   @Test(expected = NullPointerException.class)
   public void testValidateResourceIdentifierNoType() {
-    MetastoreConfiguration conf = new MetastoreConfiguration();
     ResourceIdentifier identifier = ResourceIdentifier.factoryResourceIdentifier("any", null);
-    fail("Don't reach this line!");
+    fail("Don't reach this line!" + identifier);
   }
 
   @Test(expected = BadArgumentException.class)
@@ -229,7 +222,6 @@ public class SchemaRecordUtilTest {
 
   @Test
   public void testIdentifierTypes() {
-    MetadataSchemaRecord mr = new MetadataSchemaRecord();
     ResourceIdentifier.IdentifierType[] values = ResourceIdentifier.IdentifierType.values();
     for (ResourceIdentifier.IdentifierType item : values) {
       assertNotNull(item.value() + " is not defined in DataResource!", Identifier.IDENTIFIER_TYPE.valueOf(item.name()));
@@ -248,44 +240,13 @@ public class SchemaRecordUtilTest {
   public void testFixRelativeUriWithUnknownProtocol() {
     String relativeUri = "unknown:/schema1.json";
     String result = SchemaRecordUtil.fixRelativeURI(relativeUri);
-    Assert.fail("This line should not be executed!");
+    Assert.fail("This line should not be executed!" + result);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testFixRelativeUriWithInvalidUri() {
     String relativeUri = "file:/// schema1.json";
     String result = SchemaRecordUtil.fixRelativeURI(relativeUri);
-    Assert.fail("This line should not be executed!");
-  }
-  private MetadataSchemaRecord buildMSR(Set<AclEntry> aclEntry, String comment, Instant creationDate, String definition,
-          String eTag, String label, Instant update, boolean doNotSync, String mimetype, String pid, String schemaDocument,
-          String schemaHash, String schemaId, String version, SCHEMA_TYPE type) {
-    MetadataSchemaRecord msr = new MetadataSchemaRecord();
-    msr.setAcl(aclEntry);
-    msr.setComment(comment);
-    msr.setCreatedAt(creationDate);
-    msr.setDefinition(definition);
-    msr.setETag(eTag);
-    msr.setLabel(label);
-    msr.setLastUpdate(update);
-    msr.setDoNotSync(doNotSync);
-    msr.setMimeType(mimetype);
-    msr.setPid(ResourceIdentifier.factoryUrlResourceIdentifier(pid));
-    msr.setSchemaDocumentUri(schemaDocument);
-    msr.setSchemaHash(schemaHash);
-    msr.setSchemaId(schemaId);
-    msr.setSchemaVersion(version);
-    msr.setType(type);
-
-    return msr;
- }
-
-  private AclEntry createEntry(Long id, PERMISSION permission, String sid) {
-    AclEntry entry = new AclEntry();
-    entry.setId(id);
-    entry.setPermission(permission);
-    entry.setSid(sid);
-    return entry;
-
+    Assert.fail("This line should not be executed!" + result);
   }
 }

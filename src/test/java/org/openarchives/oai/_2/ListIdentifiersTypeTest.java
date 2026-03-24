@@ -45,8 +45,7 @@ public class ListIdentifiersTypeTest {
     public void testGetHeader() {
         System.out.println("getHeader");
         ListIdentifiersType instance = new ListIdentifiersType();
-        List<HeaderType> value = null;
-        List<HeaderType> expResult = value;
+        List<HeaderType> expResult = null;
         List<HeaderType> result = instance.getHeader();
         assertTrue(result.isEmpty());
         expResult = result;

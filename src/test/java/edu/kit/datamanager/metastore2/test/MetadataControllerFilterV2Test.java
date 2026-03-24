@@ -85,51 +85,54 @@ public class MetadataControllerFilterV2Test {
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/jsonfilter/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
-  private final static String JSON_SCHEMA = "{\n"
-          + "    \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",\n"
-          + "    \"$id\": \"http://www.example.org/schema/json\",\n"
-          + "    \"type\": \"object\",\n"
-          + "    \"title\": \"Json schema for tests\",\n"
-          + "    \"default\": {},\n"
-          + "    \"required\": [\n"
-          + "        \"title\",\n"
-          + "        \"date\"\n"
-          + "    ],\n"
-          + "    \"properties\": {\n"
-          + "        \"title\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"title\": \"Title\",\n"
-          + "            \"description\": \"Title of object.\"\n"
-          + "        },\n"
-          + "        \"date\": {\n"
-          + "            \"type\": \"string\",\n"
-          + "            \"format\": \"date\",\n"
-          + "            \"title\": \"Date\",\n"
-          + "            \"description\": \"Date of object\"\n"
-          + "        }\n"
-          + "    },\n"
-          + "    \"additionalProperties\": false\n"
-          + "}";
+  private final static String JSON_SCHEMA = """
+          {
+              "$schema": "https://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title",
+                  "date"
+              ],
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
+                  },
+                  "date": {
+                      "type": "string",
+                      "format": "date",
+                      "title": "Date",
+                      "description": "Date of object"
+                  }
+              },
+              "additionalProperties": false
+          }""";
   private final static String JSON_DOCUMENT = "{\"title\":\"any string\",\"date\": \"2020-10-16\"}";
-  private final static String XML_SCHEMA = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/\"\n"
-          + "                xmlns=\"http://www.example.org/schema/xsd/\"\n"
-          + "                xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
-          + "                elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
-          + "      <xs:element name=\"metadata\">\n"
-          + "        <xs:complexType>\n"
-          + "          <xs:sequence>\n"
-          + "            <xs:element name=\"title\" type=\"xs:string\"/>\n"
-          + "            <xs:element name=\"date\" type=\"xs:date\"/>\n"
-          + "          </xs:sequence>\n"
-          + "        </xs:complexType>\n"
-          + "      </xs:element>\n"
-          + "    </xs:schema>";
+  private final static String XML_SCHEMA = """
+              <xs:schema targetNamespace="http://www.example.org/schema/xsd/"
+                          xmlns="http://www.example.org/schema/xsd/"
+                          xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                          elementFormDefault="qualified" attributeFormDefault="unqualified">
+                <xs:element name="metadata">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="title" type="xs:string"/>
+                      <xs:element name="date" type="xs:date"/>
+                    </xs:sequence>
+                  </xs:complexType>
+                </xs:element>
+              </xs:schema>""";
 
-  private final static String XML_DOCUMENT = "<?xml version='1.0' encoding='utf-8'?>\n"
-          + "<ex:metadata xmlns:ex=\"http://www.example.org/schema/xsd/\">\n"
-          + "  <ex:title>Title of second version</ex:title>\n"
-          + "  <ex:date>2021-06-15</ex:date>\n"
-          + "</ex:metadata>";
+  private final static String XML_DOCUMENT = """
+          <?xml version='1.0' encoding='utf-8'?>
+          <ex:metadata xmlns:ex="http://www.example.org/schema/xsd/">
+            <ex:title>Title of second version</ex:title>
+            <ex:date>2021-06-15</ex:date>
+          </ex:metadata>""";
   public static boolean initialize = true;
   public final static int MAX_NO_OF_SCHEMAS = 4;
   private static final String JSON_SCHEMA_ID = "json_schema_";
@@ -154,7 +157,7 @@ public class MetadataControllerFilterV2Test {
   @Autowired
   private MetastoreConfiguration schemaConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {
@@ -217,7 +220,7 @@ public class MetadataControllerFilterV2Test {
       Assert.assertEquals("No of records for schema '" + i + "'", i, result.length);
       for (DataResource item : result) {
         edu.kit.datamanager.repo.domain.RelatedIdentifier schemaIdentifier = DataResourceRecordUtil.getSchemaIdentifier(item);
-        Assert.assertEquals(schemaIdentifier.getIdentifierType().URL, schemaIdentifier.getIdentifierType());
+        Assert.assertEquals(Identifier.IDENTIFIER_TYPE.URL, schemaIdentifier.getIdentifierType());
         String schemaUrl = DataResourceRecordUtil.getSchemaIdentifier(item).getValue();
         Assert.assertTrue(schemaUrl.startsWith("http://localhost:"));
         Assert.assertTrue(schemaUrl.contains(API_SCHEMA_PATH));
@@ -302,9 +305,8 @@ public class MetadataControllerFilterV2Test {
 
   @Test
   public void testFindSchemaRecordsByInvalidMimeType() throws Exception {
-    String mimeType = INVALID_MIMETYPE;
     MvcResult res = this.mockMvc.perform(get(API_SCHEMA_PATH)
-            .param("mimeType", mimeType))
+            .param("mimeType", INVALID_MIMETYPE))
             .andDo(print())
             .andExpect(status().isOk())
             .andReturn();

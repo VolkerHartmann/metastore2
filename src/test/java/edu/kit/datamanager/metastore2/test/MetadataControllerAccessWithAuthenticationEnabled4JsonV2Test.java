@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.hamcrest.Matchers;
 import org.javers.core.Javers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -96,34 +97,34 @@ public class MetadataControllerAccessWithAuthenticationEnabled4JsonV2Test {
   private static final String INVALID_SCHEMA = "invalid_dc";
   private final static String JSON_SCHEMA = """
           {
-              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-              \"$id\": \"http://www.example.org/schema/json\",
-              \"type\": \"object\",
-              \"title\": \"Json schema for tests\",
-              \"default\": {},
-              \"required\": [
-                  \"title\",
-                  \"date\"
+              "$schema": "https://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title",
+                  "date"
               ],
-              \"properties\": {
-                  \"title\": {
-                      \"type\": \"string\",
-                      \"title\": \"Title\",
-                      \"description\": \"Title of object.\"
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
                   },
-                  \"date\": {
-                      \"type\": \"string\",
-                      \"format\": \"date\",
-                      \"title\": \"Date\",
-                      \"description\": \"Date of object\"
+                  "date": {
+                      "type": "string",
+                      "format": "date",
+                      "title": "Date",
+                      "description": "Date of object"
                   }
               },
-              \"additionalProperties\": false
+              "additionalProperties": false
           }""";
   private final static String JSON_DOCUMENT = """
           {
-              \"title\": \"Json schema for tests\",
-              \"date\": \"2022-07-29\"
+              "title": "Json schema for tests",
+              "date": "2022-07-29"
           }""";
 
   private String adminToken;
@@ -158,7 +159,7 @@ public class MetadataControllerAccessWithAuthenticationEnabled4JsonV2Test {
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {
@@ -227,7 +228,8 @@ public class MetadataControllerAccessWithAuthenticationEnabled4JsonV2Test {
         ex.printStackTrace();
       }
 
-      CreateSchemaUtil.ingestKitSchemaRecordV2(mockMvc, SCHEMA_ID, applicationProperties.getJwtSecret());
+      String uri = CreateSchemaUtil.ingestKitSchemaRecordV2(mockMvc, SCHEMA_ID, applicationProperties.getJwtSecret());
+      Assert.assertNotNull(uri);
       int schemaNo = 1;
       for (PERMISSION user1 : PERMISSION.values()) {
         for (PERMISSION guest : PERMISSION.values()) {
@@ -235,7 +237,7 @@ public class MetadataControllerAccessWithAuthenticationEnabled4JsonV2Test {
           schemaNo++;
         }
       }
-      ingestDataResource4UnregisteredUsers(SCHEMA_ID + "_" + schemaNo);
+      ingestDataResource4UnregisteredUsers(SCHEMA_ID);
     }
   }
 
@@ -385,7 +387,7 @@ public class MetadataControllerAccessWithAuthenticationEnabled4JsonV2Test {
    * @throws Exception
    */
   private void ingestDataResource4UnregisteredUsers(String schemaId) throws Exception {
-    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(ANONYMOUS_ID, SCHEMA_ID);
+    DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(ANONYMOUS_ID, schemaId);
     Set<AclEntry> aclEntries = new HashSet<>();
     aclEntries.add(new AclEntry(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL, PERMISSION.READ));
     record.setAcls(aclEntries);

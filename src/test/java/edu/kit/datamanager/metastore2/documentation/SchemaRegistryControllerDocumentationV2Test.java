@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.documentation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import edu.kit.datamanager.entities.PERMISSION;
@@ -97,91 +96,93 @@ public class SchemaRegistryControllerDocumentationV2Test {
   @Autowired
   private WebApplicationContext context;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   private final static String EXAMPLE_SCHEMA_ID = "my_first_xsd";
   private final static String ANOTHER_SCHEMA_ID = "another_xsd";
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/v2/restdocu/xml/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
   private final static String TEMP_DIR_4_METADATA = TEMP_DIR_4_ALL + "metadata/";
-  private final static String SCHEMA_V1 = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/\"\n"
-          + "        xmlns=\"http://www.example.org/schema/xsd/\"\n"
-          + "        xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
-          + "        elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
-          + "\n"
-          + "<xs:element name=\"metadata\">\n"
-          + "  <xs:complexType>\n"
-          + "    <xs:sequence>\n"
-          + "      <xs:element name=\"title\" type=\"xs:string\"/>\n"
-          + "    </xs:sequence>\n"
-          + "  </xs:complexType>\n"
-          + "</xs:element>\n"
-          + "\n"
-          + "</xs:schema>";
-  private final static String SCHEMA_V2 = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/\"\n"
-          + "        xmlns=\"http://www.example.org/schema/xsd/\"\n"
-          + "        xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
-          + "        elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
-          + "\n"
-          + "<xs:element name=\"metadata\">\n"
-          + "  <xs:complexType>\n"
-          + "    <xs:sequence>\n"
-          + "      <xs:element name=\"title\" type=\"xs:string\"/>\n"
-          + "      <xs:element name=\"date\" type=\"xs:date\"/>\n"
-          + "    </xs:sequence>\n"
-          + "  </xs:complexType>\n"
-          + "</xs:element>\n"
-          + "\n"
-          + "</xs:schema>";
-  private final static String SCHEMA_V3 = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/\"\n"
-          + "        xmlns=\"http://www.example.org/schema/xsd/\"\n"
-          + "        xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
-          + "        elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
-          + "\n"
-          + "<xs:element name=\"metadata\">\n"
-          + "  <xs:complexType>\n"
-          + "    <xs:sequence>\n"
-          + "      <xs:element name=\"title\" type=\"xs:string\"/>\n"
-          + "      <xs:element name=\"date\" type=\"xs:date\"/>\n"
-          + "      <xs:element name=\"note\" type=\"xs:string\" minOccurs=\"0\"/>\n"
-          + "    </xs:sequence>\n"
-          + "  </xs:complexType>\n"
-          + "</xs:element>\n"
-          + "\n"
-          + "</xs:schema>";
+  private final static String SCHEMA_V1 = """
+          <xs:schema targetNamespace="http://www.example.org/schema/xsd/"
+                  xmlns="http://www.example.org/schema/xsd/"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                  elementFormDefault="qualified" attributeFormDefault="unqualified">
+          
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="title" type="xs:string"/>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          
+          </xs:schema>""";
+  private final static String SCHEMA_V2 = """
+          <xs:schema targetNamespace="http://www.example.org/schema/xsd/"
+                  xmlns="http://www.example.org/schema/xsd/"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                  elementFormDefault="qualified" attributeFormDefault="unqualified">
+          
+            <xs:element name="metadata">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="title" type="xs:string"/>
+                  <xs:element name="date" type="xs:date"/>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>""";
+  private final static String SCHEMA_V3 = """ 
+          <xs:schema targetNamespace="http://www.example.org/schema/xsd/"
+                  xmlns="http://www.example.org/schema/xsd/"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                  elementFormDefault="qualified" attributeFormDefault="unqualified">
+            <xs:element name="metadata">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="title" type="xs:string"/>
+                  <xs:element name="date" type="xs:date"/>
+                  <xs:element name="note" type="xs:string" minOccurs="0"/>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>""";
 
-  private final static String ANOTHER_SCHEMA = "<xs:schema targetNamespace=\"http://www.example.org/schema/xsd/example\"\n"
-          + "        xmlns=\"http://www.example.org/schema/xsd/example\"\n"
-          + "        xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n"
-          + "        elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
-          + "\n"
-          + "<xs:element name=\"metadata\">\n"
-          + "  <xs:complexType>\n"
-          + "    <xs:sequence>\n"
-          + "      <xs:element name=\"description\" type=\"xs:string\"/>\n"
-          + "    </xs:sequence>\n"
-          + "  </xs:complexType>\n"
-          + "</xs:element>\n"
-          + "\n"
-          + "</xs:schema>";
+  private final static String ANOTHER_SCHEMA = """
+          <xs:schema targetNamespace="http://www.example.org/schema/xsd/example"
+                  xmlns="http://www.example.org/schema/xsd/example"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                  elementFormDefault="qualified" attributeFormDefault="unqualified">
+            <xs:element name="metadata">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="description" type="xs:string"/>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:schema>""";
 
-  private final static String DOCUMENT_V1 = "<?xml version='1.0' encoding='utf-8'?>\n"
-          + "<example:metadata xmlns:example=\"http://www.example.org/schema/xsd/\" >\n"
-          + "  <example:title>My first XML document</example:title>\n"
-          + "</example:metadata>";
+  private final static String DOCUMENT_V1 = """
+          <?xml version='1.0' encoding='utf-8'?>
+          <example:metadata xmlns:example="http://www.example.org/schema/xsd/" >
+            <example:title>My first XML document</example:title>
+          </example:metadata>""";
 
-  private final static String DOCUMENT_V2 = "<?xml version='1.0' encoding='utf-8'?>\n"
-          + "<example:metadata xmlns:example=\"http://www.example.org/schema/xsd/\" >\n"
-          + "  <example:title>My second XML document</example:title>\n"
-          + "  <example:date>2018-07-02</example:date>\n"
-          + "</example:metadata>";
+  private final static String DOCUMENT_V2 = """
+          <?xml version='1.0' encoding='utf-8'?>
+          <example:metadata xmlns:example="http://www.example.org/schema/xsd/" >
+            <example:title>My second XML document</example:title>
+            <example:date>2018-07-02</example:date>
+          </example:metadata>""";
 
-  private final static String DOCUMENT_V3 = "<?xml version='1.0' encoding='utf-8'?>\n"
-          + "<example:metadata xmlns:example=\"http://www.example.org/schema/xsd/\" >\n"
-          + "  <example:title>My third XML document</example:title>\n"
-          + "  <example:date>2018-07-02</example:date>\n"
-          + "  <example:note>since version 3 notes are allowed</example:note>\n"
-          + "</example:metadata>";
+  private final static String DOCUMENT_V3 = """
+          <?xml version='1.0' encoding='utf-8'?>
+          <example:metadata xmlns:example="http://www.example.org/schema/xsd/" >
+            <example:title>My third XML document</example:title>
+            <example:date>2018-07-02</example:date>
+            <example:note>since version 3 notes are allowed</example:note>
+          </example:metadata>""";
   private static final ResourceIdentifier RELATED_RESOURCE = ResourceIdentifier.factoryUrlResourceIdentifier("https://repo/anyResourceId");
 
   @Before
@@ -208,7 +209,10 @@ public class SchemaRegistryControllerDocumentationV2Test {
                     .uris().withPort(8040).and()
                     .operationPreprocessors()
                     .withRequestDefaults(prettyPrint())
-                    .withResponseDefaults(Preprocessors.removeHeaders("X-Content-Type-Options", "X-XSS-Protection", "X-Frame-Options"), prettyPrint()))
+                    .withResponseDefaults(Preprocessors.modifyHeaders().
+                            remove("X-Content-Type-Options").
+                            remove("X-XSS-Protection").
+                            remove("X-Frame-Options"), prettyPrint()))
             .build();
   }
 
@@ -301,7 +305,6 @@ public class SchemaRegistryControllerDocumentationV2Test {
             andExpect(status().isOk()).
             andReturn();
     etag = result.getResponse().getHeader("ETag");
-    String exampleSchemaV3 = result.getResponse().getHeader("location");
     //  6. Registering another metadata schema
     //**************************************************************************
     schemaRecord.setId(ANOTHER_SCHEMA_ID);

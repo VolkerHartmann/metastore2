@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
  */
 public class MetadataSchemaRecordTest {
   
-  String metadataSchemaRecordAsJson = "{\"schemaId\":\"dc\",\"mimeType\":\"application/xml\",\"type\":\"XML\",\"createdAt\":\"2020-04-15T05:34:01.5465Z\",\"lastUpdate\":\"2020-04-15T05:34:01.546502Z\",\"acl\":[{\"id\":11,\"sid\":\"SELF\",\"permission\":\"WRITE\"}],\"schemaDocumentUri\":\"http://localhost/api/v1/schemas/dc\",\"locked\":false}";
+  final String metadataSchemaRecordAsJson = "{\"schemaId\":\"dc\",\"mimeType\":\"application/xml\",\"type\":\"XML\",\"createdAt\":\"2020-04-15T05:34:01.5465Z\",\"lastUpdate\":\"2020-04-15T05:34:01.546502Z\",\"acl\":[{\"id\":11,\"sid\":\"SELF\",\"permission\":\"WRITE\"}],\"schemaDocumentUri\":\"http://localhost/api/v1/schemas/dc\",\"locked\":false}";
   
   public MetadataSchemaRecordTest() {
   }
@@ -298,7 +298,7 @@ public class MetadataSchemaRecordTest {
     assertEquals(expResult, result);
   }
 
-  /**
+  /*
    * Test of toString method, of class MetadataSchemaRecord.
    */
 //  @Test

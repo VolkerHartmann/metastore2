@@ -55,18 +55,18 @@ public class JsonUtilsFailingTest {
 
     String schemaDocument = """
           {
-            \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-            \"$id\": \"http://localhost:8040/api/v1/schemas/Test\",
-            \"title\": \"Test\",
-            \"type\": \"object\",
-            \"properties\": {
-              \"asd\": {
-                \"type\": \"lllll\",
-                \"pattern\": 100,
-                \"maxLength\": \"asda\"
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "$id": "http://localhost:8040/api/v1/schemas/Test",
+            "title": "Test",
+            "type": "object",
+            "properties": {
+              "asd": {
+                "type": "lllll",
+                "pattern": 100,
+                "maxLength": "asda"
               }
             },
-            \"allOf\": \"nope\"
+            "allOf": "nope"
           }""";
 
     try ( MockedStatic<SimpleServiceClient> utilities = Mockito.mockStatic(SimpleServiceClient.class)) {
@@ -91,10 +91,10 @@ public class JsonUtilsFailingTest {
     System.out.println("testValidateJsonSchemaDocumentWithSchemaDraft201909AsStreamButWrongVersion");
     String jsonSchemaWithversiondraft201909 = """
           {
-            \"$schema\": \"https://json-schema.org/draft/2019-09/schema\", 
-            \"properties\": {
-              \"id\": {
-                \"type\": \"number\"
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "properties": {
+              "id": {
+                "type": "number"
               }
             }
           }""";

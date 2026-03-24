@@ -77,7 +77,7 @@ public class ActuatorPrometheusTest {
 
   private static Boolean alreadyInitialized = Boolean.FALSE;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
   private MockMvc mockMvc;
   @Autowired
   private WebApplicationContext context;

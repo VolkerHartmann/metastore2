@@ -638,7 +638,7 @@ public class CreateSchemaUtil {
     MvcResult result = null;
     String versionAsString = null;
     if (version != null) {
-      versionAsString = version.toString() + ".0.0";
+      versionAsString = version + ".0.0";
     }
 
     DataResource record = SchemaRegistryControllerV2Test.createDataResource4Document(metadataId, schemaId, versionAsString);

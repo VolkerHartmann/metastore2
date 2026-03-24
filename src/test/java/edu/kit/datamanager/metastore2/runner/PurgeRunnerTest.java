@@ -50,7 +50,6 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 import org.springframework.test.context.web.ServletTestExecutionListener;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import static org.junit.Assert.assertFalse;
@@ -89,8 +88,6 @@ public class PurgeRunnerTest {
 
   private static Boolean alreadyInitialized = Boolean.FALSE;
 
-  private MockMvc mockMvc;
-
   @Autowired
   private ElasticIndexerRunner eir;
   @Autowired
@@ -103,7 +100,7 @@ public class PurgeRunnerTest {
   private PurgeRunner purgeRunner;
 
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   public PurgeRunnerTest() {
   }
@@ -130,7 +127,7 @@ public class PurgeRunnerTest {
   @Before
   public void setUp() {
     // setup mockMvc
-    this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
+    MockMvcBuilders.webAppContextSetup(this.context)
             .apply(springSecurity())
             .apply(documentationConfiguration(this.restDocumentation).uris()
                     .withPort(41438))

@@ -94,7 +94,6 @@ public class SchemaRegistryControllerAccessWithAuthenticationEnabledV2Test {
   private static final String API_BASE_PATH = "/api/v2";
   private static final String ALTERNATE_API_SCHEMA_PATH = API_BASE_PATH + "/schemas";
   private static final String API_SCHEMA_PATH = ALTERNATE_API_SCHEMA_PATH + "/";
-  private static final String API_METADATA_PATH = API_BASE_PATH + "/metadata/";
 
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/v2/schema/aai/access/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
@@ -132,7 +131,7 @@ public class SchemaRegistryControllerAccessWithAuthenticationEnabledV2Test {
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {

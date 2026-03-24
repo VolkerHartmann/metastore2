@@ -125,7 +125,7 @@ public class ElasticIndexerRunnerTest {
   @Autowired
   private MetastoreConfiguration metadataConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   private final static String TEMP_DIR_4_ALL = "/tmp/metastore2/elasticRunner/";
   private final static String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
@@ -290,6 +290,7 @@ public class ElasticIndexerRunnerTest {
             andDo(print()).
             andExpect(status().isCreated()).
             andReturn().getResponse().getHeader("Location");
+    Assert.assertNotNull(schemaLocation);
     return schemaLocation;
   }
 

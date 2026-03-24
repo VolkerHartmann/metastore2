@@ -97,74 +97,74 @@ public class JsonSchemaRegistryControllerV2Test {
   private static final String INVALID_SCHEMA_ID = "invalid/json";
   private final static String JSON_SCHEMA = """
           {
-              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-              \"$id\": \"http://www.example.org/schema/json\",
-              \"type\": \"object\",
-              \"title\": \"Json schema for tests\",
-              \"default\": {},
-              \"required\": [
-                  \"title\",
-                  \"date\"
+              "$schema": "https://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title",
+                  "date"
               ],
-              \"properties\": {
-                  \"title\": {
-                      \"type\": \"string\",
-                      \"title\": \"Title\",
-                      \"description\": \"Title of object.\"
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
                   },
-                  \"date\": {
-                      \"type\": \"string\",
-                      \"format\": \"date\",
-                      \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",
-                      \"title\": \"Date\",
-                      \"description\": \"Date of object\"
+                  "date": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^[0-9]{4}-[01][0-9]-[0-3][0-9]$",
+                      "title": "Date",
+                      "description": "Date of object"
                   }
               },
-              \"additionalProperties\": false
+              "additionalProperties": false
           }""";
   private final static String JSON_SCHEMA_V2 = """
           {
-              \"$schema\": \"https://json-schema.org/draft/2019-09/schema\",
-              \"$id\": \"http://www.example.org/schema/json\",
-              \"type\": \"object\",
-              \"title\": \"Json schema for tests\",
-              \"default\": {},
-              \"required\": [
-                  \"title\",
-                  \"date\"
+              "$schema": "https://json-schema.org/draft/2019-09/schema",
+              "$id": "http://www.example.org/schema/json",
+              "type": "object",
+              "title": "Json schema for tests",
+              "default": {},
+              "required": [
+                  "title",
+                  "date"
               ],
-              \"properties\": {
-                  \"title\": {
-                      \"type\": \"string\",
-                      \"title\": \"Title\",
-                      \"description\": \"Title of object.\"
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "title": "Title",
+                      "description": "Title of object."
                   },
-                  \"date\": {
-                      \"type\": \"string\",
-                      \"format\": \"date\",
-                      \"pattern\": \"^[0-9]{4}-[01][0-9]-[0-3][0-9]$\",
-                      \"title\": \"Date\",
-                      \"description\": \"Date of object\"
+                  "date": {
+                      "type": "string",
+                      "format": "date",
+                      "pattern": "^[0-9]{4}-[01][0-9]-[0-3][0-9]$",
+                      "title": "Date",
+                      "description": "Date of object"
                   },
-                  \"note\": {
-                      \"type\": \"string\",
-                      \"title\": \"Note\",
-                      \"description\": \"Additonal information about object.\"
+                  "note": {
+                      "type": "string",
+                      "title": "Note",
+                      "description": "Additonal information about object."
                   }
               },
-              \"additionalProperties\": false
+              "additionalProperties": false
           }""";
 
   private final static String JSON_SCHEMA4UPDATE = """
           {
-              \"type\": \"object\", 
-              \"properties\": 
+              "type": "object",
+              "properties": 
               { 
-                  \"title\": 
+                  "title": 
                   { 
-                      \"type\": \"string\", 
-                      \"title\": \"Title\", 
-                      \"description\": \"Title of object.\" 
+                      "type": "string", 
+                      "title": "Title", 
+                      "description": "Title of object." 
                   } 
               } 
           }""";
@@ -172,7 +172,7 @@ public class JsonSchemaRegistryControllerV2Test {
   private final static String INVALID_JSON_DOCUMENT = "{\"title\":\"any string\",\"date\":\"2020-10-16T10:13:24\"}";
   private final static String DC_DOCUMENT = """
           <?xml version='1.0' encoding='utf-8'?>
-          <oai_dc:dc xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:oai_dc=\"http://www.openarchives.org/OAI/2.0/oai_dc/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd\">
+          <oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
             <dc:creator>Carbon, Seth</dc:creator>
             <dc:creator>Mungall, Chris</dc:creator>
             <dc:date>2018-07-02</dc:date>
@@ -204,7 +204,7 @@ public class JsonSchemaRegistryControllerV2Test {
   @Autowired
   private MetastoreConfiguration schemaConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   @Before
   public void setUp() throws Exception {

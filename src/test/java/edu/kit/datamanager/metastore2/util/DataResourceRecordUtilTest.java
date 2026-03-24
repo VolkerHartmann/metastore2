@@ -38,13 +38,11 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.*;
+
 import static org.junit.Assert.*;
-import org.junit.Rule;
+
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -67,7 +65,6 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 import org.springframework.test.context.web.ServletTestExecutionListener;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.MultipartFile;
@@ -96,7 +93,6 @@ public class DataResourceRecordUtilTest {
 
   private static final String TEMP_DIR_4_ALL = "/tmp/metastore2/drru/";
   private static final String TEMP_DIR_4_SCHEMAS = TEMP_DIR_4_ALL + "schema/";
-  private MockMvc mockMvc;
   @Autowired
   private WebApplicationContext context;
 
@@ -112,7 +108,7 @@ public class DataResourceRecordUtilTest {
   @Autowired
   private MetastoreConfiguration schemaConfig;
   @Rule
-  public JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
+  public final JUnitRestDocumentation restDocumentation = new JUnitRestDocumentation();
 
   public DataResourceRecordUtilTest() {
   }
@@ -145,7 +141,7 @@ public class DataResourceRecordUtilTest {
     } catch (IOException ex) {
       ex.printStackTrace();
     }
-    this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
+    MockMvcBuilders.webAppContextSetup(this.context)
             .apply(springSecurity())
             .apply(documentationConfiguration(this.restDocumentation))
             .build();
@@ -315,6 +311,7 @@ public class DataResourceRecordUtilTest {
   @Test(expected = CustomInternalServerError.class)
   public void testCheckDocumentForChangesWithNoContentInformation() {
     boolean result = DataResourceRecordUtil.checkDocumentForChanges(null, null);
+    Assert.assertFalse("Result should be not present because there should be an exception!", result);
     fail();
   }
 

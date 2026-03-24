@@ -60,7 +60,7 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   @Autowired
   private ElasticIndexerService elasticIndexerService;
 
-  /**
+  /*
    * ***************************************************************************
    * Parameter for migrating MetaStore version 1.x to version 2.x This should be
    * executed only once.
@@ -77,7 +77,7 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   @Parameter(names = {"--prefixIndices", "-p"}, description = "Parameter for 'migrate2Datacite': Prefix used for the indices inside elastic.")
   String prefixIndices;
 
-  /**
+  /*
    * ***************************************************************************
    * Parameters for reindexing elasticsearch. This should be executed only once.
    * ***************************************************************************
@@ -98,7 +98,7 @@ public class ElasticIndexerRunner implements CommandLineRunner {
   @Parameter(names = {"--updateDate", "-u"}, description = "Parameter for 'reindex': Starting reindexing only for documents updated at earliest on update date.")
   Date updateDate;
 
-  /**
+  /*
    * ***************************************************************************
    * Parameter for purging database and disc.
    * ***************************************************************************

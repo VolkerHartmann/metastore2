@@ -98,8 +98,7 @@ public class IdentifyTypeTest {
     public void testSetAndGetAdminEmail() {
         System.out.println("getAdminEmail");
         IdentifyType instance = new IdentifyType();
-        List<String> value = null;
-        List<String> expResult = value;
+        List<String> expResult = null;
         List<String> result = instance.getAdminEmail();
         assertTrue(result.isEmpty());
         expResult = result;
@@ -115,8 +114,8 @@ public class IdentifyTypeTest {
     public void testSetAndGetEarliestDatestamp() {
         System.out.println("getEarliestDatestamp");
         IdentifyType instance = new IdentifyType();
-        String value = null;
-        String expResult = value;
+        String value;
+        String expResult = null;
         String result = instance.getEarliestDatestamp();
         assertEquals(expResult, result);
         value = "firstDateStamp";
@@ -169,8 +168,7 @@ public class IdentifyTypeTest {
     public void testGetCompression() {
         System.out.println("getCompression");
         IdentifyType instance = new IdentifyType();
-        List<String> value = null;
-        List<String> expResult = value;
+        List<String> expResult = null;
         List<String> result = instance.getCompression();
         assertTrue(result.isEmpty());
         expResult = result;
@@ -186,8 +184,7 @@ public class IdentifyTypeTest {
     public void testGetDescription() {
         System.out.println("getDescription");
         IdentifyType instance = new IdentifyType();
-        List<DescriptionType> value = null;
-        List<DescriptionType> expResult = value;
+        List<DescriptionType> expResult = null;
         List<DescriptionType> result = instance.getDescription();
         assertTrue(result.isEmpty());
         expResult = result;

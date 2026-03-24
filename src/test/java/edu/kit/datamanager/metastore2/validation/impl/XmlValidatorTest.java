@@ -24,12 +24,12 @@ import org.springframework.http.MediaType;
  */
 public class XmlValidatorTest {
 
-    File schemaFile = new File("src/test/resources/examples/xml/example.xsd");
-    File schema_oai_dc = new File("src/test/resources/examples/xml/kit.xsd");
-    File invalidSchemaWithDoctype = new File("src/test/resources/examples/xml/forbidden.xsd");
-    File xmlFile = new File("src/test/resources/examples/xml/example.xml");
-    File xmlFile_oai_dc = new File("src/test/resources/examples/xml/kit.xml");
-    File invalidXmlFile = new File("src/test/resources/examples/xml/invalidExample.xml");
+    final File schemaFile = new File("src/test/resources/examples/xml/example.xsd");
+    final File schema_oai_dc = new File("src/test/resources/examples/xml/kit.xsd");
+    final File invalidSchemaWithDoctype = new File("src/test/resources/examples/xml/forbidden.xsd");
+    final File xmlFile = new File("src/test/resources/examples/xml/example.xml");
+    final File xmlFile_oai_dc = new File("src/test/resources/examples/xml/kit.xml");
+    final File invalidXmlFile = new File("src/test/resources/examples/xml/invalidExample.xml");
 
     public XmlValidatorTest() {
     }
