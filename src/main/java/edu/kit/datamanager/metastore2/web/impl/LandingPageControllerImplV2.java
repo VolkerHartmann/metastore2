@@ -141,7 +141,7 @@ public class LandingPageControllerImplV2 implements ILandingPageControllerV2 {
       metadataRecord.setLastUpdate(item.getLastUpdate());
       metadataRecord.setRelatedResource(ResourceIdentifier.factoryInternalResourceIdentifier(DataResourceRecordUtil.getRelatedIdentifier(item, DataResourceRecordUtil.RELATED_DATA_RESOURCE_TYPE).getValue()));
       metadataRecord.setMetadataDocumentUri(DataResourceRecordUtil.getMetadataDocumentUri(item.getId(), item.getVersion()).toString());
-      metadataRecord.setSchema(ResourceIdentifier.factoryUrlResourceIdentifier(DataResourceRecordUtil.getSchemaDocumentUri(item.getId(), item.getVersion())));
+      metadataRecord.setSchema(ResourceIdentifier.factoryUrlResourceIdentifier(DataResourceRecordUtil.getSchemaIdentifier(item).getValue()));
 
       resultList.add(metadataRecord);
     }
