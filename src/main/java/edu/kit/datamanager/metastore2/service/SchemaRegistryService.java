@@ -74,7 +74,7 @@ public class SchemaRegistryService {
         // Check all registered schemas...
         for (RepoInfo repoInfo : repoInfoDao.findAll()) {
           LOG.trace("Checking the following schema: {}", repoInfo);
-          DataResource schemaDocument = null;
+          DataResource schemaDocument;
           try {
             DataResource dataResource = DataResourceRecordUtil.getSchemaRecordByIdAndVersion(schemaConfig, repoInfo.getSchemaId(), repoInfo.getVersion());
             dataResource = DataResourceUtils.copyDataResource(dataResource);
@@ -88,7 +88,6 @@ public class SchemaRegistryService {
           } catch (Exception e) {
             LOG.error("Error reading schema for RepoInfo: {}", repoInfo);
             LOG.error(e.getMessage(), e);
-            continue;
           }
         }
       } finally {

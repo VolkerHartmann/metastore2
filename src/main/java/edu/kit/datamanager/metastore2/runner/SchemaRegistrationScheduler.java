@@ -15,11 +15,8 @@
  */
 package edu.kit.datamanager.metastore2.runner;
 
-import edu.kit.datamanager.metastore2.configuration.MetaStoreMonitoringConfiguration;
 import edu.kit.datamanager.metastore2.configuration.SchemaRegistryConfiguration;
-import edu.kit.datamanager.metastore2.service.MetaStoreMonitoringService;
 import edu.kit.datamanager.metastore2.service.SchemaRegistryService;
-import jakarta.annotation.PostConstruct;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,10 +52,10 @@ public class SchemaRegistrationScheduler {
     LOG.debug("Schema Registration Scheduler configuration: {}", schemaRegistryConfiguration);
     // Intialize the ThreadPoolTaskScheduler
     schedule4RegisteringSchemas.setPoolSize(2);
-    schedule4RegisteringSchemas.setThreadNamePrefix("monitoring-scheduler-");
+    schedule4RegisteringSchemas.setThreadNamePrefix("schema-registry-scheduler-");
     schedule4RegisteringSchemas.initialize();
     // Schedule the tasks
-    schedule4RegisteringSchemas.schedule(this::runUpdateRegisteredSchemas, cronTrigger(schemaRegistryConfiguration.getCron4schedule()));
+    schedule4RegisteringSchemas.schedule(this::runUpdateRegisteredSchemas, cronTrigger(this.schemaRegistryConfiguration.getCron4schedule()));
   }
 
   private Trigger cronTrigger(String cronExpression) {

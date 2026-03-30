@@ -41,7 +41,6 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.rest.core.support.RepositoryRelProvider;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -84,7 +83,6 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   private final MetastoreConfiguration schemaConfig;
 
   private final IRepoInfoDao repoInfoDao;
-  private final RepositoryRelProvider repositoryRelProvider;
 
   /**
    * Constructor for schema documents controller.
@@ -96,7 +94,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
   public SchemaRegistryControllerImplV2(ApplicationProperties applicationProperties,
                                         MetastoreConfiguration schemaConfig,
                                         IDataResourceDao dataResourceDao,
-                                        IRepoInfoDao repoInfoDao, RepositoryRelProvider repositoryRelProvider) {
+                                        IRepoInfoDao repoInfoDao) {
     this.applicationProperties = applicationProperties;
     this.schemaConfig = schemaConfig;
     this.repoInfoDao = repoInfoDao;
@@ -204,7 +202,7 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
     redirectUrl = redirectUrl.replace(MetadataControllerImplV2.PLACEHOLDER_ID, id);
     String versionString = "";
     if (version != null) {
-      versionString = version.toString();
+      versionString = version;
     }
     redirectUrl = "redirect:" + redirectUrl.replace(MetadataControllerImplV2.PLACEHOLDER_VERSION, versionString);
 

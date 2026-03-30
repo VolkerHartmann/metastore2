@@ -30,7 +30,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.Optional;
 
 public class GitHubReleaseFetcher {
@@ -70,7 +69,7 @@ public class GitHubReleaseFetcher {
             .replace(PLACEHOLDER_REPO, repoInfo.getRepoName());
     String downloadUrl4Schema;
     Optional<SemanticVersion> currentVersionOptional = SemanticVersion.tryParse(repoInfo.getVersion());
-    SemanticVersion currentVersion = null;
+    SemanticVersion currentVersion;
     // Set current version to '0.0.0' if no further version is available.
     currentVersion = currentVersionOptional.orElseGet(() -> SemanticVersion.parse("0.0.0"));
 

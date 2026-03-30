@@ -15,7 +15,6 @@
  */
 package edu.kit.datamanager.metastore2.util;
 
-import com.beust.ah.A;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.Identifier;
@@ -2083,8 +2082,8 @@ public class DataResourceRecordUtil {
    * If it is not valid return HTTP BAD_REQUEST. If it is valid do nothing.
    * If no version is provided set it to default or if no default is given to '1.0.0'.
    *
-   * @param dataResourceRecord
-   * @param defaultVersion
+   * @param dataResourceRecord Data resource holding the given version.
+   * @param defaultVersion Default value for the vision.
    */
   private static void check4GivenVersion(DataResource dataResourceRecord, String defaultVersion) {
     if (dataResourceRecord.getVersion() != null) {
