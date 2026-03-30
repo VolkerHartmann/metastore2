@@ -17,11 +17,13 @@ public class RepoInfoTest {
   public void testSettersAndGetters() {
     RepoInfo ri = new RepoInfo("o", "r", "p");
     ri.setSchemaId("my_schema");
-    ri.setTagName("v1.2.3");
+    ri.setReleaseName("v1.2.3");
+    ri.setTagName("tag");
     ri.setETag("etag-value");
 
     Assert.assertEquals("my_schema", ri.getSchemaId());
-    Assert.assertEquals("v1.2.3", ri.getTagName());
+    Assert.assertEquals("v1.2.3", ri.getReleaseName());
+    Assert.assertEquals("tag", ri.getTagName());
     Assert.assertEquals("etag-value", ri.getETag());
     Assert.assertEquals("p", ri.getPath2Schema());
 
@@ -37,7 +39,7 @@ public class RepoInfoTest {
   public void testGetVersion_whenTagNameNull() {
     RepoInfo ri = new RepoInfo("o", "r", "p");
     ri.setTagName(null);
-    Assert.assertEquals("0.0.1", ri.getVersion());
+    Assert.assertEquals("0.0.0", ri.getVersion());
   }
 
   @Test
@@ -62,14 +64,17 @@ public class RepoInfoTest {
   public void testToStringContainsFields() {
     RepoInfo ri = new RepoInfo("org", "repo", "p");
     ri.setSchemaId("id1");
-    ri.setTagName("v0.0.1");
-    ri.setETag("e");
+    ri.setReleaseName("v0.0.1");
+    ri.setTagName("tag1");
+    ri.setETag("0001394");
     String s = ri.toString();
     Assert.assertTrue(s.contains("schemaId"));
     Assert.assertTrue(s.contains("id1"));
     Assert.assertTrue(s.contains("org"));
     Assert.assertTrue(s.contains("repo"));
     Assert.assertTrue(s.contains("v0.0.1"));
+    Assert.assertTrue(s.contains("tag1"));
+    Assert.assertTrue(s.contains("0001394"));
   }
 
 }

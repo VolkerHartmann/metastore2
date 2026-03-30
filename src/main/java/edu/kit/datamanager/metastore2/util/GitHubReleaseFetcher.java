@@ -94,13 +94,13 @@ public class GitHubReleaseFetcher {
         }
 
         conn.disconnect();
+        LOG.trace("Fetching lastest release from GitHub repository: {}/{}", repoInfo.getOrganization(), repoInfo.getRepoName());
         JsonNode jsonNode = JsonUtils.getJsonNodeFromString(response.toString());
         for (JsonNode node : jsonNode) {
+          // Get release name. The release name consists of the schemaId and the version number. The version number is determined by the part after the last '_' in the release name prefixed by a 'v'.
           String name = node.path("name").asText("No release yet!");
-          // Get tag name. The tag name consists of the schemaId and the version number. The version number is determined by the part after the last '_' in the tag name prefixed by a 'v'.
           String tag = node.path("tag_name").asText(null);
-          LOG.debug("Fetching lastest release from GitHub repository: {}/{}", repoInfo.getOrganization(), repoInfo.getRepoName());
-          LOG.debug("Latest release: '{}' (tag: '{}')", name, tag);
+          LOG.trace("Found release: '{}' (tag: '{}')", name, tag);
           // Extract the part before the last '_' of tag to determine schemaId
           String schemaId = getSchemaId(tag);
           // Extract the part after the last 'v'
@@ -108,11 +108,15 @@ public class GitHubReleaseFetcher {
           LOG.trace("New release version: '{}'", newVersion);
           LOG.trace("Current version: '{}'", currentVersion);
           Optional<SemanticVersion> newVersionOptional = SemanticVersion.tryParse(newVersion);
-          if (newVersionOptional.isEmpty() || newVersionOptional.get().isAtMost(currentVersion)) {
-            throw new CustomInternalServerError("No new version found for tag: " + tag + "! Current version: " + currentVersion);
+          if (newVersionOptional.isEmpty()) {
+            // Skip that tag due to missing version information. This can be the case if the tag name does not follow the expected format (e.g. schemaId_v1.2.3).
+            LOG.debug("Can't parse version from tag: '{}'. Skip this tag and continue with next tag...", tag);
+            continue;
           }
-          if ((schemaId == null) || schemaId.equals(repoInfo.getSchemaId())) {
+          if (((schemaId == null) || schemaId.equals(repoInfo.getSchemaId())) && newVersionOptional.get().isAfter(currentVersion)) {
             LOG.debug("Matching release found: " + name);
+            // Set release name
+            repoInfo.setReleaseName(name);
             // Set tag
             repoInfo.setTagName(tag);
             // Set version
@@ -134,8 +138,9 @@ public class GitHubReleaseFetcher {
             LOG.debug("Release " + name + " does not match the expected schemaId: " + repoInfo.getSchemaId());
           }
         }
-       } else {
-        LOG.debug("Failed to fetch latest release: " + conn.getResponseCode() + " " + conn.getResponseMessage());
+      }
+      if (schemaDocument == null) {
+        LOG.debug("No new version available from GitHub repository: '{}/{}'", repoInfo.getOrganization(), repoInfo.getRepoName());
       }
 
     } catch (Exception e) {
@@ -149,15 +154,13 @@ public class GitHubReleaseFetcher {
 
     TemporaryMultipartFile multipartFile = null;
     String originalFilename = FilenameUtils.getName(url4Schema);
-    Path downloadedJsonSchemaPath =null;
 
     try (InputStream inputStream = new URL(url4Schema).openStream()) {
       multipartFile = new TemporaryMultipartFile("schema", originalFilename, inputStream);
     } catch (Exception e) {
       LOG.error("Error fetching JSON schema from URL: {}", url4Schema, e);
-      downloadedJsonSchemaPath = null;
     }
-    LOG.debug("Downloaded JSON schema from URL: {}", downloadedJsonSchemaPath);
+    LOG.debug("Downloaded JSON schema from URL: {} with file name: {}", url4Schema, originalFilename);
     return multipartFile;
   }
 
@@ -191,13 +194,27 @@ public class GitHubReleaseFetcher {
    */
   public static String getVersionFromTag(String tag) {
     String version = "";
-    if ((tag != null) && !tag.trim().isEmpty() && tag.lastIndexOf('v') >= 0) {
-      String expectedVersion = tag.substring(tag.lastIndexOf('v') + 1);
-      Optional<SemanticVersion> semanticVersion = SemanticVersion.tryParse(expectedVersion);
+      Optional<SemanticVersion> semanticVersion = getSemanticVersionFromTag(tag);
       if (semanticVersion.isPresent()) {
         version = semanticVersion.get().toString();
       }
-    }
     return version;
+  }
+
+  /**
+   * Get version from tag name.
+   * The version is determined by extracting the part of the tag name after the last underscore ('_') without the 'v' prefix.
+   * e.g. schema_Id_v1.2.3 -> version = 1.2.3
+   * If no valid version is available an empty string is returned.
+   * @param tag tag name.
+   * @return version
+   */
+  public static Optional<SemanticVersion> getSemanticVersionFromTag(String tag) {
+    Optional<SemanticVersion> semanticVersion = Optional.empty();
+    if ((tag != null) && !tag.trim().isEmpty() && tag.lastIndexOf('v') >= 0) {
+      String expectedVersion = tag.substring(tag.lastIndexOf('v') + 1);
+      semanticVersion = SemanticVersion.tryParse(expectedVersion);
+    }
+    return semanticVersion;
   }
 }

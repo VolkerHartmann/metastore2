@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import edu.kit.datamanager.exceptions.ResourceNotFoundException;
 import edu.kit.datamanager.metastore2.configuration.ApplicationProperties;
 import edu.kit.datamanager.metastore2.configuration.MetastoreConfiguration;
+import edu.kit.datamanager.metastore2.dao.IRepoInfoDao;
 import edu.kit.datamanager.metastore2.domain.RepoInfo;
 import edu.kit.datamanager.metastore2.util.ActuatorUtil;
 import edu.kit.datamanager.metastore2.util.DataResourceRecordUtil;
@@ -40,6 +41,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.rest.core.support.RepositoryRelProvider;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -81,6 +83,9 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
 
   private final MetastoreConfiguration schemaConfig;
 
+  private final IRepoInfoDao repoInfoDao;
+  private final RepositoryRelProvider repositoryRelProvider;
+
   /**
    * Constructor for schema documents controller.
    *
@@ -89,14 +94,17 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
    * @param dataResourceDao DAO for data resources.
    */
   public SchemaRegistryControllerImplV2(ApplicationProperties applicationProperties,
-          MetastoreConfiguration schemaConfig,
-          IDataResourceDao dataResourceDao) {
+                                        MetastoreConfiguration schemaConfig,
+                                        IDataResourceDao dataResourceDao,
+                                        IRepoInfoDao repoInfoDao, RepositoryRelProvider repositoryRelProvider) {
     this.applicationProperties = applicationProperties;
     this.schemaConfig = schemaConfig;
+    this.repoInfoDao = repoInfoDao;
     DataResourceRecordUtil.setDataResourceDao(dataResourceDao);
     LOG.info("------------------------------------------------------");
     LOG.info("------{}", schemaConfig);
     LOG.info("------------------------------------------------------");
+    this.repositoryRelProvider = repositoryRelProvider;
   }
 
   @Override
@@ -113,8 +121,10 @@ public class SchemaRegistryControllerImplV2 implements ISchemaRegistryController
     LOG.trace("RepoInfo: {}", repoInfo);
     DataResource dataResourceRecord = DataResourceRecordUtil.createDataResourceRecord4GitHubSchema(schemaConfig, recordDocument, repoInfo);
     LOG.trace("Schema record successfully registered. Returning result.");
+    repoInfoDao.save(repoInfo);
+    LOG.trace("RepoInfo2: {}", repoInfo);
+    // preparing result
     String etag = dataResourceRecord.getEtag();
-
     URI locationUri;
     locationUri = SchemaRegistryControllerImplV2.getSchemaDocumentUri(dataResourceRecord);
     LOG.trace("Set locationUri to '{}'", locationUri);

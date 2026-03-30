@@ -76,7 +76,7 @@ public class GitHubReleaseFetcherTest {
   @Test
   public void testFetchLatestReleaseWithUnknownSchema() throws Exception {
     RepoInfo repoInfo = new RepoInfo("kit-data-manager",
-            "metadata-schemas-for-materials-science",
+            "service-base",
             "not needed");
     repoInfo.setSchemaId("unknown");
       MultipartFile schemaFile = GitHubReleaseFetcher.fetchLatestRelease(repoInfo);

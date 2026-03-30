@@ -15,6 +15,7 @@
  */
 package edu.kit.datamanager.metastore2.util;
 
+import com.beust.ah.A;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.kit.datamanager.entities.Identifier;
@@ -130,7 +131,7 @@ public class DataResourceRecordUtil {
    * @param currentAcl Check current ACL (true) or new one (false).
    * @return Allowed (true)
    * @throws AccessForbiddenException If user is not allowed to change ACL entries.
-   * @throws BadArgumentException If user is not allowed to revoke own administrator rights.
+   * @throws BadArgumentException     If user is not allowed to revoke own administrator rights.
    */
   public static boolean checkAccessRights(Set<AclEntry> aclEntries, boolean currentAcl) {
     boolean isAllowed = true;
@@ -221,7 +222,9 @@ public class DataResourceRecordUtil {
   }
 
   /**
-   * Create/Ingest an instance of MetadataSchemaRecord.
+   * Create/Ingest an instance of a schema.
+   * In case that a version is provided only updates will
+   * take place.
    *
    * @param applicationProperties Settings of repository.
    * @param recordDocument        Record of the schema.
@@ -229,8 +232,8 @@ public class DataResourceRecordUtil {
    * @return Record of registered schema document.
    */
   public static DataResource createDataResourceRecord4GitHubSchema(MetastoreConfiguration applicationProperties,
-                                                             MultipartFile recordDocument,
-                                                             RepoInfo repoInfo){
+                                                                   MultipartFile recordDocument,
+                                                                   RepoInfo repoInfo) {
   /*  1. Check if recordDocument and repoInfo are not empty
             2. Create DataResource from recordDocument
             2.a) Get ID of the schema
@@ -238,11 +241,12 @@ public class DataResourceRecordUtil {
             4. Get TemporaryMultipartFile from repository
             5. Set ACL to readable for WORLD (if not already)
             6. Set format and resource type (if not already set)
-            7. Create TemporaryMultipartFile from dataResource */
+            7. Create TemporaryMultipartFile from dataResource
+            8. If success: Store repoInfo for scheduling.  */
     DataResource dataResourceRecord;
     // Do some checks first.
-    if (recordDocument == null || recordDocument.isEmpty() || repoInfo == null || repoInfo.getOrganization() == null || repoInfo.getRepoName() == null) {
-      throw new BadArgumentException("Record document or repo info is null or empty");
+    if (recordDocument == null || recordDocument.isEmpty()) {
+      throw new BadArgumentException("Record document is null or empty");
     }
     ObjectMapper mapper = new ObjectMapper();
     LOG.trace("Start mapping dataresource record from record document. ");
@@ -263,17 +267,65 @@ public class DataResourceRecordUtil {
 
     LOG.trace("Id is now set to '{}'", dataResourceRecord.getId());
     repoInfo.setSchemaId(dataResourceRecord.getId());
+    return createOrUpdateDataResourceRecord4GitHubSchema(applicationProperties, dataResourceRecord, repoInfo);
+  }
+
+  /**
+   * Create/Ingest/Update an instance of a schema.
+   * In case that a version is provided only updates will
+   * take place.
+   *
+   * @param applicationProperties Settings of repository.
+   * @param dataResourceRecord    Record of the schema.
+   * @param repoInfo              RepoInfo containing information about the GitHub repository to fetch the schema document from.
+   * @return Record of registered schema document.
+   */
+  public static DataResource createOrUpdateDataResourceRecord4GitHubSchema(MetastoreConfiguration applicationProperties,
+                                                                           DataResource dataResourceRecord,
+                                                                           RepoInfo repoInfo) {
+    boolean registerNewSchema = true;
+    DataResource createdOrUpdatedResourceRecord = null;
+    // Do some checks first.
+    if (repoInfo == null || repoInfo.getOrganization() == null || repoInfo.getRepoName() == null) {
+      throw new BadArgumentException("Repo info is null or empty");
+    }
+    if (repoInfo.getTagName() != null) {
+      LOG.trace("Tag name is set to '{}'. Try to update schema...", repoInfo.getTagName());
+      registerNewSchema = false;
+
+    } else {
+      LOG.trace("No tag name provided. Try to create schema...");
+    }
     MultipartFile schemaDocument = null;
-     try {
+    MultipartFile recordDocument = null;
+    try {
       schemaDocument = GitHubReleaseFetcher.fetchLatestRelease(repoInfo);
-      check4GivenVersion(dataResourceRecord, repoInfo.getVersion());
-      InputStream stream = new ByteArrayInputStream(mapper.writeValueAsBytes(dataResourceRecord));
-      recordDocument = new TemporaryMultipartFile(recordDocument.getName(), recordDocument.getOriginalFilename(), stream);
+      if (registerNewSchema) {
+        check4GivenVersion(dataResourceRecord, repoInfo.getVersion());
+        addAnonymousAccess(dataResourceRecord);
+        ObjectMapper mapper = new ObjectMapper();
+        InputStream stream = new ByteArrayInputStream(mapper.writeValueAsBytes(dataResourceRecord));
+        recordDocument = new TemporaryMultipartFile("record", "record.json", stream);
+        createdOrUpdatedResourceRecord = createDataResourceRecord4Schema(applicationProperties, recordDocument, schemaDocument);
+      } else {
+        // do an update if new schema document is available
+        // 1. Get ETag
+        // 2. Get resourceId
+        // 3. call update
+        if  (schemaDocument != null) {
+          // Get old data resource to determine eTag
+          DataResource oldDataResource = applicationProperties.getDataResourceService().findById(dataResourceRecord.getId());
+          dataResourceRecord.setVersion(repoInfo.getVersion());
+          String eTag = "\"" + oldDataResource.getEtag() + "\"";
+          String resourceId = dataResourceRecord.getId();
+          createdOrUpdatedResourceRecord = updateDataResource4SchemaDocument(applicationProperties, resourceId, eTag, dataResourceRecord, schemaDocument, t -> "somethingStupid");
+        }
+      }
     } catch (IOException e) {
       LOG.error("Error reading data resource record from record document. ", e);
       throw new BadArgumentException("Error reading data resource record from record document. ");
     }
-    return createDataResourceRecord4Schema(applicationProperties, recordDocument, schemaDocument);
+    return createdOrUpdatedResourceRecord;
   }
 
   /**
@@ -509,11 +561,13 @@ public class DataResourceRecordUtil {
     }
     return returnValue;
   }
+
   /**
    * Get a schema record by given id and version. If version is null, the latest version will be returned.
+   *
    * @param metastoreProperties Configuration for accessing services
-   * @param recordId ID of the record to be obtained.
-   * @param version Version of the record to be obtained. If null, the latest version will be returned.
+   * @param recordId            ID of the record to be obtained.
+   * @param version             Version of the record to be obtained. If null, the latest version will be returned.
    * @return DataResource with given id and version.
    * @throws ResourceNotFoundException If no record with given id and version exists or if the record is not a schema record.
    */
@@ -528,9 +582,10 @@ public class DataResourceRecordUtil {
 
   /**
    * Get a record by given id and version. If version is null, the latest version will be returned.
+   *
    * @param metastoreProperties Configuration for accessing services
-   * @param recordId ID of the record to be obtained.
-   * @param version Version of the record to be obtained. If null, the latest version will be returned.
+   * @param recordId            ID of the record to be obtained.
+   * @param version             Version of the record to be obtained. If null, the latest version will be returned.
    * @return DataResource with given id and version.
    * @throws ResourceNotFoundException If no record with given id and version exists.
    */
@@ -822,6 +877,28 @@ public class DataResourceRecordUtil {
   }
 
   /**
+   * Check for anonymous access. If not already set add an appropriate AclEntry.
+   * @param resource Data resource to check.
+   */
+  private static void addAnonymousAccess(DataResource resource) {
+    Set<AclEntry> aclEntries = resource.getAcls();
+    if (aclEntries == null) {
+      aclEntries = new HashSet<>();
+      resource.setAcls(aclEntries);
+    }
+    boolean anonymous = false;
+    for (AclEntry aclEntry : aclEntries) {
+      if (aclEntry.getSid().equals(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL) && aclEntry.getPermission().equals(PERMISSION.READ)) {
+        anonymous = true;
+        break;
+      }
+    }
+    if (!anonymous) {
+      aclEntries.add(new AclEntry(AuthenticationHelper.ANONYMOUS_USER_PRINCIPAL, PERMISSION.READ));
+    }
+  }
+
+  /**
    * Return the number of ingested documents. If there are two versions of the
    * same document this will be counted as one.
    *
@@ -876,6 +953,7 @@ public class DataResourceRecordUtil {
 
   /**
    * Set the DAO holding all identifiers and their versions.
+   *
    * @param allIdentifiersDao the allIdentifiersDao to set
    */
   public static void setAllIdentifiersDao(IAllIdentifiersDao allIdentifiersDao) {
@@ -1150,8 +1228,8 @@ public class DataResourceRecordUtil {
   /**
    * Fix resource type and format of data resource if not provided. This is necessary for validation and indexing.
    *
-   * @param dataResource        Data resource to be checked.
-   * @param mimeType Detected mimetype of the schema document.
+   * @param dataResource Data resource to be checked.
+   * @param mimeType     Detected mimetype of the schema document.
    */
   private static void fixResourceTypeAndFormat(DataResource dataResource, String mimeType) {
     if (mimeType != null) {
@@ -1178,7 +1256,7 @@ public class DataResourceRecordUtil {
     // Also fix format if necessary and possible
     String type = dataResource.getResourceType().getValue();
     if (dataResource.getFormats().isEmpty()) {
-      if (type.toLowerCase(Locale.ENGLISH).contains("json") ) {
+      if (type.toLowerCase(Locale.ENGLISH).contains("json")) {
         dataResource.getFormats().add(MediaType.APPLICATION_JSON_VALUE);
       } else {
         if (type.toLowerCase(Locale.ENGLISH).contains("xml")) {
@@ -1399,9 +1477,9 @@ public class DataResourceRecordUtil {
    * @throws RuntimeException In case of an error during update.
    */
   private static void updateDocument(MetastoreConfiguration applicationProperties,
-                                        DataResource updatedDataResource,
-                                        MultipartFile document,
-                                        UnaryOperator<String> supplier) {
+                                     DataResource updatedDataResource,
+                                     MultipartFile document,
+                                     UnaryOperator<String> supplier) {
     ContentInformation info;
     String fileName;
     info = getContentInformationOfResource(applicationProperties, updatedDataResource);
@@ -2004,6 +2082,7 @@ public class DataResourceRecordUtil {
    * Set a version for the first record of a data resource. If a version is provided check if it is valid.
    * If it is not valid return HTTP BAD_REQUEST. If it is valid do nothing.
    * If no version is provided set it to default or if no default is given to '1.0.0'.
+   *
    * @param dataResourceRecord
    * @param defaultVersion
    */
@@ -2018,7 +2097,7 @@ public class DataResourceRecordUtil {
     } else {
       if (SemanticVersion.tryParse(defaultVersion).isEmpty()) {
         dataResourceRecord.setVersion("1.0.0");
-      } else  {
+      } else {
         dataResourceRecord.setVersion(defaultVersion);
       }
     }

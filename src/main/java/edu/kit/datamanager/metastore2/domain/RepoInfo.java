@@ -36,10 +36,15 @@ public class RepoInfo {
   @NotNull(message = "The relative path to the schema file. This is used to locate the schema file in the repository. It is expected to be a valid path string, e.g., 'schemas/schema.json'.")
   String path2Schema;
   @Schema(
-          description = "The tag name of the latest release. This is used to identify the version of the schema. It is expected to be in the format 'vX.Y.Z' where X, Y, and Z are integers.",
-          example = "0.9.0"
+          description = "The tag name of the latest release. This is used to access the files of a release.",
+          example = "v0.9.0"
   )
   String tagName;
+  @Schema(
+          description = "The release name of the latest release. This is used to identify the version of the schema. It is expected to be in the format '[..._]vX.Y.Z' where X, Y, and Z are integers.",
+          example = "v0.9.0"
+  )
+  String releaseName;
   @Schema(
           description = "The eTag of the latest release. This is used to avoid unnecessary traffic when checking for updates. It is expected to be a string returned by the GitHub API."
   )
@@ -135,8 +140,14 @@ public class RepoInfo {
   public void setETag(String eTag) {
     this.eTag = eTag;
   }
+
+  /**
+   * Extract the version from the tag name.
+   * There is no check for valid versions!
+   * @return Substring after the last 'v' of the tag name. Or '0.0.0' if no tag name is available.
+   */
   public String getVersion()  {
-    return tagName != null ? tagName.substring(tagName.lastIndexOf('v') + 1) : "0.0.1";
+    return tagName != null ? tagName.substring(tagName.lastIndexOf('v') + 1) : "0.0.0";
   }
 
   /**
@@ -165,6 +176,7 @@ public class RepoInfo {
             ", organization='" + organization + "'" +
             ", repoName='" + repoName + "'" +
             ", path2Schema='" + path2Schema + "'" +
+            ", releaseName='" + releaseName + "'" +
             ", tagName='" + tagName + "'" +
             ", eTag='" + eTag + "' }";
   }
